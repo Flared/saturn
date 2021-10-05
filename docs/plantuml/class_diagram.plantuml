@@ -32,7 +32,7 @@ class Pipeline {
 
 Job --|> Topic
 
-Queue "1" -- "*" Job
+Queue "1" -- "*" Topic
 Topic "1" -- "*" Pipeline
 Topic "*" -- "*" Resource
 Job "*" -- "1" Inventory
