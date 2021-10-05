@@ -15,4 +15,6 @@
 
 **WorkerManager**: The Worker Manager assigns topics to workers.
 
+**Pipeline**: Pipelines are functions that accept queue messages as inputs. They may or may not write messages to other queues.
+
 ![class_diagram](https://www.plantuml.com/plantuml/proxy?cache=no&fmt=svg&src=https://github.com/Flared/saturn/raw/main/docs/plantuml/class_diagram.plantuml)
