@@ -9,7 +9,7 @@
 
 **Job**: Jobs are topics that are proxies to inventories.
 
-**Queues**: Queues contain messages that will be distributed to associated topics. The messages it contains are kept until they were comsumed by all topics. Example: Queue *q1* is associated with topics *t1* and *t2*.
+**Queues**: Queues contain messages that will be distributed to associated topics. The messages it contains are kept until they were consumed by all topics. Example: Queue *q1* is associated with topics *t1* and *t2*.
 
 **Worker**: Workers are assigned topics and they run the associated pipelines.
 
