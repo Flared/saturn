@@ -1,0 +1,55 @@
+[tool.poetry]
+name = "saturn-engine"
+version = "0.1.0"
+description = ""
+readme = "README.md"
+authors = ["Flare Systems <oss@flare.systems>"]
+repository = "https://github.com/Flared/saturn"
+keywords = ["data", "collection", "task", "worker", "processing"]
+classifiers = [
+  "Intended Audience :: Information Technology",
+  "Intended Audience :: Developers",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3.9",
+  "Topic :: Software Development :: Libraries :: Application Frameworks",
+  "Topic :: System :: Distributed Computing",
+]
+license = "BSD-3-Clause"
+packages = [
+    { include = "saturn", from = "src" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+flask = "^2.0.2"
+
+[tool.poetry.dev-dependencies]
+black = "^21.9b0"
+flake8 = "^3.9.2"
+flake8-bandit = "^2.1.2"
+flake8-black = "^0.2.3"
+flake8-bugbear = "^21.9.2"
+flake8-isort = "^4.0.0"
+isort = "^5.9.3"
+mypy = "^0.910"
+pytest = "^6.2.5"
+nox-poetry = "^0.8.6"
+
+[tool.isort]
+profile = "black"
+
+[build-system]
+requires = ["poetry_core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+disallow_untyped_calls = true
+
+[[tool.mypy.overrides]]
+module = [
+  "nox.*",
+]
+ignore_missing_imports = true
