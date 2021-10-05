@@ -5,7 +5,7 @@
 
 **Inventory**: Inventories are lists of things of the same type that serve as input to queues. They are used to generate queue messages. Example: List of pages to crawl.
 
-**Topics**: Topics are proxies to message queues. They contain messages that serves as input to pipelines. A topic may be associated with one or more resources. Example: Topic *t1* lists pages that have to be crawled using API Key *r1*. A topic may only be assigned to a single worker.
+**Topics**: Topics are proxies to message queues. They forward queue messages that serves as input to pipelines. A topic may be associated with one or more resources. Example: Topic *t1* lists pages that have to be crawled using API Key *r1*. A topic may only be assigned to a single worker.
 
 **Job**: Jobs are topics that are proxies to inventories.
 
