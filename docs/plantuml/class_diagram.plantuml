@@ -38,6 +38,9 @@ class Pipeline {
 class JobGroup {
 }
 
+class WorkerManager {
+}
+
 Topic "0..1" -- "*" Queue
 Queue "*" -- "*" Resource
 Queue "1" -- "*" Pipeline
