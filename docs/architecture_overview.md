@@ -5,16 +5,20 @@
 
 **Inventory**: Inventories are lists of things of the same type that serve as input to queues. They are used to generate queue messages. Example: List of pages to crawl.
 
-**Topics**: Topics are proxies to message queues. They forward queue messages that serves as input to pipelines. A topic may be associated with one or more resources. Example: Topic *t1* lists pages that have to be crawled using API Key *r1*. A topic may only be assigned to a single worker.
+**Job**: A job is the execution of a pipeline over all inventory items. A job effectively feeds an inventory into a queue.
 
-**Job**: Jobs are topics that are proxies to inventories.
+**Job Group**: A job group links jobs together to manage rescheduling of jobs once the group is completed instead of a single job.
 
-**Queues**: Queues contain messages that will be distributed to associated topics. The messages it contains are kept until they were consumed by all topics. Example: Queue *q1* is associated with topics *t1* and *t2*.
+**Topics**: Topics are components that broadcast messages to all subscribed queues.
 
-**Worker**: Workers are assigned topics and they run the associated pipelines.
+**Queues**: Queues feed pipelines. A queue holds properties such as resources to enrich messages coming from inventory or topics.
 
-**WorkerManager**: The Worker Manager assigns topics to workers.
+**Pipeline**: A pipeline takes messages read from a queue as input to some function. Pipelines might require resources to process messages.
 
-**Pipeline**: Pipelines are functions that accept queue messages as inputs. They may or may not write messages to other queues.
+**Resource**: A resource is an object that is used by workers to run a pipeline. For example, an API Key might be required by a pipeline to enrich data with a third-party service. Resources effectively allow to manage pipeline concurrency and rate-limit.
+
+**Worker**: Workers run pipelines by processing a set of queues and jobs
+
+**WorkerManager**: The Worker Manager distributes the queues and jobs processing to the available workers.
 
 ![class_diagram](https://www.plantuml.com/plantuml/proxy?cache=no&fmt=svg&src=https://github.com/Flared/saturn/raw/main/docs/plantuml/class_diagram.plantuml)
