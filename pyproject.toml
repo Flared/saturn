@@ -22,7 +22,8 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.9"
 Flask = {extras = ["async"], version = "^2.0.2"}
-SQLAlchemy = {extras = ["mypy"], version = "^1.4.25"}
+SQLAlchemy = {extras = ["asyncio", "mypy"], version = "^1.4.25"}
+aiosqlite = "^0.17.0"
 
 [tool.poetry.dev-dependencies]
 black = "^21.9b0"
