@@ -1,0 +1,20 @@
+#!/bin/bash
+# Poetry lock file is very conflictual. This script makes it easy to regen the
+# lock file to fix any conflict.
+# From https://www.peterbe.com/plog/how-to-resolve-a-git-conflict-in-poetry.lock
+
+set -ex
+
+# Get poetry.lock to look like it does in master
+git checkout --theirs poetry.lock
+
+# Rewrite the lock file
+poetry lock --no-update
+
+# Resolve conflict
+git add poetry.lock
+
+# Most likely needed
+poetry install
+
+echo 'Conflict solved, run "git commit" or "git rebase --continue"'

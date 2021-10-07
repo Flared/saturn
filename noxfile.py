@@ -46,7 +46,7 @@ def install_with_constraints(session: Session, *args: str, **kwargs: Any) -> Non
 def tests(session: Session) -> None:
     args = session.posargs
     install_project(session)
-    install_with_constraints(session, "pytest")
+    install_with_constraints(session, "pytest", "pytest-asyncio")
     session.run("pytest", *args)
 
 
