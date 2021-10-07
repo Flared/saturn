@@ -4,7 +4,8 @@ To run locally, simply `pip install --user --upgrade nox` and then run `nox`
 """
 
 import tempfile
-from typing import Any, Sequence
+from typing import Any
+from typing import Sequence
 
 import nox
 from nox.sessions import Session
