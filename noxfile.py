@@ -15,7 +15,7 @@ nox.options.reuse_existing_virtualenvs = True
 
 python_all_versions = ["3.9"]
 python_tool_version = "3.9"
-pyfiles_locations = "src", "tests", "noxfile.py"
+pyfiles_locations = "src", "tests", "noxfile.py", "mypy_stubs"
 
 
 def install_project(session: Session, groups: Sequence[str] = ()) -> None:
