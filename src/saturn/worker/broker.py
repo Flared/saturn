@@ -1,7 +1,7 @@
 import asyncio
 
 from .executors.simple import SimpleExecutor
-from .queue import Queue
+from .queues import Queue
 from .scheduler import Scheduler
 from .work_manager import WorkManager
 
