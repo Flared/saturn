@@ -14,19 +14,13 @@ class JobItem(QueueItem):
 
 
 @dataclasses.dataclass
-class WorkItem:
-    job: JobItem
-    queue: QueueItem
-
-
-@dataclasses.dataclass
 class SyncResponse:
-    items: list[WorkItem]
+    items: list[QueueItem]
 
 
 class WorkerManagerClient:
     def __init__(self) -> None:
         pass
 
-    def sync(self) -> SyncResponse:
+    async def sync(self) -> SyncResponse:
         return SyncResponse(items=[])
