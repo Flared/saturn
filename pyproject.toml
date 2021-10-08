@@ -43,6 +43,7 @@ pytest-icdiff = "^0.5"
 
 [tool.pytest.ini_options]
 addopts = "--doctest-modules"
+filterwarnings = ["error"]
 
 [tool.isort]
 profile = "black"

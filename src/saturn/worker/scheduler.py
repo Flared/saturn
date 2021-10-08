@@ -6,20 +6,22 @@ T = TypeVar("T")
 
 
 class Scheduler(Generic[T]):
+    queues: list[T]
+
     def __init__(self) -> None:
-        pass
+        self.queues = []
 
     def iter_ready(self) -> Iterator[T]:
-        return iter([])
+        return iter(self.queues)
 
     def set_processing(self, queue: T) -> None:
         pass
 
     def add(self, queue: T) -> None:
-        pass
+        self.queues.append(queue)
 
     def remove(self, queue: T) -> None:
-        pass
+        self.queues.remove(queue)
 
     async def wait_ready(self) -> None:
         pass
