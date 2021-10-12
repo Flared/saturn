@@ -26,8 +26,6 @@ SQLAlchemy = {extras = ["asyncio", "mypy"], version = "^1.4.25"}
 aiosqlite = "^0.17.0"
 marshmallow = "^3.13.0"
 desert = "^2020.11.18"
-flask-apispec = "^0.11.0"
-webargs = "^8.0.1"
 
 [tool.poetry.dev-dependencies]
 black = "^21.9b0"
