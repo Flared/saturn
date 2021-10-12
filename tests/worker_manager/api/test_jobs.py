@@ -2,6 +2,7 @@ from flask.testing import FlaskClient
 from sqlalchemy.orm import Session
 
 from saturn.stores import jobs_store
+from saturn.stores import queues_store
 
 
 def test_api_jobs(client: FlaskClient, session: Session) -> None:
@@ -11,7 +12,9 @@ def test_api_jobs(client: FlaskClient, session: Session) -> None:
     assert resp.json == {"jobs": []}
 
     # Add a job
-    jobs_store.create_job(session)
+    queue = queues_store.create_queue(session=session, pipeline="test")
+    session.flush()
+    jobs_store.create_job(session=session, queue_id=queue.id)
     session.commit()
 
     # Contains one job
