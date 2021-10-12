@@ -39,6 +39,7 @@ mypy = "^0.910"
 pytest = "^6.2.5"
 nox-poetry = "^0.8.6"
 pytest-asyncio = "^0.15.1"
+pytest-icdiff = "^0.5"
 
 [tool.pytest.ini_options]
 addopts = "--doctest-modules"
