@@ -3,6 +3,7 @@ import dataclasses
 from typing import AsyncGenerator
 
 from saturn.core import Message
+from saturn.utils.log import getLogger
 
 from .queues import Queue
 
@@ -18,6 +19,7 @@ class Scheduler:
     tasks_queues: dict[asyncio.Task, Queue]
 
     def __init__(self) -> None:
+        self.logger = getLogger(__name__, self)
         self.queues = {}
         self.tasks_queues = {}
 
@@ -29,6 +31,12 @@ class Scheduler:
     def remove(self, queue: Queue) -> None:
         task = self.queues.pop(queue).task
         task.cancel()
+
+    def close(self) -> None:
+        for task in self.tasks_queues:
+            task.cancel()
+        self.tasks_queues.clear()
+        self.queues.clear()
 
     async def iter(self) -> AsyncGenerator[Message, None]:
         while True:
@@ -42,7 +50,11 @@ class Scheduler:
 
             for task in sorted(done, key=self.task_order):
                 if not task.cancelled():
-                    yield await task
+                    try:
+                        yield await task
+                    except Exception:
+                        # Log the error and keep processing.
+                        self.logger.exception("Failed to get queue item")
 
                 # Create a new queue task.
                 queue = self.tasks_queues[task]
