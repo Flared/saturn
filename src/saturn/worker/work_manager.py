@@ -9,7 +9,6 @@ from typing import Optional
 from saturn.client.worker_manager import QueueItem
 from saturn.client.worker_manager import WorkerManagerClient
 from saturn.utils import flatten
-from saturn.utils import tri_split
 
 from .queues import Queue
 
@@ -48,7 +47,8 @@ class WorkManager:
         current_items = set(self.work_items_queues.keys())
         sync_items = {item.id: item for item in sync_response.items}
         sync_items_ids = set(sync_items.keys())
-        add, _, drop = tri_split(sync_items_ids, current_items)
+        add = sync_items_ids - current_items
+        drop = current_items - sync_items_ids
 
         added_items_queues: ItemsQueues = await self.build_queues_for_items(
             sync_items[i] for i in add
@@ -59,6 +59,9 @@ class WorkManager:
         drop_queues = list(flatten(self.work_items_queues.pop(k) for k in drop))
 
         return QueuesSync(add_queues, drop_queues)
+
+    def queues_by_id(self, id: str) -> list[Queue]:
+        return self.work_items_queues.get(id, [])
 
     async def build_queues_for_items(self, items: Iterator[QueueItem]) -> ItemsQueues:
         tasks_items = [(item.id, item) for item in items]

@@ -30,7 +30,7 @@ class Scheduler:
         task = self.queues.pop(queue).task
         task.cancel()
 
-    async def __aiter__(self) -> AsyncGenerator[Message, None]:
+    async def iter(self) -> AsyncGenerator[Message, None]:
         while True:
             if not self.tasks_queues:
                 await asyncio.sleep(1)
@@ -58,4 +58,8 @@ class Scheduler:
 
     def task_order(self, task: asyncio.Task) -> int:
         queue = self.tasks_queues[task]
+        queue_slot = self.queues.get(queue)
+        if queue_slot is None:
+            # Maximum priority so we clean the task as soon as possible.
+            return -1
         return self.queues[queue].order

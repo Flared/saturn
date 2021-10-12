@@ -35,7 +35,7 @@ class Broker:
         pipeline through an executor.
         """
         # Go through all queue in the Ready state.
-        async for message in self.scheduler:
+        async for message in self.scheduler.iter():
             self.logger.debug("Processing message: %s", message)
 
             # change queue state to Processing

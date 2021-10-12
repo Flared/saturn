@@ -1,4 +1,3 @@
-from typing import Generator
 from typing import Iterator
 
 import pytest

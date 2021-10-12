@@ -7,6 +7,7 @@ from saturn.client.worker_manager import JobItem
 from saturn.client.worker_manager import QueueItem
 from saturn.client.worker_manager import SyncResponse
 from saturn.client.worker_manager import WorkerManagerClient
+from saturn.utils import flatten
 from saturn.worker.work_manager import WorkManager
 
 
@@ -47,6 +48,9 @@ async def test_sync_queues(
     assert len(queues_sync.add) == 3
     assert queues_sync.drop == []
 
+    q2_queues = work_manager.queues_by_id("q1")
+    q3_queues = work_manager.queues_by_id("q3")
+
     # New sync add 1 and drop 2 items.
     worker_manager_client.sync.return_value = SyncResponse(
         items=[
@@ -57,4 +61,5 @@ async def test_sync_queues(
 
     queues_sync = await work_manager.sync_queues()
     assert len(queues_sync.add) == 1
-    assert len(queues_sync.drop) == 2
+    # Ensure the item dropped are the same queue object that were added.
+    assert set(queues_sync.drop) == set(flatten([q2_queues, q3_queues]))

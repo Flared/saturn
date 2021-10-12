@@ -1,5 +1,4 @@
 import asyncio
-from selectors import BaseSelector
 from selectors import DefaultSelector
 from typing import Any
 from typing import Optional
