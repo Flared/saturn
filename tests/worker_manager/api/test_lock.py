@@ -1,14 +1,24 @@
 from flask.testing import FlaskClient
 
 
-def test_api_lock(client: FlaskClient) -> None:
+def test_api_lock_bad_input(client: FlaskClient) -> None:
     resp = client.post("/api/lock", json={})
-    assert resp.status_code == 422
+    assert resp.status_code == 400
     assert resp.json == {
         "error": {
-            "code": "422",
-            "message": "The request was well-formed"
-            " but was unable to be followed due to semantic errors.",
-            "data": {"json": {"worker_id": ["Missing data for required field."]}},
+            "code": "BAD_LOCK_INPUT",
+            "message": "Bad lock input",
+            "data": {"worker_id": ["Missing data for required field."]},
         },
     }
+
+
+def test_api_lock(client: FlaskClient) -> None:
+    resp = client.post(
+        "/api/lock",
+        json={
+            "worker_id": "test",
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json == {"items": []}
