@@ -1,6 +1,8 @@
 import asyncio
 import dataclasses
 import logging
+from datetime import datetime
+from datetime import timedelta
 from typing import Iterator
 from typing import Optional
 
@@ -24,14 +26,24 @@ ItemsQueues = dict[str, list[Queue]]
 class WorkManager:
     client: WorkerManagerClient
     work_items_queues: ItemsQueues
+    last_sync_at: Optional[datetime]
 
     def __init__(self, client: Optional[WorkerManagerClient] = None) -> None:
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.client = client or WorkerManagerClient()
         self.work_items_queues = {}
+        self.last_sync_at = None
+        self.sync_period = timedelta(seconds=60)
 
     async def sync_queues(self) -> QueuesSync:
+        if self.last_sync_at:
+            last_sync_elapsed = datetime.now() - self.last_sync_at
+            if last_sync_elapsed < self.sync_period:
+                await asyncio.sleep(
+                    (self.sync_period - last_sync_elapsed).total_seconds()
+                )
         sync_response = await self.client.sync()
+        self.last_sync_at = datetime.now()
 
         current_items = set(self.work_items_queues.keys())
         sync_items = {item.id: item for item in sync_response.items}
@@ -65,7 +77,7 @@ class WorkManager:
         try:
             from .queues.dummy import DummyQueue
 
-            return [DummyQueue()]
+            return [DummyQueue(item.id)]
         except Exception:
             logging.exception("Failed to build queues for %s", item)
             raise

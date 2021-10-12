@@ -1,27 +1,61 @@
-from typing import Generic
-from typing import Iterator
-from typing import TypeVar
+import asyncio
+import dataclasses
+from typing import AsyncGenerator
 
-T = TypeVar("T")
+from saturn.core import Message
+
+from .queues import Queue
 
 
-class Scheduler(Generic[T]):
-    queues: list[T]
+@dataclasses.dataclass
+class QueueSlot:
+    task: asyncio.Task
+    order: int = 0
+
+
+class Scheduler:
+    queues: dict[Queue, QueueSlot]
+    tasks_queues: dict[asyncio.Task, Queue]
 
     def __init__(self) -> None:
-        self.queues = []
+        self.queues = {}
+        self.tasks_queues = {}
 
-    def iter_ready(self) -> Iterator[T]:
-        return iter(self.queues)
+    def add(self, queue: Queue) -> None:
+        task = asyncio.create_task(queue.get())
+        self.queues[queue] = QueueSlot(task=task)
+        self.tasks_queues[task] = queue
 
-    def set_processing(self, queue: T) -> None:
-        pass
+    def remove(self, queue: Queue) -> None:
+        task = self.queues.pop(queue).task
+        task.cancel()
 
-    def add(self, queue: T) -> None:
-        self.queues.append(queue)
+    async def __aiter__(self) -> AsyncGenerator[Message, None]:
+        while True:
+            if not self.tasks_queues:
+                await asyncio.sleep(1)
+                continue
 
-    def remove(self, queue: T) -> None:
-        self.queues.remove(queue)
+            done, pending = await asyncio.wait(
+                self.tasks_queues.keys(), return_when=asyncio.FIRST_COMPLETED
+            )
 
-    async def wait_ready(self) -> None:
-        pass
+            for task in sorted(done, key=self.task_order):
+                if not task.cancelled():
+                    yield await task
+
+                # Create a new queue task.
+                queue = self.tasks_queues[task]
+                del self.tasks_queues[task]
+
+                queue_slot = self.queues.get(queue)
+                if queue_slot is None:
+                    continue
+                new_task = asyncio.create_task(queue.get())
+                self.tasks_queues[new_task] = queue
+                queue_slot.task = new_task
+                queue_slot.order += 1
+
+    def task_order(self, task: asyncio.Task) -> int:
+        queue = self.tasks_queues[task]
+        return self.queues[queue].order
