@@ -44,7 +44,10 @@ pytest-icdiff = "^0.5"
 
 [tool.pytest.ini_options]
 addopts = "--doctest-modules"
-filterwarnings = ["error"]
+filterwarnings = [
+  "error",
+  "ignore::marshmallow.warnings.RemovedInMarshmallow4Warning",
+]
 
 [tool.isort]
 profile = "black"
