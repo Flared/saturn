@@ -37,19 +37,6 @@ def lazy(init: Callable[[], T]) -> Callable[[], T]:
     return wrapper
 
 
-def tri_split(s1: set[T], s2: set[T]) -> tuple[set[T], set[T], set[T]]:
-    """
-    Return a 3-items tuple of left, intersection and right of two sets.
-
-    >>> tri_split({1, 2}, {2, 3})
-    ({1}, {2}, {3})
-    """
-    left = s1 - s2
-    right = s2 - s1
-    intersection = s2 & s1
-    return left, intersection, right
-
-
 def flatten(xs: Iterable[Iterable[T]]) -> Iterator[T]:
     """
     Flatten iterable of iterable into list.

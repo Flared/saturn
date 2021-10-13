@@ -23,4 +23,9 @@ class WorkerManagerClient:
         pass
 
     async def sync(self) -> SyncResponse:
-        return SyncResponse(items=[])
+        return SyncResponse(
+            items=[
+                QueueItem(id="q-1", pipeline="hello", ressources=[]),
+                QueueItem(id="q-2", pipeline="hello", ressources=[]),
+            ]
+        )

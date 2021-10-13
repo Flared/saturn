@@ -1,16 +1,18 @@
 import asyncio
 
+from saturn.utils.log import getLogger
+
 from .executors.simple import SimpleExecutor
-from .queue import Queue
 from .scheduler import Scheduler
 from .work_manager import WorkManager
 
 
 class Broker:
     def __init__(self) -> None:
+        self.logger = getLogger(__name__, self)
         self.is_running = False
         self.work_manager = WorkManager()
-        self.scheduler: Scheduler[Queue] = Scheduler()
+        self.scheduler = Scheduler()
         # TODO: Load executor based on config
         self.executor = SimpleExecutor()
 
@@ -19,6 +21,7 @@ class Broker:
         Start all the task required to run the worker.
         """
         self.is_running = True
+        self.logger.info("Starting worker")
         queue_manager_task = self.run_queue_manager()
         worker_manager_task = self.run_worker_manager()
         await asyncio.gather(
@@ -31,20 +34,12 @@ class Broker:
         Coroutine that keep polling the queues in round-robin and execute their
         pipeline through an executor.
         """
-        while self.is_running:
-            # Go through all queue in the Ready state.
-            for queue in self.scheduler.iter_ready():
-                message = queue.get_nowait()
-                if message is None:
-                    # TODO: log warning if message is None. It wasn't ready.
-                    continue
+        # Go through all queue in the Ready state.
+        async for message in self.scheduler.iter():
+            self.logger.debug("Processing message: %s", message)
 
-                # change queue state to Processing
-                self.scheduler.set_processing(queue)
-                await self.executor.submit(message)
-
-            # Check queue in Waiting state that must go to Ready state.
-            await self.scheduler.wait_ready()
+            # change queue state to Processing
+            await self.executor.submit(message)
 
     async def run_worker_manager(self) -> None:
         """
@@ -53,6 +48,7 @@ class Broker:
         """
         while self.is_running:
             queues_sync = await self.work_manager.sync_queues()
+            self.logger.info("Worker sync: %s", queues_sync)
 
             for queue in queues_sync.add:
                 self.scheduler.add(queue)
