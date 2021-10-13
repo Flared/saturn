@@ -101,7 +101,7 @@ def test_api_lock(
     assert resp.json == expected_items_worker2
 
     # Move 20 minutes in the future
-    frozen_time.move_to(datetime.now() + timedelta(minutes=20))  # type: ignore
+    frozen_time.move_to(datetime.now() + timedelta(minutes=20))
 
     # Worker 2 picks up all of worker 1's expired items
     resp = client.post("/api/lock", json={"worker_id": "worker-2"})

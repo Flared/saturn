@@ -1,9 +1,10 @@
 from typing import Iterator
+from typing import Union
 
 import freezegun
-import freezegun.api
 import pytest
-from freezegun.api import _freeze_time as FreezeTime
+from freezegun.api import FrozenDateTimeFactory
+from freezegun.api import StepTickTimeFactory
 from sqlalchemy.orm import Session
 
 from saturn_engine import database
@@ -24,6 +25,9 @@ def event_loop() -> Iterator[TimeForwardLoop]:
     loop = TimeForwardLoop()
     yield loop
     loop.close()
+
+
+FreezeTime = Union[FrozenDateTimeFactory, StepTickTimeFactory]
 
 
 @pytest.fixture
