@@ -1,9 +1,9 @@
-name: Release
+name: Release PyPI
 on:
   release:
     types: [published]
 jobs:
-  release:
+  release-pypi:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2

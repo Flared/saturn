@@ -1,0 +1,6 @@
+/.venv
+/.nox
+/.mypy_cache
+/.pytest_cache
+/dist
+__pycache__/
