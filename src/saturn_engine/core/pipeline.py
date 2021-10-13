@@ -1,4 +1,4 @@
-from saturn.core import Message
+from saturn_engine.core import Message
 
 
 async def echo(message: Message) -> None:

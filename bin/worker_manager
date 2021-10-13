@@ -2,4 +2,4 @@
 
 set -eo pipefail
 
-python -m saturn.worker_manager.server
+python -m saturn_engine.worker_manager.server

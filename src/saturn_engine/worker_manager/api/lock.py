@@ -9,10 +9,10 @@ from flask import Blueprint
 from flask import jsonify
 from flask import request
 
-from saturn.database import async_session_scope
-from saturn.models.queue import Queue
-from saturn.stores import queues_store
-from saturn.worker_manager.http_errors import abort
+from saturn_engine.database import async_session_scope
+from saturn_engine.models.queue import Queue
+from saturn_engine.stores import queues_store
+from saturn_engine.worker_manager.http_errors import abort
 
 bp = Blueprint("lock", __name__, url_prefix="/api/lock")
 

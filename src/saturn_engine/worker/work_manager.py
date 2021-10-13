@@ -6,9 +6,9 @@ from datetime import timedelta
 from typing import Iterator
 from typing import Optional
 
-from saturn.client.worker_manager import QueueItem
-from saturn.client.worker_manager import WorkerManagerClient
-from saturn.utils import flatten
+from saturn_engine.client.worker_manager import QueueItem
+from saturn_engine.client.worker_manager import WorkerManagerClient
+from saturn_engine.utils import flatten
 
 from .queues import Queue
 

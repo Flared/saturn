@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime
 
-from saturn.utils.log import getLogger
+from saturn_engine.utils.log import getLogger
 
 from . import Queue
 
