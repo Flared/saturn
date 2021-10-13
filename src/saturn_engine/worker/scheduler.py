@@ -2,8 +2,8 @@ import asyncio
 import dataclasses
 from typing import AsyncGenerator
 
-from saturn.core import Message
-from saturn.utils.log import getLogger
+from saturn_engine.core import Message
+from saturn_engine.utils.log import getLogger
 
 from .queues import Queue
 

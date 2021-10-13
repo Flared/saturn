@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.sqltypes import DateTime
 from sqlalchemy.sql.sqltypes import Integer
 
-from saturn.utils import StrEnum
+from saturn_engine.utils import StrEnum
 
 from .base import Base
 

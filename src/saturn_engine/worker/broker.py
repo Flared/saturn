@@ -1,6 +1,6 @@
 import asyncio
 
-from saturn.utils.log import getLogger
+from saturn_engine.utils.log import getLogger
 
 from .executors.simple import SimpleExecutor
 from .scheduler import Scheduler

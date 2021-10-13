@@ -3,12 +3,12 @@ from unittest.mock import create_autospec
 
 import pytest
 
-from saturn.client.worker_manager import JobItem
-from saturn.client.worker_manager import QueueItem
-from saturn.client.worker_manager import SyncResponse
-from saturn.client.worker_manager import WorkerManagerClient
-from saturn.utils import flatten
-from saturn.worker.work_manager import WorkManager
+from saturn_engine.client.worker_manager import JobItem
+from saturn_engine.client.worker_manager import QueueItem
+from saturn_engine.client.worker_manager import SyncResponse
+from saturn_engine.client.worker_manager import WorkerManagerClient
+from saturn_engine.utils import flatten
+from saturn_engine.worker.work_manager import WorkManager
 
 
 @pytest.fixture

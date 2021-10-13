@@ -16,7 +16,7 @@ classifiers = [
 ]
 license = "BSD-3-Clause"
 packages = [
-    { include = "saturn", from = "src" },
+    { include = "saturn_engine", from = "src" },
 ]
 
 [tool.poetry.dependencies]

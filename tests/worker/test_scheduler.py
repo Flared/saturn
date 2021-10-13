@@ -6,9 +6,9 @@ from unittest.mock import sentinel
 import asyncstdlib as alib
 import pytest
 
-from saturn.core import Message
-from saturn.worker.queues import Queue
-from saturn.worker.scheduler import Scheduler
+from saturn_engine.core import Message
+from saturn_engine.worker.queues import Queue
+from saturn_engine.worker.scheduler import Scheduler
 
 
 @pytest.fixture

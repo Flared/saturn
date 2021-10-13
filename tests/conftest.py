@@ -6,7 +6,7 @@ import pytest
 from freezegun.api import _freeze_time as FreezeTime
 from sqlalchemy.orm import Session
 
-from saturn import database
+from saturn_engine import database
 
 from .utils import TimeForwardLoop
 

@@ -16,8 +16,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
 
-from saturn.models import Base
-from saturn.utils import lazy
+from saturn_engine.models import Base
+from saturn_engine.utils import lazy
 
 AnyAsyncSession = Union[AsyncSession, _sqlalchemy_async_scoped_session]
 AnySession = Union[Session, AnyAsyncSession]

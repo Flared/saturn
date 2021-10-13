@@ -3,11 +3,11 @@ from datetime import timedelta
 
 from flask.testing import FlaskClient
 
-from saturn.database import Session
-from saturn.models import Job
-from saturn.models import Queue
-from saturn.stores import jobs_store
-from saturn.stores import queues_store
+from saturn_engine.database import Session
+from saturn_engine.models import Job
+from saturn_engine.models import Queue
+from saturn_engine.stores import jobs_store
+from saturn_engine.stores import queues_store
 from tests.conftest import FreezeTime
 
 

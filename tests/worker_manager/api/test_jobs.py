@@ -1,8 +1,8 @@
 from flask.testing import FlaskClient
 from sqlalchemy.orm import Session
 
-from saturn.stores import jobs_store
-from saturn.stores import queues_store
+from saturn_engine.stores import jobs_store
+from saturn_engine.stores import queues_store
 
 
 def test_api_jobs(client: FlaskClient, session: Session) -> None:

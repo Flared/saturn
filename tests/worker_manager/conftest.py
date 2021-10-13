@@ -3,9 +3,9 @@ from typing import Iterator
 import pytest
 from flask.testing import FlaskClient
 
-from saturn import database
-from saturn.models import Base
-from saturn.worker_manager import server as worker_manager_server
+from saturn_engine import database
+from saturn_engine.models import Base
+from saturn_engine.worker_manager import server as worker_manager_server
 
 
 @pytest.fixture
