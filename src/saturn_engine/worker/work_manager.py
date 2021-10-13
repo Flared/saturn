@@ -11,6 +11,8 @@ from saturn_engine.client.worker_manager import WorkerManagerClient
 from saturn_engine.utils import flatten
 
 from .queues import Queue
+from .queues import factory as queues_factory
+from .queues.context import QueueContext
 
 
 @dataclasses.dataclass
@@ -27,12 +29,15 @@ class WorkManager:
     work_items_queues: ItemsQueues
     last_sync_at: Optional[datetime]
 
-    def __init__(self, client: Optional[WorkerManagerClient] = None) -> None:
+    def __init__(
+        self, *, context: QueueContext, client: Optional[WorkerManagerClient] = None
+    ) -> None:
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.client = client or WorkerManagerClient()
         self.work_items_queues = {}
         self.last_sync_at = None
         self.sync_period = timedelta(seconds=60)
+        self.context = context
 
     async def sync_queues(self) -> QueuesSync:
         if self.last_sync_at:
@@ -78,9 +83,7 @@ class WorkManager:
 
     async def build_queues_for_item(self, item: QueueItem) -> list[Queue]:
         try:
-            from .queues.dummy import DummyQueue
-
-            return [DummyQueue(item.id)]
+            return queues_factory.build(item, context=self.context)
         except Exception:
             logging.exception("Failed to build queues for %s", item)
             raise

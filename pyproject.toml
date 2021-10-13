@@ -28,6 +28,7 @@ marshmallow = "^3.13.0"
 # Using a fork to fix deprecation warning.
 desert = { git = "https://github.com/Flared/desert", tag = "v2021.10.13.post1" }
 asyncstdlib = "^3.10.1"
+aio-pika = "^6.8.0"
 
 [tool.poetry.dev-dependencies]
 black = "^21.9b0"

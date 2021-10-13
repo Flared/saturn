@@ -8,8 +8,20 @@ from freezegun.api import StepTickTimeFactory
 from sqlalchemy.orm import Session
 
 from saturn_engine import database
+from saturn_engine.worker.queues.context import QueueContext
+from saturn_engine.worker.services.manager import ServicesManager
 
 from .utils import TimeForwardLoop
+
+
+@pytest.fixture
+def services_manager() -> Iterator[ServicesManager]:
+    yield ServicesManager()
+
+
+@pytest.fixture
+def queue_context(services_manager: ServicesManager) -> Iterator[QueueContext]:
+    yield QueueContext(services=services_manager)
 
 
 @pytest.fixture
