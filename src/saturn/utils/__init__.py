@@ -1,3 +1,4 @@
+import enum
 from functools import wraps
 from typing import Callable
 from typing import Iterable
@@ -45,3 +46,8 @@ def flatten(xs: Iterable[Iterable[T]]) -> Iterator[T]:
     [1, 2, 3, 4]
     """
     return (item for sublist in xs for item in sublist)
+
+
+class StrEnum(str, enum.Enum):
+    def __str__(self) -> str:
+        return self

@@ -6,7 +6,14 @@ from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.sqltypes import DateTime
 from sqlalchemy.sql.sqltypes import Integer
 
+from saturn.utils import StrEnum
+
 from .base import Base
+
+
+class WorkType(StrEnum):
+    JOB = "job"
+    QUEUE = "queue"
 
 
 class Queue(Base):
@@ -22,8 +29,8 @@ class Queue(Base):
         self.pipeline = pipeline
 
     @property
-    def work_type(self) -> str:
-        return "job" if self.job else "queue"
+    def work_type(self) -> WorkType:
+        return WorkType.JOB if self.job else WorkType.QUEUE
 
     def as_work_item(self) -> dict:
         return {
