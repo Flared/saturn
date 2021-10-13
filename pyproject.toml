@@ -25,7 +25,8 @@ Flask = {extras = ["async"], version = "^2.0.2"}
 SQLAlchemy = {extras = ["asyncio", "mypy"], version = "^1.4.25"}
 aiosqlite = "^0.17.0"
 marshmallow = "^3.13.0"
-desert = "^2020.11.18"
+# Using a fork to fix deprecation warning.
+desert = { git = "https://github.com/Flared/desert", tag = "v2021.10.13.post1" }
 asyncstdlib = "^3.10.1"
 
 [tool.poetry.dev-dependencies]
@@ -48,7 +49,6 @@ types-freezegun = "^1.1.1"
 addopts = "--doctest-modules"
 filterwarnings = [
   "error",
-  "ignore::marshmallow.warnings.RemovedInMarshmallow4Warning",
 ]
 
 [tool.isort]
