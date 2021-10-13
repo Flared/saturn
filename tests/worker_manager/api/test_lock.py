@@ -1,7 +1,6 @@
 from datetime import datetime
 from datetime import timedelta
 
-import freezegun.api
 from flask.testing import FlaskClient
 
 from saturn.database import Session
