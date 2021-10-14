@@ -23,8 +23,9 @@ COPY --from=build /opt/saturn/dist/*.whl /opt/saturn/
 RUN pip install /opt/saturn/*.whl \
     && rm -rf /opt/saturn
 
-ENV FLASK_HOST=0.0.0.0
-ENV FLASK_PORT=80
+ENV SATURN_FLASK_HOST=0.0.0.0
+ENV SATURN_FLASK_PORT=80
+ENV SATURN_DATABASE_URL=sqlite:///tmp/saturn.sqlite
 
 EXPOSE 80
 

@@ -1,11 +1,11 @@
 import asyncio
-import os
 from typing import Optional
 
 from flask import Flask
 
 from saturn_engine.database import async_scoped_session
 from saturn_engine.database import create_all
+from saturn_engine.worker_manager.config import config
 from saturn_engine.worker_manager.http_errors import (
     register_http_exception_error_handler,
 )
@@ -35,8 +35,8 @@ def main() -> None:
     app = get_app()
     asyncio.run(create_all())
     app.run(
-        host=os.environ.get("FLASK_HOST", "127.0.0.1"),
-        port=int(os.environ.get("FLASK_PORT", 5000)),
+        host=config().flask_host,
+        port=config().flask_port,
     )
 
 
