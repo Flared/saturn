@@ -3,11 +3,12 @@ from unittest.mock import create_autospec
 
 import pytest
 
-from saturn_engine.client.worker_manager import JobItem
-from saturn_engine.client.worker_manager import QueueItem
-from saturn_engine.client.worker_manager import SyncResponse
 from saturn_engine.client.worker_manager import WorkerManagerClient
+from saturn_engine.core.api import JobItem
+from saturn_engine.core.api import QueueItem
+from saturn_engine.core.api import SyncResponse
 from saturn_engine.utils import flatten
+from saturn_engine.worker.queues.context import QueueContext
 from saturn_engine.worker.work_manager import WorkManager
 
 
@@ -19,8 +20,10 @@ def worker_manager_client() -> Mock:
 
 
 @pytest.fixture
-def work_manager(worker_manager_client: WorkerManagerClient) -> WorkManager:
-    _work_manager = WorkManager(client=worker_manager_client)
+def work_manager(
+    worker_manager_client: WorkerManagerClient, queue_context: QueueContext
+) -> WorkManager:
+    _work_manager = WorkManager(context=queue_context, client=worker_manager_client)
     return _work_manager
 
 
@@ -38,9 +41,13 @@ async def test_sync_queues(
     # Sync add 3 new items.
     worker_manager_client.sync.return_value = SyncResponse(
         items=[
-            QueueItem(id="q1", pipeline="p1", ressources=[]),
-            QueueItem(id="q2", pipeline="p2", ressources=[]),
-            JobItem(id="q3", pipeline="p3", ressources=[], inventory="i4"),
+            QueueItem(
+                id="q1", pipeline="p1", ressources=[], options={"queue_name": "q1"}
+            ),
+            QueueItem(
+                id="q2", pipeline="p2", ressources=[], options={"queue_name": "q2"}
+            ),
+            JobItem(id="q3", pipeline="p3", ressources=[], inventory="i4", options={}),
         ]
     )
 
@@ -54,8 +61,10 @@ async def test_sync_queues(
     # New sync add 1 and drop 2 items.
     worker_manager_client.sync.return_value = SyncResponse(
         items=[
-            QueueItem(id="q2", pipeline="p2", ressources=[]),
-            JobItem(id="q4", pipeline="p4", ressources=[], inventory="i4"),
+            QueueItem(
+                id="q2", pipeline="p2", ressources=[], options={"queue_name": "q2"}
+            ),
+            JobItem(id="q4", pipeline="p4", ressources=[], inventory="i4", options={}),
         ]
     )
 

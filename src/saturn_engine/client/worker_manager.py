@@ -1,21 +1,5 @@
-import dataclasses
-
-
-@dataclasses.dataclass
-class QueueItem:
-    id: str
-    pipeline: str
-    ressources: list[str]
-
-
-@dataclasses.dataclass
-class JobItem(QueueItem):
-    inventory: str
-
-
-@dataclasses.dataclass
-class SyncResponse:
-    items: list[QueueItem]
+from saturn_engine.core.api import QueueItem
+from saturn_engine.core.api import SyncResponse
 
 
 class WorkerManagerClient:
@@ -25,7 +9,17 @@ class WorkerManagerClient:
     async def sync(self) -> SyncResponse:
         return SyncResponse(
             items=[
-                QueueItem(id="q-1", pipeline="hello", ressources=[]),
-                QueueItem(id="q-2", pipeline="hello", ressources=[]),
+                QueueItem(
+                    id="q-1",
+                    pipeline="hello",
+                    ressources=[],
+                    options={"queue_name": "q1"},
+                ),
+                QueueItem(
+                    id="q-2",
+                    pipeline="hello",
+                    ressources=[],
+                    options={"queue_name": "q2"},
+                ),
             ]
         )

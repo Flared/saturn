@@ -1,2 +1,6 @@
+import dataclasses
+
+
+@dataclasses.dataclass
 class Message:
-    pass
+    data: str

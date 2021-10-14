@@ -3,7 +3,9 @@ import asyncio
 from saturn_engine.utils.log import getLogger
 
 from .executors.simple import SimpleExecutor
+from .queues.context import QueueContext
 from .scheduler import Scheduler
+from .services.manager import ServicesManager
 from .work_manager import WorkManager
 
 
@@ -11,7 +13,10 @@ class Broker:
     def __init__(self) -> None:
         self.logger = getLogger(__name__, self)
         self.is_running = False
-        self.work_manager = WorkManager()
+        self.services_manager = ServicesManager()
+        self.work_manager = WorkManager(
+            context=QueueContext(services=self.services_manager)
+        )
         self.scheduler = Scheduler()
         # TODO: Load executor based on config
         self.executor = SimpleExecutor()
@@ -28,6 +33,8 @@ class Broker:
             queue_manager_task,
             worker_manager_task,
         )
+
+        await self.scheduler.close()
 
     async def run_queue_manager(self) -> None:
         """

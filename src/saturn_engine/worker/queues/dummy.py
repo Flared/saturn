@@ -1,21 +1,29 @@
 import asyncio
-from datetime import datetime
+import dataclasses
+from collections.abc import AsyncGenerator
 
+from saturn_engine.core import Message
 from saturn_engine.utils.log import getLogger
 
 from . import Queue
+from .context import QueueContext
 
 
-class DummyQueue(Queue[str]):
+class DummyQueue(Queue):
     """A dummy queue that yield a message every second"""
 
-    def __init__(self, id: str) -> None:
-        self.id = id
-        self.logger = getLogger(__name__, self)
-        self.last_yield_at = datetime.now()
+    @dataclasses.dataclass
+    class Options:
+        id: str
+        sleep_time: float = 1
 
-    async def get(self) -> str:
-        self.logger.info("get/before_sleep [q=%s]", self.id)
-        await asyncio.sleep(1)
-        self.logger.info("get/after_sleep [q=%s]", self.id)
-        return f"hello - {self.id}"
+    def __init__(self, options: Options, context: QueueContext) -> None:
+        self.options = options
+        self.logger = getLogger(__name__, self)
+
+    async def iterator(self) -> AsyncGenerator[Message, None]:
+        while True:
+            self.logger.info("get/before_sleep [q=%s]", self.options.id)
+            await asyncio.sleep(self.options.sleep_time)
+            self.logger.info("get/after_sleep [q=%s]", self.options.id)
+            yield Message(data=f"hello - {self.options.id}")
