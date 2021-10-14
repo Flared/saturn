@@ -1,3 +1,5 @@
+import asyncio
+import os
 from typing import Optional
 
 from flask import Flask
@@ -31,8 +33,11 @@ def get_app() -> Flask:
 
 def main() -> None:
     app = get_app()
-    create_all()
-    app.run()
+    asyncio.run(create_all())
+    app.run(
+        host=os.environ.get("FLASK_HOST", "127.0.0.1"),
+        port=int(os.environ.get("FLASK_PORT", 5000)),
+    )
 
 
 if __name__ == "__main__":
