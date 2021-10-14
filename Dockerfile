@@ -3,15 +3,14 @@
 ###########
 FROM python:3.10-slim-bullseye as build
 
-ENV POETRY_VERSION=1.1.11
-
-WORKDIR /opt/saturn
-
 RUN apt-get update \
     && apt-get install -y git \
     && rm -rf /var/lib/apt/lists/*
 
+ENV POETRY_VERSION=1.1.11
 RUN pip install poetry==${POETRY_VERSION}
+
+WORKDIR /opt/saturn
 
 ADD pyproject.toml poetry.lock README.md ./
 ADD src ./src
