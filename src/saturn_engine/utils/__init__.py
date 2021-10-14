@@ -1,20 +1,32 @@
 import enum
+import threading
 from functools import wraps
+from typing import Any
 from typing import Callable
 from typing import Iterable
 from typing import Iterator
-from typing import Optional
 from typing import TypeVar
+from typing import Union
 
 T = TypeVar("T")
 
 
-def lazy(init: Callable[[], T]) -> Callable[[], T]:
+class Scope:
+    value: Any
+
+
+F_NOARGS = Callable[[], T]
+
+
+def lazy(
+    *,
+    threadlocal: bool = False,
+) -> Callable[[F_NOARGS], F_NOARGS]:
     """
     Ensure a function is called only once. Useful to lazilly setup some global.
 
     >>> def expansive_computation(): ...
-    >>> @lazy
+    >>> @lazy()
     ... def say_hi_once():
     ...     print("hi")
     ...     expansive_computation()
@@ -26,16 +38,23 @@ def lazy(init: Callable[[], T]) -> Callable[[], T]:
     >>> say_hi_once()
     1
     """
-    value: Optional[T] = None
 
-    @wraps(init)
-    def wrapper() -> T:
-        nonlocal value
-        if value is None:
-            value = init()
-        return value
+    scope: Union[Scope, threading.local]
+    if threadlocal:
+        scope = threading.local()
+    else:
+        scope = Scope()
 
-    return wrapper
+    def decorator(init: F_NOARGS) -> F_NOARGS:
+        @wraps(init)
+        def wrapper() -> T:
+            if not hasattr(scope, "value"):
+                scope.value = init()
+            return scope.value
+
+        return wrapper
+
+    return decorator
 
 
 def flatten(xs: Iterable[Iterable[T]]) -> Iterator[T]:
