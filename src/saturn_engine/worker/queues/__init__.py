@@ -18,7 +18,7 @@ class Queue:
     class Options:
         pass
 
-    async def iterator(self) -> AsyncGenerator[Message, None]:
+    async def run(self) -> AsyncGenerator[Message, None]:
         for _ in ():
             yield _
 

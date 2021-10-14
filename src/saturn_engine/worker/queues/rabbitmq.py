@@ -21,10 +21,13 @@ class RabbitMQQueue(Queue):
         self.context = context
 
     async def run(self) -> AsyncGenerator[Message, None]:
+        breakpoint()
+        self.logger.info("Starting queue %s", self.options.queue_name)
         connection = await self.context.services.rabbitmq.connection
         channel = await connection.channel()
         queue = await channel.declare_queue(self.options.queue_name)
 
-        async with queue.iterator() as q:
+        self.logger.info("Processing queue %s", self.options.queue_name)
+        async with queue.run() as q:
             async for message in q:
                 yield message

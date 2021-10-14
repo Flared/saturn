@@ -1,6 +1,5 @@
 import asyncio
 import dataclasses
-import logging
 from datetime import datetime
 from datetime import timedelta
 from typing import Iterator
@@ -9,6 +8,7 @@ from typing import Optional
 from saturn_engine.client.worker_manager import QueueItem
 from saturn_engine.client.worker_manager import WorkerManagerClient
 from saturn_engine.utils import flatten
+from saturn_engine.utils.log import getLogger
 
 from .queues import Queue
 from .queues import factory as queues_factory
@@ -32,7 +32,7 @@ class WorkManager:
     def __init__(
         self, *, context: QueueContext, client: Optional[WorkerManagerClient] = None
     ) -> None:
-        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+        self.logger = getLogger(__name__, self)
         self.client = client or WorkerManagerClient()
         self.work_items_queues = {}
         self.last_sync_at = None
@@ -69,21 +69,14 @@ class WorkManager:
         return self.work_items_queues.get(id, [])
 
     async def build_queues_for_items(self, items: Iterator[QueueItem]) -> ItemsQueues:
-        tasks_items = [(item.id, item) for item in items]
-        queues_tasks = [
-            asyncio.create_task(self.build_queues_for_item(item))
-            for _, item in tasks_items
-        ]
-        tasks_results = await asyncio.gather(*queues_tasks, return_exceptions=True)
-        return dict(
-            (i, queues)
-            for (i, _), queues in zip(tasks_items, tasks_results)
-            if isinstance(queues, list)
-        )
+        return {
+            item.id: self.build_queues_for_item(item)
+            for item in items
+        }
 
-    async def build_queues_for_item(self, item: QueueItem) -> list[Queue]:
+    def build_queues_for_item(self, item: QueueItem) -> list[Queue]:
         try:
             return queues_factory.build(item, context=self.context)
         except Exception:
-            logging.exception("Failed to build queues for %s", item)
-            raise
+            self.logger.exception("Failed to build queues for %s", item)
+            return []

@@ -10,7 +10,7 @@ from .queues import Queue
 
 @dataclasses.dataclass
 class QueueSlot:
-    iterator: AsyncGenerator[Message, None]
+    generator: AsyncGenerator[Message, None]
     task: asyncio.Task
     order: int = 0
 
@@ -25,9 +25,9 @@ class Scheduler:
         self.tasks_queues = {}
 
     def add(self, queue: Queue) -> None:
-        iterator = queue.iterator().__aiter__()
-        task = asyncio.create_task(iterator.__anext__())
-        self.queues[queue] = QueueSlot(task=task, iterator=iterator)
+        generator = queue.run().__aiter__()
+        task = asyncio.create_task(generator.__anext__())
+        self.queues[queue] = QueueSlot(task=task, generator=generator)
         self.tasks_queues[task] = queue
 
     async def remove(self, queue: Queue) -> None:
@@ -55,12 +55,9 @@ class Scheduler:
 
     async def stop_queue(self, queue_slot: QueueSlot) -> None:
         queue_slot.task.cancel()
-        try:
-            await queue_slot.iterator.aclose()
-        except GeneratorExit:
-            pass
+        await queue_slot.generator.aclose()
 
-    async def iter(self) -> AsyncGenerator[Message, None]:
+    async def run(self) -> AsyncGenerator[Message, None]:
         while True:
             if not self.tasks_queues:
                 await asyncio.sleep(1)
@@ -69,6 +66,8 @@ class Scheduler:
             done, pending = await asyncio.wait(
                 self.tasks_queues.keys(), return_when=asyncio.FIRST_COMPLETED
             )
+
+            self.logger.debug("task ready: %s", done)
 
             for task in sorted(done, key=self.task_order):
                 queue = self.tasks_queues[task]
@@ -89,7 +88,7 @@ class Scheduler:
                         self.logger.error(
                             "Failed to iter queue item", exc_info=exception
                         )
-                except BaseException:
+                except BaseException as e:
                     # This is an unexpected error, likely a closed generator or
                     # cancellation. The task is put back in the queue for later
                     # processing.
@@ -102,7 +101,7 @@ class Scheduler:
         queue_slot = self.queues.get(queue)
         if queue_slot is None:
             return
-        new_task = asyncio.create_task(queue_slot.iterator.__anext__())
+        new_task = asyncio.create_task(queue_slot.generator.__anext__())
         self.tasks_queues[new_task] = queue
         queue_slot.task = new_task
         queue_slot.order += 1
