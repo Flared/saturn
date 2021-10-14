@@ -18,6 +18,7 @@ from sqlalchemy.orm import sessionmaker
 
 from saturn_engine.models import Base
 from saturn_engine.utils import lazy
+from saturn_engine.worker_manager.config import config
 
 AnyAsyncSession = Union[AsyncSession, _sqlalchemy_async_scoped_session]
 AnySession = Union[Session, AnyAsyncSession]
@@ -35,11 +36,11 @@ async def drop_all() -> None:
 
 @lazy
 def async_engine() -> AsyncEngine:
-    return create_async_engine("sqlite+aiosqlite:///test.db", future=True)
+    return create_async_engine(config().async_database_url, future=True)
 
 
 def engine() -> Engine:
-    return create_engine("sqlite:///test.db", future=True)
+    return create_engine(config().database_url, future=True)
 
 
 @lazy
