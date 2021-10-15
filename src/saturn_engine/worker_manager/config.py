@@ -20,9 +20,12 @@ class Configuration:
 
     @cached_property
     def async_database_url(self) -> str:
-        return self.database_url.replace("sqlite:/", "sqlite+aiosqlite:/")
+        database_url: str = self.database_url
+        database_url = database_url.replace("sqlite:/", "sqlite+aiosqlite:/")
+        database_url = database_url.replace("postgresql:/", "postgresql+asyncpg:/")
+        return database_url
 
 
-@lazy
+@lazy()
 def config() -> Configuration:
     return Configuration()

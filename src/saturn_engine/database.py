@@ -34,7 +34,7 @@ async def drop_all() -> None:
         await conn.run_sync(Base.metadata.drop_all)
 
 
-@lazy
+@lazy(threadlocal=True)
 def async_engine() -> AsyncEngine:
     return create_async_engine(config().async_database_url, future=True)
 
@@ -43,7 +43,7 @@ def engine() -> Engine:
     return create_engine(config().database_url, future=True)
 
 
-@lazy
+@lazy(threadlocal=True)
 def async_session_factory() -> Callable[[], AsyncSession]:
     return sessionmaker(
         autocommit=False,
@@ -54,7 +54,7 @@ def async_session_factory() -> Callable[[], AsyncSession]:
     )
 
 
-@lazy
+@lazy()
 def session_factory() -> Callable[[], Session]:
     return sessionmaker(
         autocommit=False,
@@ -81,7 +81,7 @@ async def async_session_scope(
         await s.close()
 
 
-@lazy
+@lazy(threadlocal=True)
 def async_scoped_session() -> _sqlalchemy_async_scoped_session:
     return _sqlalchemy_async_scoped_session(
         async_session_factory(),
