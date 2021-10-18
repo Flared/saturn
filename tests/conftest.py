@@ -1,4 +1,6 @@
-from typing import Iterator
+import asyncio
+from collections.abc import AsyncIterator
+from collections.abc import Iterator
 from typing import Union
 
 import freezegun
@@ -15,8 +17,10 @@ from .utils import TimeForwardLoop
 
 
 @pytest.fixture
-def services_manager() -> Iterator[ServicesManager]:
-    yield ServicesManager()
+async def services_manager() -> AsyncIterator[ServicesManager]:
+    _services_manager = ServicesManager()
+    yield _services_manager
+    await _services_manager.close()
 
 
 @pytest.fixture
@@ -36,7 +40,11 @@ def event_loop() -> Iterator[TimeForwardLoop]:
     """
     loop = TimeForwardLoop()
     yield loop
-    loop.close()
+    tasks = asyncio.all_tasks(loop)
+    try:
+        assert not tasks
+    finally:
+        loop.close()
 
 
 FreezeTime = Union[FrozenDateTimeFactory, StepTickTimeFactory]

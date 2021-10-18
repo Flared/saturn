@@ -21,9 +21,9 @@ class DummyQueue(Queue):
         self.options = options
         self.logger = getLogger(__name__, self)
 
-    async def iterator(self) -> AsyncGenerator[Message, None]:
+    async def run(self) -> AsyncGenerator[Message, None]:
         while True:
             self.logger.info("get/before_sleep [q=%s]", self.options.id)
             await asyncio.sleep(self.options.sleep_time)
             self.logger.info("get/after_sleep [q=%s]", self.options.id)
-            yield Message(data=f"hello - {self.options.id}")
+            yield Message(body=f"hello - {self.options.id}")
