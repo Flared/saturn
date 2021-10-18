@@ -3,5 +3,8 @@ class ServicesManager:
         from .config import ConfigService
         from .rabbitmq import RabbitMQService
 
-        self.rabbitmq = RabbitMQService
-        self.config = ConfigService
+        self.rabbitmq = RabbitMQService(self)
+        self.config = ConfigService()
+
+    async def close(self) -> None:
+        await self.rabbitmq.close()

@@ -27,7 +27,7 @@ aiosqlite = "^0.17.0"
 marshmallow = "^3.13.0"
 # Using a fork to fix deprecation warning.
 desert = { git = "https://github.com/Flared/desert", tag = "v2021.10.13.post1" }
-asyncstdlib = "^3.10.1"
+asyncstdlib = "^3.10.2"
 aio-pika = "^6.8.0"
 asyncpg = "^0.24.0"
 

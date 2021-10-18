@@ -69,10 +69,7 @@ class WorkManager:
         return self.work_items_queues.get(id, [])
 
     async def build_queues_for_items(self, items: Iterator[QueueItem]) -> ItemsQueues:
-        return {
-            item.id: self.build_queues_for_item(item)
-            for item in items
-        }
+        return {item.id: self.build_queues_for_item(item) for item in items}
 
     def build_queues_for_item(self, item: QueueItem) -> list[Queue]:
         try:

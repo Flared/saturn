@@ -9,4 +9,5 @@ class SimpleExecutor(BaseExecutor):
         self.logger = getLogger(__name__, self)
 
     async def submit(self, message: Message) -> None:
-        self.logger.info(message)
+        async with message.process():
+            self.logger.info(message)

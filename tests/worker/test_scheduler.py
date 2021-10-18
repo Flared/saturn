@@ -1,3 +1,4 @@
+import asyncio
 from collections import Counter
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
@@ -14,14 +15,16 @@ from saturn_engine.worker.scheduler import Scheduler
 
 
 @pytest.fixture
-async def scheduler() -> AsyncIterator[Scheduler]:
+async def scheduler(event_loop: asyncio.AbstractEventLoop) -> AsyncIterator[Scheduler]:
     _scheduler = Scheduler()
     yield _scheduler
     await _scheduler.close()
 
 
 @pytest.mark.asyncio
-async def test_scheduler(scheduler: Scheduler) -> None:
+async def test_scheduler(
+    scheduler: Scheduler, event_loop: asyncio.AbstractEventLoop
+) -> None:
     queue1 = MagicMock(spec=Queue)
     queue1.run.return_value = alib.cycle([sentinel.queue1])
     queue2 = MagicMock(spec=Queue)
@@ -38,7 +41,6 @@ async def test_scheduler(scheduler: Scheduler) -> None:
 
         # Removing a queue should cancel its task.
         await scheduler.remove(queue2)
-
 
         messages.clear()
         async for item in alib.islice(alib.borrow(generator), 10):
