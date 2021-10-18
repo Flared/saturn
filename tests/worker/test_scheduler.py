@@ -35,7 +35,7 @@ async def test_scheduler(
 
     messages: Counter[Message] = Counter()
     async with alib.scoped_iter(scheduler.run()) as generator:
-        async for item in alib.islice(alib.borrow(generator), 10):
+        async for item in alib.islice(generator, 10):
             messages[item] += 1
         assert messages == {sentinel.queue1: 5, sentinel.queue2: 5}
 
@@ -43,7 +43,7 @@ async def test_scheduler(
         await scheduler.remove(queue2)
 
         messages.clear()
-        async for item in alib.islice(alib.borrow(generator), 10):
+        async for item in alib.islice(generator, 10):
             messages[item] += 1
 
         assert messages == {sentinel.queue1: 10}
@@ -54,7 +54,7 @@ async def test_scheduler(
         scheduler.add(queue3)
 
         messages.clear()
-        async for item in alib.islice(alib.borrow(generator), 10):
+        async for item in alib.islice(generator, 10):
             messages[item] += 1
         assert messages == {sentinel.queue1: 5, sentinel.queue3: 5}
 
@@ -89,7 +89,7 @@ async def test_scheduler_queue_errors(scheduler: Scheduler) -> None:
     async with alib.scoped_iter(scheduler.run()) as generator:
 
         messages.clear()
-        async for item in alib.islice(alib.borrow(generator), 5):
+        async for item in alib.islice(generator, 5):
             messages[item] += 1
         assert messages == {sentinel.queue1: 4, sentinel.queue3: 1}
 
@@ -102,7 +102,7 @@ async def test_scheduler_queue_errors(scheduler: Scheduler) -> None:
         queue4.run.side_effect = queue_error_init
         scheduler.add(queue4)
 
-        async for item in alib.islice(alib.borrow(generator), 10):
+        async for item in alib.islice(generator, 10):
             pass
 
         assert queue4 not in scheduler.queues
