@@ -1,32 +1,38 @@
 import dataclasses
-import functools
 from collections.abc import AsyncGenerator
-from typing import Any
-from typing import Type
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from typing import Callable
 from typing import TypeVar
 
-import desert
-import marshmallow
-
 from saturn_engine.core import Message
+from saturn_engine.utils.options import OptionsSchema
 
 T = TypeVar("T")
 
 
-class Queue:
-    @dataclasses.dataclass
-    class Options:
-        pass
+class AckWrapper(Message):
+    def __init__(self, message: Message, *, ack: Callable[[], object]):
+        super().__init__(**dataclasses.asdict(message))
+        self.ack = ack
 
+    @asynccontextmanager
+    async def process(self) -> AsyncIterator:
+        try:
+            yield
+        finally:
+            self.ack()
+
+
+class Queue(OptionsSchema):
     async def run(self) -> AsyncGenerator[Message, None]:
         for _ in ():
             yield _
 
-    @classmethod
-    async def new(cls: Type[T], id: str, options: Any) -> T:
-        raise NotImplementedError()
 
-    @classmethod
-    @functools.cache
-    def options_schema(cls, **meta: Any) -> marshmallow.Schema:
-        return desert.schema(cls.Options, meta=meta)
+class Publisher(OptionsSchema):
+    def __init__(self, options: object) -> None:
+        pass
+
+    async def push(self, message: Message) -> None:
+        pass

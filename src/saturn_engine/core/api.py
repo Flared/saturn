@@ -20,5 +20,10 @@ class DummyItem(QueueItem):
 
 
 @dataclasses.dataclass
+class MemoryItem(QueueItem):
+    pass
+
+
+@dataclasses.dataclass
 class SyncResponse:
     items: list[QueueItem]
