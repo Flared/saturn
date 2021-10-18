@@ -5,7 +5,6 @@ from typing import Any
 from typing import Callable
 from typing import Iterable
 from typing import Iterator
-from typing import Protocol
 from typing import TypeVar
 from typing import Union
 
@@ -80,11 +79,7 @@ class StrEnum(str, enum.Enum):
         return self
 
 
-class Instance(Protocol):
-    __dict__: dict[str, Any]
-
-
-def get_own_attr(inst: Instance, attr: str, default: Union[T, Sentinel] = MISSING) -> T:
+def get_own_attr(inst: object, attr: str, default: Union[T, Sentinel] = MISSING) -> T:
     """
     Act like `getattr`, but only check the instance namespace.
 
@@ -109,7 +104,7 @@ def get_own_attr(inst: Instance, attr: str, default: Union[T, Sentinel] = MISSIN
         raise AttributeError(attr) from None
 
 
-def has_own_attr(inst: Instance, attr: str) -> bool:
+def has_own_attr(inst: object, attr: str) -> bool:
     """
     Act like `hasattr`, but only check the instance namespace.
 
