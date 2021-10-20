@@ -18,14 +18,21 @@ python_tool_version = "3.9"
 pyfiles_locations = "src", "tests", "noxfile.py", "mypy_stubs"
 
 
-def install_project(session: Session, groups: Sequence[str] = ()) -> None:
+def install_project(
+    session: Session,
+    groups: Sequence[str] = (),
+    worker_manager: bool = True,
+) -> None:
     # Must wait for the release of Poetry 1.2.0 for
     # https://github.com/python-poetry/poetry/pull/4260/
     # poetry_options = []
     # if groups:
     #   poetry_options = "--with", ",".join(groups)
     # session.run("poetry", "install", *poetry_options, external=True)
-    session.run("poetry", "install", external=True)
+    poetry_command: list[str] = ["poetry", "install"]
+    if worker_manager:
+        poetry_command.extend(["--extras", "worker-manager"])
+    session.run(*poetry_command, external=True)
 
 
 def install_with_constraints(session: Session, *args: str, **kwargs: Any) -> None:
@@ -48,6 +55,15 @@ def tests(session: Session) -> None:
     install_project(session)
     install_with_constraints(session, "pytest", "pytest-asyncio", "pytest-icdiff")
     session.run("pytest", *args)
+
+
+@nox.session(python=python_all_versions)
+def tests_worker(session: Session) -> None:
+    """Worker tests must pass without installing the worker-manager extra."""
+    args = session.posargs
+    install_project(session, worker_manager=False)
+    install_with_constraints(session, "pytest", "pytest-asyncio", "pytest-icdiff")
+    session.run("pytest", "tests/worker", *args)
 
 
 @nox.session(python=python_tool_version)
