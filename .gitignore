@@ -1,2 +1,4 @@
 __pycache__/
 /test.db
+/.venv-tools
+/dist
