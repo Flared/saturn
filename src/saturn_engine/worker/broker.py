@@ -7,6 +7,7 @@ from .executors.simple import SimpleExecutor
 from .queues.context import QueueContext
 from .scheduler import Scheduler
 from .services.manager import ServicesManager
+from .task_manager import TaskManager
 from .work_manager import WorkManager
 
 
@@ -20,6 +21,7 @@ class Broker:
         self.work_manager = WorkManager(
             context=QueueContext(services=self.services_manager)
         )
+        self.task_manager = TaskManager()
         self.scheduler = Scheduler()
         # TODO: Load executor based on config
         self.executor = SimpleExecutor()
@@ -63,17 +65,22 @@ class Broker:
         This allow to add and remove queues from the scheduler.
         """
         while self.is_running:
-            queues_sync = await self.work_manager.sync_queues()
-            self.logger.info("Worker sync: %s", queues_sync)
+            work_sync = await self.work_manager.sync()
+            self.logger.info("Worker sync: %s", work_sync)
 
-            for queue in queues_sync.add:
+            for queue in work_sync.queues.add:
                 self.scheduler.add(queue)
+            for task in work_sync.tasks.add:
+                self.task_manager.add(task)
 
-            for queue in queues_sync.drop:
+            for queue in work_sync.queues.drop:
                 self.scheduler.remove(queue)
+            for task in work_sync.tasks.drop:
+                self.task_manager.remove(task)
 
     async def close(self) -> None:
         await self.scheduler.close()
+        await self.task_manager.close()
         await self.services_manager.close()
 
     def stop(self) -> None:

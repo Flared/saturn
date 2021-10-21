@@ -6,7 +6,6 @@ from saturn_engine.core import Message
 from saturn_engine.utils.log import getLogger
 
 from . import Queue
-from .context import QueueContext
 
 
 class DummyQueue(Queue):
@@ -17,7 +16,7 @@ class DummyQueue(Queue):
         id: str
         sleep_time: float = 1
 
-    def __init__(self, options: Options, context: QueueContext) -> None:
+    def __init__(self, options: Options) -> None:
         self.options = options
         self.logger = getLogger(__name__, self)
 
