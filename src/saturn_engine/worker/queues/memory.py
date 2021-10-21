@@ -24,10 +24,7 @@ class MemoryQueue(Queue):
         self.options = options
 
     async def run(self) -> AsyncGenerator[Message, None]:
-        if self.options.id not in _memory_queues:
-            _memory_queues[self.options.id] = asyncio.Queue()
-        queue = _memory_queues[self.options.id]
-
+        queue = get_queue(self.options.id)
         while True:
             message = await queue.get()
             yield AckWrapper(message, ack=queue.task_done)
@@ -40,12 +37,21 @@ class MemoryPublisher(Publisher):
         self.options = options
 
     async def push(self, message: Message) -> None:
-        if self.options.id not in _memory_queues:
-            _memory_queues[self.options.id] = asyncio.Queue()
-        queue = _memory_queues[self.options.id]
+        queue = get_queue(self.options.id)
         await queue.put(message)
+
+
+def get_queue(queue_id: str, *, maxsize: int = 10) -> asyncio.Queue:
+    if queue_id not in _memory_queues:
+        _memory_queues[queue_id] = asyncio.Queue(maxsize=maxsize)
+    return _memory_queues[queue_id]
 
 
 async def join_all() -> None:
     for queue in _memory_queues.values():
         await queue.join()
+    reset()
+
+
+def reset() -> None:
+    return _memory_queues.clear()

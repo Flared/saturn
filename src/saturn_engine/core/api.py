@@ -10,12 +10,23 @@ class QueueItem:
 
 
 @dataclasses.dataclass
+class Inventory:
+    type: str
+    options: dict
+
+
+@dataclasses.dataclass
 class JobItem(QueueItem):
-    inventory: str
+    inventory: Inventory
 
 
 @dataclasses.dataclass
 class DummyItem(QueueItem):
+    pass
+
+
+@dataclasses.dataclass
+class DummyJob(JobItem):
     pass
 
 

@@ -1,30 +1,12 @@
 from unittest.mock import Mock
-from unittest.mock import create_autospec
 
 import pytest
 
-from saturn_engine.client.worker_manager import WorkerManagerClient
 from saturn_engine.core.api import DummyItem
 from saturn_engine.core.api import SyncResponse
 from saturn_engine.utils import flatten
-from saturn_engine.worker.queues.context import QueueContext
 from saturn_engine.worker.work_manager import WorkManager
 from saturn_engine.worker.work_manager import WorkSync
-
-
-@pytest.fixture
-def worker_manager_client() -> Mock:
-    _worker_manager_client = create_autospec(WorkerManagerClient, instance=True)
-    _worker_manager_client.sync.return_value = SyncResponse(items=[])
-    return _worker_manager_client
-
-
-@pytest.fixture
-def work_manager(
-    worker_manager_client: WorkerManagerClient, queue_context: QueueContext
-) -> WorkManager:
-    _work_manager = WorkManager(context=queue_context, client=worker_manager_client)
-    return _work_manager
 
 
 @pytest.mark.asyncio

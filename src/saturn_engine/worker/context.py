@@ -1,8 +1,8 @@
 import dataclasses
 
-from ..services.manager import ServicesManager
+from .services.manager import ServicesManager
 
 
 @dataclasses.dataclass
-class QueueContext:
+class Context:
     services: ServicesManager

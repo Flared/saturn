@@ -15,8 +15,8 @@ from saturn_engine.utils import flatten
 from saturn_engine.utils.log import getLogger
 
 from . import work_factory
+from .context import Context
 from .queues import Queue
-from .queues.context import QueueContext
 from .work import WorkItems
 
 T = TypeVar("T")
@@ -82,7 +82,7 @@ class WorkManager:
     last_sync_at: Optional[datetime]
 
     def __init__(
-        self, *, context: QueueContext, client: Optional[WorkerManagerClient] = None
+        self, *, context: Context, client: Optional[WorkerManagerClient] = None
     ) -> None:
         self.logger = getLogger(__name__, self)
         self.client = client or WorkerManagerClient()
