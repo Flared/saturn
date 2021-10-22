@@ -5,6 +5,7 @@ from collections.abc import AsyncGenerator
 from saturn_engine.core import Message
 from saturn_engine.utils.log import getLogger
 
+from . import Processable
 from . import Queue
 
 
@@ -20,9 +21,9 @@ class DummyQueue(Queue):
         self.options = options
         self.logger = getLogger(__name__, self)
 
-    async def run(self) -> AsyncGenerator[Message, None]:
+    async def run(self) -> AsyncGenerator[Processable, None]:
         while True:
             self.logger.info("get/before_sleep [q=%s]", self.options.id)
             await asyncio.sleep(self.options.sleep_time)
             self.logger.info("get/after_sleep [q=%s]", self.options.id)
-            yield Message(body=f"hello - {self.options.id}")
+            yield Processable(Message(body=f"hello - {self.options.id}"))

@@ -1,4 +1,3 @@
-import dataclasses
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -11,21 +10,31 @@ from saturn_engine.utils.options import OptionsSchema
 T = TypeVar("T")
 
 
-class AckWrapper(Message):
+class Processable:
+    def __init__(self, message: Message):
+        self.message = message
+
+    @asynccontextmanager
+    async def process(self) -> AsyncIterator[Message]:
+        yield self.message
+
+
+class AckProcessable(Processable):
     def __init__(self, message: Message, *, ack: Callable[[], object]):
-        super().__init__(**dataclasses.asdict(message))
+        super().__init__(message=message)
         self.ack = ack
 
     @asynccontextmanager
-    async def process(self) -> AsyncIterator:
+    async def process(self) -> AsyncIterator[Message]:
         try:
-            yield
+            async with super().process() as message:
+                yield message
         finally:
             self.ack()
 
 
 class Queue(OptionsSchema):
-    async def run(self) -> AsyncGenerator[Message, None]:
+    async def run(self) -> AsyncGenerator[Processable, None]:
         for _ in ():
             yield _
 

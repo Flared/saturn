@@ -9,7 +9,7 @@ from unittest.mock import sentinel
 import asyncstdlib as alib
 import pytest
 
-from saturn_engine.core import Message
+from saturn_engine.worker.queues import Processable
 from saturn_engine.worker.queues import Queue
 from saturn_engine.worker.scheduler import Scheduler
 
@@ -33,7 +33,7 @@ async def test_scheduler(
     scheduler.add(queue1)
     scheduler.add(queue2)
 
-    messages: Counter[Message] = Counter()
+    messages: Counter[Processable] = Counter()
     async with alib.scoped_iter(scheduler.run()) as generator:
         async for item in alib.islice(generator, 10):
             messages[item] += 1
@@ -65,7 +65,7 @@ async def test_scheduler_queue_errors(scheduler: Scheduler) -> None:
     queue1.run.return_value = alib.cycle([sentinel.queue1])
     scheduler.add(queue1)
 
-    messages: Counter[Message] = Counter()
+    messages: Counter[Processable] = Counter()
 
     # Add bogus queues that raise exceptions.
     async def queue_error_init() -> AsyncGenerator:
