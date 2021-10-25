@@ -1,7 +1,7 @@
 from saturn_engine.core.message import Message
 
 
-class BaseExecutor:
+class Executor:
     def __init__(self) -> None:
         pass
 

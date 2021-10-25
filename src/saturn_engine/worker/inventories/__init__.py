@@ -1,12 +1,16 @@
+import dataclasses
 from collections.abc import Iterable
 from typing import Optional
 
-from saturn_engine.core import Message
+from saturn_engine.utils.options import OptionsSchema
 
 
-class Inventory:
-    def __init__(self) -> None:
-        pass
+@dataclasses.dataclass
+class Item:
+    id: int
+    data: object
 
-    async def next_batch(self, after: Optional[str] = None) -> Iterable[Message]:
+
+class Inventory(OptionsSchema):
+    async def next_batch(self, after: Optional[int] = None) -> Iterable[Item]:
         return []

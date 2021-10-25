@@ -1,31 +1,51 @@
 import asyncio
+from typing import Callable
 from typing import Optional
+from typing import Protocol
 
 from saturn_engine.utils.log import getLogger
 
+from .context import Context
+from .executors import Executor
 from .executors.simple import SimpleExecutor
-from .queues.context import QueueContext
 from .scheduler import Scheduler
 from .services.manager import ServicesManager
 from .task_manager import TaskManager
 from .work_manager import WorkManager
 
 
+class WorkManagerInit(Protocol):
+    def __call__(self, context: Context) -> WorkManager:
+        ...
+
+
+ExecutorInit = Callable[[], Executor]
+
+
 class Broker:
     running_task: Optional[asyncio.Future]
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        work_manager: WorkManagerInit = WorkManager,
+        executor: ExecutorInit = SimpleExecutor
+    ) -> None:
         self.logger = getLogger(__name__, self)
         self.is_running = False
+        self.running_task = None
+
+        # Build context
         self.services_manager = ServicesManager()
-        self.work_manager = WorkManager(
-            context=QueueContext(services=self.services_manager)
-        )
+        self.context = Context(services=self.services_manager)
+
+        # Init subsystem
+        self.work_manager = work_manager(context=self.context)
         self.task_manager = TaskManager()
         self.scheduler = Scheduler()
+
         # TODO: Load executor based on config
-        self.executor = SimpleExecutor()
-        self.running_task = None
+        self.executor = executor()
 
     async def run(self) -> None:
         """
@@ -35,9 +55,11 @@ class Broker:
         self.logger.info("Starting worker")
         queue_manager_task = self.run_queue_manager()
         worker_manager_task = self.run_worker_manager()
+        task_manager_task = self.task_manager.run()
         self.running_task = asyncio.gather(
             queue_manager_task,
             worker_manager_task,
+            task_manager_task,
         )
         try:
             await self.running_task

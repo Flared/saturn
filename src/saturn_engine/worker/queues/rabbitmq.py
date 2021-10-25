@@ -8,8 +8,8 @@ from aio_pika import IncomingMessage
 from saturn_engine.core import Message
 from saturn_engine.utils.log import getLogger
 
+from ..context import Context
 from . import Queue
-from .context import QueueContext
 
 
 class MessageWrapper(Message):
@@ -30,7 +30,7 @@ class RabbitMQQueue(Queue):
     class Options:
         queue_name: str
 
-    def __init__(self, options: Options, context: QueueContext) -> None:
+    def __init__(self, options: Options, context: Context) -> None:
         self.logger = getLogger(__name__, self)
         self.options = options
         self.context = context
