@@ -54,7 +54,7 @@ class BaseExecutor(Executor):
 
                     self.queue.task_done()
 
-    async def submit(self, processable: Processable) -> None:
+    async def submit(self, processable: Processable, *, wait: bool = True) -> None:
         processing_task = self.process(processable)
         await self.queue.put(processing_task)
 
@@ -63,7 +63,8 @@ class BaseExecutor(Executor):
             await self.process_message(message)
 
     async def close(self) -> None:
-        pass
+        for task in self.tasks:
+            task.cancel()
 
     @abstractmethod
     async def process_message(self, message: Message) -> None:
