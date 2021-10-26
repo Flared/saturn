@@ -115,7 +115,7 @@ async def test_scheduler_close_error(scheduler: Scheduler) -> None:
     async def queue_error_close() -> AsyncGenerator:
         try:
             while True:
-                yield
+                yield sentinel.queue
         except GeneratorExit:
             close_mock()
             raise ValueError from None

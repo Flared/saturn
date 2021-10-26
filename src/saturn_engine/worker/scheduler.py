@@ -6,6 +6,7 @@ from collections.abc import AsyncIterator
 
 from saturn_engine.utils.log import getLogger
 
+from .queues import BlockingQueue
 from .queues import Processable
 from .queues import Queue
 
@@ -19,7 +20,7 @@ class QueueSlot:
 
 class Scheduler:
     queues: dict[Queue, QueueSlot]
-    tasks_queues: dict[asyncio.Task, Queue]
+    tasks_queues: dict[asyncio.Task, BlockingQueue]
 
     def __init__(self) -> None:
         self.logger = getLogger(__name__, self)
@@ -27,10 +28,11 @@ class Scheduler:
         self.tasks_queues = {}
 
     def add(self, queue: Queue) -> None:
-        generator = queue.run().__aiter__()
+        task_queue = BlockingQueue(queue)
+        generator = task_queue.run().__aiter__()
         task = asyncio.create_task(generator.__anext__())
         self.queues[queue] = QueueSlot(task=task, generator=generator)
-        self.tasks_queues[task] = queue
+        self.tasks_queues[task] = task_queue
 
     async def remove(self, queue: Queue) -> None:
         queue_slot = self.queues.pop(queue, None)
@@ -84,14 +86,14 @@ class Scheduler:
         try:
             # Even if the task finished, if the queue was removed we
             # discard the item.
-            if task.cancelled() or queue not in self.queues:
+            if task.cancelled() or queue.queue not in self.queues:
                 return
 
             exception = task.exception()
             if exception is None:
                 yield task.result()
             elif isinstance(exception, StopAsyncIteration):
-                await self.remove(queue)
+                await self.remove(queue.queue)
             elif isinstance(exception, asyncio.CancelledError):
                 pass
             elif exception:
@@ -106,8 +108,8 @@ class Scheduler:
             # Requeue the __anext__ task to process next item.
             self._requeue_queue_task(queue)
 
-    def _requeue_queue_task(self, queue: Queue) -> None:
-        queue_slot = self.queues.get(queue)
+    def _requeue_queue_task(self, queue: BlockingQueue) -> None:
+        queue_slot = self.queues.get(queue.queue)
         if queue_slot is None:
             return
         new_task = asyncio.create_task(queue_slot.generator.__anext__())
@@ -117,8 +119,8 @@ class Scheduler:
 
     def task_order(self, task: asyncio.Task) -> int:
         queue = self.tasks_queues[task]
-        queue_slot = self.queues.get(queue)
+        queue_slot = self.queues.get(queue.queue)
         if queue_slot is None:
             # Maximum priority so we clean the task as soon as possible.
             return -1
-        return self.queues[queue].order
+        return queue_slot.order

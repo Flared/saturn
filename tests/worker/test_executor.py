@@ -5,29 +5,46 @@ import pytest
 
 from saturn_engine.core.message import Message
 from saturn_engine.worker.executors import BaseExecutor
+from saturn_engine.worker.queues import Parkers
 from saturn_engine.worker.queues import Processable
 from tests.utils import TimeForwardLoop
 
 
 class FakeExecutor(BaseExecutor):
-    def __init__(self) -> None:
-        super().__init__(concurrency=5)
-        self.start_executing = asyncio.Event()
+    def __init__(self, concurrency: int = 5, resources_count: int = 2 ** 16) -> None:
+        super().__init__(concurrency=concurrency)
+        self.execute_semaphore = asyncio.Semaphore(0)
         self.processing = 0
         self.processed = 0
+        self.resources_semaphore = asyncio.Semaphore(resources_count)
 
     async def process_message(self, message: Message) -> None:
         self.processing += 1
-        await self.start_executing.wait()
+        await self.execute_semaphore.acquire()
         self.processed += 1
+
+    async def acquire_resources(self, processable: Processable, *, wait: bool) -> bool:
+        if not self.resources_semaphore:
+            return True
+
+        if not wait and self.resources_semaphore.locked():
+            return False
+
+        await self.resources_semaphore.acquire()
+        return True
+
+    async def release_resources(self, processable: Processable) -> None:
+        if self.resources_semaphore:
+            self.resources_semaphore.release()
 
 
 @pytest.mark.asyncio
 async def test_base_executor(
     processable_maker: Callable[[], Processable], event_loop: TimeForwardLoop
 ) -> None:
+
     executor = FakeExecutor()
-    run_task = asyncio.create_task(executor.run())
+    executor.start()
 
     for _ in range(10):
         asyncio.create_task(executor.submit(processable_maker()))
@@ -36,9 +53,58 @@ async def test_base_executor(
     assert executor.processing == 5
     assert executor.processed == 0
 
-    executor.start_executing.set()
+    for _ in range(10):
+        executor.execute_semaphore.release()
     await event_loop.wait_idle()
     assert executor.processed == 10
 
-    run_task.cancel()
+    await executor.close()
+
+
+@pytest.mark.asyncio
+async def test_executor_wait_resources_and_queue(
+    processable_maker: Callable[..., Processable], event_loop: TimeForwardLoop
+) -> None:
+    executor = FakeExecutor(concurrency=1, resources_count=2)
+    executor.start()
+    parker = Parkers()
+
+    # Set up a scenario where there's 2 resource and 1 executor slot.
+    # Queuing 3 items should have 1 waiting on the executor and 1 waiting on
+    # the resources.
+    for _ in range(2):
+        await executor.submit(processable_maker(parker=parker))
+
+    await event_loop.wait_idle()
+    assert executor.processing == 1
+    assert executor.resources_semaphore.locked()
+    assert not parker.locked()
+
+    # Submit another task, stuck locking a resource, park the processable.
+    await executor.submit(processable_maker(parker=parker))
+
+    await event_loop.wait_idle()
+    assert executor.processing == 1
+    assert executor.resources_semaphore.locked()
+    assert parker.locked()
+
+    # Process the task pending in the executor and release the resource.
+    executor.execute_semaphore.release()
+    await event_loop.wait_idle()
+    assert executor.processed == 1
+    assert executor.processing == 2
+    assert executor.resources_semaphore.locked()
+    assert not parker.locked()
+
+    # Process the other task, release the resource.
+    executor.execute_semaphore.release()
+    await event_loop.wait_idle()
+    assert executor.processed == 2
+    assert executor.processing == 3
+    assert not executor.resources_semaphore.locked()
+    assert not parker.locked()
+
+    executor.execute_semaphore.release()
+    await event_loop.wait_idle()
+
     await executor.close()
