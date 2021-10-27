@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from saturn_engine.worker.resource import Resource
+from saturn_engine.core import Resource
 from saturn_engine.worker.services.resources_manager import ResourcesManager
 from saturn_engine.worker.services.resources_manager import ResourceUnavailable
 from tests.utils import TimeForwardLoop

@@ -3,7 +3,7 @@ import contextlib
 from collections import defaultdict
 from typing import Optional
 
-from saturn_engine.worker.resource import Resource
+from saturn_engine.core import Resource
 
 
 class ResourceUnavailable(Exception):
