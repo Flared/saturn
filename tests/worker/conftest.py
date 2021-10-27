@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterator
 from collections.abc import Iterator
 from typing import Callable
+from typing import Optional
 from unittest.mock import Mock
 from unittest.mock import create_autospec
 
@@ -14,6 +15,7 @@ from saturn_engine.worker.broker import ExecutorInit
 from saturn_engine.worker.broker import WorkManagerInit
 from saturn_engine.worker.context import Context
 from saturn_engine.worker.executors import Executor
+from saturn_engine.worker.queues import Parkers
 from saturn_engine.worker.queues import Processable
 from saturn_engine.worker.queues.memory import reset as reset_memory_queues
 from saturn_engine.worker.services.manager import ServicesManager
@@ -72,8 +74,8 @@ async def broker(
 
 @pytest.fixture
 def processable_maker() -> Callable[..., Processable]:
-    def maker(body: str = "test-body") -> Processable:
-        return Processable(Message(body=body))
+    def maker(body: str = "test-body", parker: Optional[Parkers] = None) -> Processable:
+        return Processable(Message(body=body), parker=parker)
 
     return maker
 

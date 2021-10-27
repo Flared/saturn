@@ -1,6 +1,5 @@
 import asyncio
 from abc import abstractmethod
-from collections.abc import Coroutine
 
 from saturn_engine.core.message import Message
 from saturn_engine.utils.log import getLogger
@@ -26,44 +25,57 @@ class BaseExecutor(Executor):
     def __init__(self, concurrency: int = 8) -> None:
         self.logger = getLogger(__name__, self)
         self.concurrency = concurrency
-        self.queue: asyncio.Queue[Coroutine] = asyncio.Queue(maxsize=1)
-        self.tasks: set[asyncio.Task] = set()
+        self.queue: asyncio.Queue[Processable] = asyncio.Queue(maxsize=1)
+        self.submit_tasks: set[asyncio.Task] = set()
+        self.processing_tasks: set[asyncio.Task] = set()
+
+    def start(self) -> None:
+        for _ in range(self.concurrency):
+            self.processing_tasks.add(asyncio.create_task(self.run()))
 
     async def run(self) -> None:
-        get_task = None
         while True:
-            if get_task is None and len(self.tasks) < self.concurrency:
-                get_task = asyncio.create_task(self.queue.get())
-                self.tasks.add(get_task)
-            done, pending = await asyncio.wait(
-                self.tasks, return_when=asyncio.FIRST_COMPLETED
-            )
-            for task in done:
-                self.tasks.discard(task)
-                if task is get_task:
-                    new_task = await get_task
-                    self.tasks.add(asyncio.create_task(new_task))
-                    get_task = None
-                else:
-                    exception = task.exception()
-                    if exception:
-                        print("error: ", str(exception))
-                        self.logger.error(
-                            "Executor '%s' failed", task, exc_info=exception
-                        )
+            processable = await self.queue.get()
+            try:
+                async with processable.process() as message:
+                    await self.process_message(message)
+            except Exception:
+                self.logger.exception("Failed to process: %s", processable)
+            finally:
+                await self.release_resources(processable)
+                self.queue.task_done()
 
-                    self.queue.task_done()
+    async def submit(self, processable: Processable) -> None:
+        # Try first to check if we have the resources available so we can
+        # then check if the executor queue is ready. That way, the scheduler
+        # will pause until the executor is free again.
+        if await self.acquire_resources(processable, wait=False):
+            await self.queue.put(processable)
+        else:
+            # Park the queue from which the processable comes from.
+            # The queue should be unparked once the resources are acquired.
+            processable.park()
+            # To avoid blocking the executor queue while we wait on resource,
+            # create a background task to wait on resources.
+            self.submit_tasks.add(asyncio.create_task(self.delayed_submit(processable)))
 
-    async def submit(self, processable: Processable, *, wait: bool = True) -> None:
-        processing_task = self.process(processable)
-        await self.queue.put(processing_task)
+    async def acquire_resources(self, processable: Processable, *, wait: bool) -> bool:
+        return True
 
-    async def process(self, processable: Processable) -> None:
-        async with processable.process() as message:
-            await self.process_message(message)
+    async def release_resources(self, processable: Processable) -> None:
+        return None
+
+    async def delayed_submit(self, processable: Processable) -> None:
+        """Submit a pipeline after waiting to acquire its resources"""
+        await self.acquire_resources(processable, wait=True)
+        await processable.unpark()
+        await self.queue.put(processable)
 
     async def close(self) -> None:
-        for task in self.tasks:
+        for task in self.submit_tasks:
+            task.cancel()
+
+        for task in self.processing_tasks:
             task.cancel()
 
     @abstractmethod
