@@ -5,7 +5,8 @@ from typing import Any
 
 from saturn_engine.core import Message
 
-from . import AckWrapper
+from . import AckProcessable
+from . import Processable
 from . import Publisher
 from . import Queue
 
@@ -23,11 +24,11 @@ class MemoryQueue(Queue):
     def __init__(self, options: MemoryOptions, **kwargs: Any):
         self.options = options
 
-    async def run(self) -> AsyncGenerator[Message, None]:
+    async def run(self) -> AsyncGenerator[Processable, None]:
         queue = get_queue(self.options.id)
         while True:
             message = await queue.get()
-            yield AckWrapper(message, ack=queue.task_done)
+            yield AckProcessable(message, ack=queue.task_done)
 
 
 class MemoryPublisher(Publisher):

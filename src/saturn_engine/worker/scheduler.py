@@ -4,15 +4,15 @@ import dataclasses
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
 
-from saturn_engine.core import Message
 from saturn_engine.utils.log import getLogger
 
+from .queues import Processable
 from .queues import Queue
 
 
 @dataclasses.dataclass
 class QueueSlot:
-    generator: AsyncGenerator[Message, None]
+    generator: AsyncGenerator[Processable, None]
     task: asyncio.Task
     order: int = 0
 
@@ -61,7 +61,7 @@ class Scheduler:
         except Exception:
             self.logger.exception("Failed to close queue: %s", queue_slot)
 
-    async def run(self) -> AsyncIterator[Message]:
+    async def run(self) -> AsyncIterator[Processable]:
         while True:
             if not self.tasks_queues:
                 await asyncio.sleep(1)
@@ -77,7 +77,7 @@ class Scheduler:
                 async for item in self.process_task(task):
                     yield item
 
-    async def process_task(self, task: asyncio.Task) -> AsyncIterator[Message]:
+    async def process_task(self, task: asyncio.Task) -> AsyncIterator[Processable]:
         queue = self.tasks_queues[task]
         del self.tasks_queues[task]
 

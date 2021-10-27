@@ -19,14 +19,14 @@ async def test_memory_queues() -> None:
     for i in range(10):
         await publisher1.push(Message(body=f"q1-{i}"))
         await publisher2.push(Message(body=f"q2-{i}"))
-        message = await alib.anext(queue1generator)
-        async with message.process():
+        processable = await alib.anext(queue1generator)
+        async with processable.process() as message:
             assert message.body == f"q1-{i}"
 
     queue2generator = queue2.run()
     for i in range(10):
-        message = await alib.anext(queue2generator)
-        async with message.process():
+        processable = await alib.anext(queue2generator)
+        async with processable.process() as message:
             assert message.body == f"q2-{i}"
 
     await queue1generator.aclose()

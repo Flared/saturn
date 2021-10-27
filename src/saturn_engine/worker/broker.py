@@ -53,13 +53,11 @@ class Broker:
         """
         self.is_running = True
         self.logger.info("Starting worker")
-        queue_manager_task = self.run_queue_manager()
-        worker_manager_task = self.run_worker_manager()
-        task_manager_task = self.task_manager.run()
         self.running_task = asyncio.gather(
-            queue_manager_task,
-            worker_manager_task,
-            task_manager_task,
+            self.run_queue_manager(),
+            self.run_worker_manager(),
+            self.task_manager.run(),
+            self.executor.run(),
         )
         try:
             await self.running_task
@@ -104,6 +102,7 @@ class Broker:
         await self.scheduler.close()
         await self.task_manager.close()
         await self.services_manager.close()
+        await self.executor.close()
 
     def stop(self) -> None:
         if not self.running_task:
