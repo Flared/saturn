@@ -1,3 +1,4 @@
 from .message import Message
+from .resource import Resource
 
-__all__ = ["Message"]
+__all__ = ["Message", "Resource"]
