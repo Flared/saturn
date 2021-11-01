@@ -3,6 +3,8 @@ from unittest.mock import Mock
 import pytest
 
 from saturn_engine.core.api import DummyItem
+from saturn_engine.core.api import PipelineInfo
+from saturn_engine.core.api import QueuePipeline
 from saturn_engine.core.api import SyncResponse
 from saturn_engine.utils import flatten
 from saturn_engine.worker.work_manager import WorkManager
@@ -10,7 +12,11 @@ from saturn_engine.worker.work_manager import WorkSync
 
 
 @pytest.mark.asyncio
-async def test_sync(work_manager: WorkManager, worker_manager_client: Mock) -> None:
+async def test_sync(
+    fake_pipeline_info: PipelineInfo,
+    work_manager: WorkManager,
+    worker_manager_client: Mock,
+) -> None:
     # Sync does nothing.
     worker_manager_client.sync.return_value = SyncResponse(items=[])
 
@@ -22,15 +28,31 @@ async def test_sync(work_manager: WorkManager, worker_manager_client: Mock) -> N
         items=[
             DummyItem(
                 id="q1",
-                pipeline="p1",
-                ressources=[],
+                pipeline=QueuePipeline(
+                    info=fake_pipeline_info,
+                    args={},
+                ),
                 options={
                     "tasks_count": 2,
                     "queues_count": 3,
                 },
             ),
-            DummyItem(id="q2", pipeline="p2", ressources=[], options={}),
-            DummyItem(id="q3", pipeline="p3", ressources=[], options={}),
+            DummyItem(
+                id="q2",
+                pipeline=QueuePipeline(
+                    info=fake_pipeline_info,
+                    args={},
+                ),
+                options={},
+            ),
+            DummyItem(
+                id="q3",
+                pipeline=QueuePipeline(
+                    info=fake_pipeline_info,
+                    args={},
+                ),
+                options={},
+            ),
         ]
     )
 
@@ -46,8 +68,22 @@ async def test_sync(work_manager: WorkManager, worker_manager_client: Mock) -> N
     # New sync add 1 and drop 2 items.
     worker_manager_client.sync.return_value = SyncResponse(
         items=[
-            DummyItem(id="q2", pipeline="p2", ressources=[], options={}),
-            DummyItem(id="q4", pipeline="p4", ressources=[], options={}),
+            DummyItem(
+                id="q2",
+                pipeline=QueuePipeline(
+                    info=fake_pipeline_info,
+                    args={},
+                ),
+                options={},
+            ),
+            DummyItem(
+                id="q4",
+                pipeline=QueuePipeline(
+                    info=fake_pipeline_info,
+                    args={},
+                ),
+                options={},
+            ),
         ]
     )
 

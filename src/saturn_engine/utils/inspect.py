@@ -42,7 +42,7 @@ def eval_annotation(func: Callable, annotation: str) -> Type:
 
 
 # Taken from CPython pickle.py
-def get_import_names(obj: Callable) -> tuple[str, str]:
+def get_import_names(obj: Callable) -> str:
     name = getattr(obj, "__qualname__", None)
     if name is None:
         name = obj.__name__
@@ -63,7 +63,7 @@ def get_import_names(obj: Callable) -> tuple[str, str]:
                 % (obj, module_name, name)
             )
 
-    return module_name, name
+    return f"{module_name}.{name}"
 
 
 def getattribute(obj: object, name: str) -> tuple[object, object]:
@@ -104,6 +104,14 @@ def whichmodule(obj: object, name: str) -> str:
     return "__main__"
 
 
-def import_name(module: str, name: str) -> object:
-    __import__(module, level=0)
-    return getattribute(sys.modules[module], name)[0]
+def import_name(name: str) -> object:
+    module, _, name = name.rpartition(".")
+    while module:
+        try:
+            __import__(module, level=0)
+            return getattribute(sys.modules[module], name)[0]
+        except ModuleNotFoundError:
+            prev_name = name
+            module, _, name = module.rpartition(".")
+            name += "." + prev_name
+    raise ModuleNotFoundError(name)

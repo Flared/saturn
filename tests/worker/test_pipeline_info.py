@@ -3,8 +3,8 @@ from typing import Callable
 
 import pytest
 
+from saturn_engine.core import PipelineInfo
 from saturn_engine.core import Resource
-from saturn_engine.worker.pipeline_info import PipelineInfo
 
 
 class ResourceA(Resource):
@@ -56,17 +56,16 @@ def test_pipeline_info_name() -> None:
         ...
 
     assert PipelineInfo.from_pipeline(simple_pipeline) == PipelineInfo(
-        module="tests.worker.test_pipeline_info", name="simple_pipeline", resources={}
+        name="tests.worker.test_pipeline_info.simple_pipeline", resources={}
     )
 
     assert PipelineInfo.from_pipeline(Namespace.pipeline) == PipelineInfo(
-        module="tests.worker.test_pipeline_info",
-        name="Namespace.pipeline",
+        name="tests.worker.test_pipeline_info.Namespace.pipeline",
         resources={},
     )
 
     assert PipelineInfo.from_pipeline(wrapped_pipeline) == PipelineInfo(
-        module="tests.worker.test_pipeline_info", name="wrapped_pipeline", resources={}
+        name="tests.worker.test_pipeline_info.wrapped_pipeline", resources={}
     )
 
     with pytest.raises(ValueError):
@@ -85,8 +84,7 @@ def test_pipeline_info_name() -> None:
 
 def test_pipeline_info_resources() -> None:
     assert PipelineInfo.from_pipeline(pipeline_with_resources) == PipelineInfo(
-        module="tests.worker.test_pipeline_info",
-        name="pipeline_with_resources",
+        name="tests.worker.test_pipeline_info.pipeline_with_resources",
         resources={
             "a": "resource_a",
             "b": "ResourceB",

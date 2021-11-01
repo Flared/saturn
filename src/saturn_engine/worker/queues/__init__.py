@@ -1,104 +1,59 @@
-import asyncio
 from abc import abstractmethod
 from collections.abc import AsyncGenerator
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
-from typing import Callable
-from typing import Optional
+from typing import AsyncContextManager
 from typing import TypeVar
+from typing import Union
+from typing import cast
 
-from saturn_engine.core import Message
+import asyncstdlib as alib
+
+from saturn_engine.core import PipelineMessage
+from saturn_engine.core import QueuePipeline
+from saturn_engine.core import TopicMessage
 from saturn_engine.utils.options import OptionsSchema
+
+from ..executable_message import ExecutableMessage
+from ..parkers import Parkers
 
 T = TypeVar("T")
 
-
-class Parkers:
-    """Parkers allow multiple parker to lock a queue.
-
-    A queue will only unlock once all parker have been unparked. It could happen
-    in the case where a pipeline has an item waiting on resource (Blocking the
-    queue) and another waiting to publish on an upstream queue (Also blocking
-    the queue). Both item might have been dequeued before either block the
-    queue. So the parkers keep track of both items and won't resume processing
-    of the queue until both are done.
-    """
-
-    def __init__(self) -> None:
-        self.condition = asyncio.Condition()
-        self.parkers: set[object] = set()
-
-    def park(self, parker: object) -> None:
-        self.parkers.add(parker)
-
-    async def unpark(self, parker: object) -> None:
-        async with self.condition:
-            self.parkers.discard(parker)
-            self.condition.notify()
-
-    def locked(self) -> bool:
-        return bool(self.parkers)
-
-    async def wait(self) -> None:
-        """Wait until no parker are left. If no parkers, return right away."""
-        async with self.condition:
-            await self.condition.wait_for(lambda: not self.parkers)
+QueueMessage = Union[AsyncContextManager[TopicMessage], TopicMessage]
 
 
-class Processable:
-    def __init__(self, message: Message, parker: Optional[Parkers] = None):
-        self.message = message
-        self.parker = parker
-
-    @asynccontextmanager
-    async def process(self) -> AsyncIterator[Message]:
-        yield self.message
-
-    def park(self) -> None:
-        if self.parker:
-            self.parker.park(id(self))
-
-    async def unpark(self) -> None:
-        if self.parker:
-            await self.parker.unpark(id(self))
-
-
-class AckProcessable(Processable):
-    def __init__(self, message: Message, *, ack: Callable[[], object]):
-        super().__init__(message=message)
-        self.ack = ack
-
-    @asynccontextmanager
-    async def process(self) -> AsyncIterator[Message]:
-        try:
-            async with super().process() as message:
-                yield message
-        finally:
-            self.ack()
-
-
-class Queue(OptionsSchema):
+class TopicReader(OptionsSchema):
     @abstractmethod
-    async def run(self) -> AsyncGenerator[Processable, None]:
+    async def run(self) -> AsyncGenerator[QueueMessage, None]:
         for _ in ():
             yield _
 
 
-class BlockingQueue:
-    def __init__(self, queue: Queue):
+class ExecutableQueue:
+    def __init__(self, queue: TopicReader, pipeline: QueuePipeline):
         self.queue = queue
         self.parkers = Parkers()
+        self.pipeline = pipeline
 
-    async def run(self) -> AsyncGenerator[Processable, None]:
-        async for processable in self.queue.run():
+    async def run(self) -> AsyncGenerator[ExecutableMessage, None]:
+        async for message in self.queue.run():
             await self.parkers.wait()
-            processable.parker = self.parkers
-            yield processable
+            if isinstance(message, AsyncContextManager):
+                context = message
+                message = await message.__aenter__()
+            else:
+                context = cast(AsyncContextManager, alib.nullcontext())
+
+            yield ExecutableMessage(
+                parker=self.parkers,
+                message=PipelineMessage(
+                    info=self.pipeline.info, message=message.extend(self.pipeline.args)
+                ),
+                message_context=context,
+            )
 
 
 class Publisher(OptionsSchema):
     def __init__(self, options: object) -> None:
         pass
 
-    async def push(self, message: Message) -> None:
+    async def push(self, message: TopicMessage) -> None:
         pass

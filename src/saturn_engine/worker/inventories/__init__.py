@@ -8,7 +8,7 @@ from saturn_engine.utils.options import OptionsSchema
 @dataclasses.dataclass
 class Item:
     id: int
-    data: object
+    data: dict[str, object]
 
 
 class Inventory(OptionsSchema):

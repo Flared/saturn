@@ -7,7 +7,6 @@ from typing import Optional
 @dataclasses.dataclass(eq=False)
 class Resource:
     data: Any
-
     typename: ClassVar[Optional[str]] = None
 
     @classmethod

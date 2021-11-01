@@ -1,14 +1,31 @@
 import dataclasses
 import uuid
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+
+from .pipeline import PipelineInfo
 
 
 @dataclasses.dataclass
-class Message:
-    body: str
+class TopicMessage:
+    args: dict[str, object]
     id: str = dataclasses.field(default_factory=lambda: str(uuid.uuid4()))
 
-    @asynccontextmanager
-    async def process(self) -> AsyncIterator:
-        yield
+    def extend(self, args: dict[str, object]) -> "TopicMessage":
+        return self.__class__(id=self.id, args=args | self.args)
+
+
+@dataclasses.dataclass
+class PipelineMessage:
+    info: PipelineInfo
+    message: TopicMessage
+
+    def execute(self) -> object:
+        pipeline = self.info.into_pipeline()
+        return pipeline(**self.message.args)
+
+    @property
+    def missing_resources(self) -> set[str]:
+        return {
+            typ
+            for name, typ in self.info.resources.items()
+            if name not in self.message.args
+        }

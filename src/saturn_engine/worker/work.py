@@ -1,12 +1,21 @@
 import dataclasses
 from typing import Type
 
-from .queues import Queue
+from .queues import ExecutableQueue
+from .scheduler import Schedulable
+
+
+class SchedulableQueue(Schedulable):
+    queue: ExecutableQueue
+
+    def __init__(self, queue: ExecutableQueue) -> None:
+        super().__init__(iterable=queue.run())
+        self.queue = queue
 
 
 @dataclasses.dataclass
 class WorkItems:
-    queues: list[Queue]
+    queues: list[SchedulableQueue]
     tasks: list[object]
 
     @classmethod

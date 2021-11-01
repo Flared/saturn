@@ -16,7 +16,7 @@ from saturn_engine.utils.log import getLogger
 
 from . import work_factory
 from .context import Context
-from .queues import Queue
+from .work import SchedulableQueue
 from .work import WorkItems
 
 T = TypeVar("T")
@@ -35,7 +35,7 @@ class ItemsSync(Generic[T]):
 
 @dataclasses.dataclass
 class WorkSync:
-    queues: ItemsSync[Queue]
+    queues: ItemsSync[SchedulableQueue]
     tasks: ItemsSync[Task]
 
     @classmethod
@@ -44,9 +44,9 @@ class WorkSync:
         items_added: Iterable[WorkItems],
         items_dropped: Iterable[WorkItems],
     ) -> "WorkSync":
-        queues_added: list[Queue] = []
+        queues_added: list[SchedulableQueue] = []
         tasks_added: list[Task] = []
-        queues_drop: list[Queue] = []
+        queues_drop: list[SchedulableQueue] = []
         tasks_drop: list[Task] = []
         if items_added:
             queues_added, tasks_added = [

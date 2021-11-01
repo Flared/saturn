@@ -6,8 +6,9 @@ from typing import Protocol
 from saturn_engine.utils.log import getLogger
 
 from .context import Context
+from .executable_message import ExecutableMessage
 from .executors import Executor
-from .executors.simple import SimpleExecutor
+from .executors.process import ProcessExecutor
 from .scheduler import Scheduler
 from .services.manager import ServicesManager
 from .task_manager import TaskManager
@@ -29,7 +30,7 @@ class Broker:
         self,
         *,
         work_manager: WorkManagerInit = WorkManager,
-        executor: ExecutorInit = SimpleExecutor
+        executor: ExecutorInit = ProcessExecutor
     ) -> None:
         self.logger = getLogger(__name__, self)
         self.is_running = False
@@ -42,9 +43,7 @@ class Broker:
         # Init subsystem
         self.work_manager = work_manager(context=self.context)
         self.task_manager = TaskManager()
-        self.scheduler = Scheduler()
-
-        # TODO: Load executor based on config
+        self.scheduler: Scheduler[ExecutableMessage] = Scheduler()
         self.executor = executor()
 
     async def run(self) -> None:
