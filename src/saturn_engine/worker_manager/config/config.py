@@ -3,6 +3,9 @@ from functools import cached_property
 
 from saturn_engine.utils import lazy
 
+from .declarative import StaticDefinitions
+from .declarative import load_definitions_from_directory
+
 
 class Configuration:
     @cached_property
@@ -24,6 +27,24 @@ class Configuration:
         database_url = database_url.replace("sqlite:/", "sqlite+aiosqlite:/")
         database_url = database_url.replace("postgresql:/", "postgresql+asyncpg:/")
         return database_url
+
+    @cached_property
+    def static_definitions_directory(self) -> str:
+        return os.environ.get(
+            "SATURN_STATIC_DEFINITIONS_DIR",
+            "/opt/saturn/definitions",
+        )
+
+    @cached_property
+    def static_definitions(self) -> StaticDefinitions:
+        """
+        Static definitions contain objects defined in a declarative configuration:
+        - Inventories
+        - Topics
+        - Jobs
+        - JobDefinitions
+        """
+        return load_definitions_from_directory(self.static_definitions_directory)
 
 
 @lazy()

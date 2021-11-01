@@ -1,0 +1,10 @@
+---
+apiVersion: saturn.github.io/v1alpha1
+kind: SaturnInventory
+metadata:
+  name: github-identifiers
+spec:
+  type: pyro.saturn.inventories.DrillerQueryApi
+  options:
+    source: driller_github
+---
