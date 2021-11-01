@@ -11,6 +11,7 @@ class QueueItem:
 
 @dataclasses.dataclass
 class Inventory:
+    name: str
     type: str
     options: dict
 

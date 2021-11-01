@@ -14,6 +14,7 @@ from saturn_engine.worker_manager.http_errors import (
 def get_app() -> Flask:
     app = Flask(__name__)
 
+    from .api.inventories import bp as bp_inventories
     from .api.jobs import bp as bp_jobs
     from .api.lock import bp as bp_lock
     from .api.status import bp as bp_status
@@ -21,6 +22,7 @@ def get_app() -> Flask:
     app.register_blueprint(bp_status)
     app.register_blueprint(bp_jobs)
     app.register_blueprint(bp_lock)
+    app.register_blueprint(bp_inventories)
 
     @app.teardown_appcontext  # type: ignore
     async def shutdown_session(response_or_exc: Optional[BaseException]) -> None:

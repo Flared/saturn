@@ -26,7 +26,9 @@ async def test_broker_dummy(broker: Broker, worker_manager_client: Mock) -> None
                 id="j1",
                 pipeline="p1",
                 ressources=[],
-                inventory=Inventory(type="dummy", options={"count": 1000}),
+                inventory=Inventory(
+                    name="dummy", type="dummy", options={"count": 1000}
+                ),
                 options={},
             )
         ]

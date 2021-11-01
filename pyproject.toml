@@ -32,6 +32,8 @@ asyncpg = "^0.24.0"
 ## worker-manager ##
 ####################
 Flask = {extras = ["async"], version = "^2.0.2", optional = true }
+PyYAML = "^6.0"
+types-PyYAML = "^6.0.0"
 
 [tool.poetry.extras]
 worker-manager = [
