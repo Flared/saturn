@@ -7,10 +7,10 @@ from saturn_engine.utils.options import OptionsSchema
 
 @dataclasses.dataclass
 class Item:
-    id: int
+    id: str
     data: dict[str, object]
 
 
 class Inventory(OptionsSchema):
-    async def next_batch(self, after: Optional[int] = None) -> Iterable[Item]:
+    async def next_batch(self, after: Optional[str] = None) -> Iterable[Item]:
         return []

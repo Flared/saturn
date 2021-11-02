@@ -6,10 +6,10 @@ from . import JobStore
 
 class MemoryJobStore(JobStore):
     def __init__(self, **kwargs: Any) -> None:
-        self.after: Optional[int] = None
+        self.after: Optional[str] = None
 
-    async def load_cursor(self) -> Optional[int]:
+    async def load_cursor(self) -> Optional[str]:
         return self.after
 
-    async def save_cursor(self, *, after: int) -> None:
+    async def save_cursor(self, *, after: str) -> None:
         self.after = after

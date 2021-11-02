@@ -10,10 +10,10 @@ from ..queues import Publisher
 
 
 class JobStore(OptionsSchema):
-    async def load_cursor(self) -> Optional[int]:
+    async def load_cursor(self) -> Optional[str]:
         pass
 
-    async def save_cursor(self, *, after: int) -> None:
+    async def save_cursor(self, *, after: str) -> None:
         pass
 
 
@@ -25,13 +25,11 @@ class Job:
         self.inventory = inventory
         self.publisher = publisher
         self.store = store
-        self.after: Optional[int] = None
+        self.after: Optional[str] = None
 
     async def push_batch(self, items: list[Item]) -> None:
         try:
             for item in items:
-                if self.after is not None and item.id <= self.after:
-                    self.logger.error("Unordered items: %s <= %s", item.id, self.after)
                 self.after = item.id
                 message = TopicMessage(id=str(item.id), args=item.data)
                 await self.publisher.push(message)
