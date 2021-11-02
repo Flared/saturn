@@ -1,5 +1,7 @@
 import asyncio
 import contextlib
+from collections.abc import Coroutine
+from typing import Union
 
 from saturn_engine.utils.log import getLogger
 
@@ -10,11 +12,14 @@ class TaskManager:
         self.tasks: set[asyncio.Task] = set()
         self.tasks_updated = asyncio.Event()
 
-    def add(self, task: asyncio.Task) -> None:
+    def add(self, task: Union[asyncio.Task, Coroutine]) -> asyncio.Task:
+        if isinstance(task, Coroutine):
+            task = asyncio.create_task(task)
         if not isinstance(task, asyncio.Task):
-            raise ValueError("Expected asyncio.Task")
+            raise ValueError("Expected asyncio.Task or Coroutine")
         self.tasks.add(task)
         self.tasks_updated.set()
+        return task
 
     def remove(self, task: asyncio.Task) -> None:
         task.cancel()

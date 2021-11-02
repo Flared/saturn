@@ -1,12 +1,11 @@
 import dataclasses
-from typing import Any
 from typing import ClassVar
 from typing import Optional
 
 
 @dataclasses.dataclass(eq=False)
 class Resource:
-    data: Any
+    id: str
     typename: ClassVar[Optional[str]] = None
 
     @classmethod

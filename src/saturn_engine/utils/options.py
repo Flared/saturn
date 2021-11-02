@@ -1,6 +1,7 @@
 import dataclasses
 import functools
 from abc import abstractmethod
+from functools import cache
 from typing import Any
 from typing import Type
 from typing import TypeVar
@@ -32,3 +33,8 @@ class OptionsSchema:
         options_schema = cls.options_schema(unknown=marshmallow.EXCLUDE)
         options: OptionsSchema.Options = options_schema.load(options_dict)
         return cls(*args, options=options, **kwargs)
+
+
+@cache
+def schema_for(klass: Type[T], **meta: Any) -> marshmallow.Schema:
+    return desert.schema(klass, meta=meta)

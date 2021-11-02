@@ -4,13 +4,12 @@ from functools import partial
 
 from saturn_engine.core import PipelineMessage
 
-from . import BaseExecutor
+from . import Executor
 from .bootstrap import bootstrap_pipeline
 
 
-class ProcessExecutor(BaseExecutor):
+class ProcessExecutor(Executor):
     def __init__(self, concurrency: int = 8) -> None:
-        super().__init__(concurrency=concurrency)
         self.pool_executor = concurrent.futures.ProcessPoolExecutor()
 
     async def process_message(self, message: PipelineMessage) -> None:

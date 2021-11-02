@@ -5,7 +5,9 @@ import signal
 from .broker import Broker
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(
+        level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    )
     logger = logging.getLogger(__name__)
     broker = Broker()
     loop = asyncio.get_event_loop()

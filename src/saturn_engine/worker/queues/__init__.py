@@ -3,9 +3,6 @@ from collections.abc import AsyncGenerator
 from typing import AsyncContextManager
 from typing import TypeVar
 from typing import Union
-from typing import cast
-
-import asyncstdlib as alib
 
 from saturn_engine.core import PipelineMessage
 from saturn_engine.core import QueuePipeline
@@ -36,11 +33,10 @@ class ExecutableQueue:
     async def run(self) -> AsyncGenerator[ExecutableMessage, None]:
         async for message in self.queue.run():
             await self.parkers.wait()
+            context = None
             if isinstance(message, AsyncContextManager):
                 context = message
                 message = await message.__aenter__()
-            else:
-                context = cast(AsyncContextManager, alib.nullcontext())
 
             yield ExecutableMessage(
                 parker=self.parkers,
