@@ -54,7 +54,7 @@ def tests(session: Session) -> None:
     args = session.posargs
     install_project(session)
     install_with_constraints(session, "pytest", "pytest-asyncio", "pytest-icdiff")
-    session.run("pytest", *args)
+    session.run("pytest", "-vv", *args)
 
 
 @nox.session(python=python_all_versions)

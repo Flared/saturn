@@ -14,9 +14,7 @@ from saturn_engine.worker_manager.config.declarative import StaticDefinitions
 
 @pytest.fixture
 def static_definitions() -> Iterator[StaticDefinitions]:
-    new_definitions = StaticDefinitions(
-        inventories=[],
-    )
+    new_definitions = StaticDefinitions()
     with unittest.mock.patch.object(
         Configuration,
         "static_definitions",

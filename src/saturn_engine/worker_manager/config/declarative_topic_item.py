@@ -11,22 +11,22 @@ from .declarative_base import BaseObject
 
 
 @dataclasses.dataclass
-class InventorySpec:
+class TopicSpec:
     type: str
     options: dict[str, Any]
 
 
 @dataclasses.dataclass
-class Inventory(BaseObject):
-    spec: InventorySpec
+class TopicItem(BaseObject):
+    spec: TopicSpec
 
     @classmethod
     @functools.cache
     def schema(cls) -> marshmallow.Schema:
         return desert.schema(cls)
 
-    def to_core_object(self) -> api.InventoryItem:
-        return api.InventoryItem(
+    def to_core_object(self) -> api.TopicItem:
+        return api.TopicItem(
             name=self.metadata.name,
             type=self.spec.type,
             options=self.spec.options,
