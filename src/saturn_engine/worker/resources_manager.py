@@ -8,7 +8,7 @@ from typing import Optional
 
 @dataclasses.dataclass(eq=False)
 class ResourceData:
-    id: str
+    name: str
     type: str
     data: dict[str, object]
 

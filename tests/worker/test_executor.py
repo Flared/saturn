@@ -9,7 +9,7 @@ from saturn_engine.core.message import PipelineMessage
 from saturn_engine.worker.executors import ExecutableMessage
 from saturn_engine.worker.executors import Executor
 from saturn_engine.worker.executors import ExecutorManager
-from saturn_engine.worker.queues import Parkers
+from saturn_engine.worker.parkers import Parkers
 from saturn_engine.worker.resources_manager import ResourceData
 from tests.utils import TimeForwardLoop
 from tests.worker.conftest import FakeResource
@@ -62,10 +62,10 @@ async def test_executor_wait_resources_and_queue(
     executor = FakeExecutor()
     executor_manager = executor_manager_maker(executor=executor, concurrency=1)
     await executor_manager.resources_manager.add(
-        ResourceData(id="r1", type="FakeResource", data={})
+        ResourceData(name="r1", type="FakeResource", data={})
     )
     await executor_manager.resources_manager.add(
-        ResourceData(id="r2", type="FakeResource", data={})
+        ResourceData(name="r2", type="FakeResource", data={})
     )
     parker = Parkers()
     executable_maker = partial(

@@ -4,6 +4,8 @@ from typing import Optional
 
 from saturn_engine.utils.options import OptionsSchema
 
+__all__ = ("Item", "Inventory", "BUILTINS")
+
 
 @dataclasses.dataclass
 class Item:
@@ -14,3 +16,8 @@ class Item:
 class Inventory(OptionsSchema):
     async def next_batch(self, after: Optional[str] = None) -> Iterable[Item]:
         return []
+
+
+from .dummy import DummyInventory
+
+BUILTINS = {"DummyInventory": DummyInventory}

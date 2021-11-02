@@ -12,9 +12,9 @@ from tests.utils import TimeForwardLoop
 async def test_resources_manager_acquire() -> None:
     resources_manager = ResourcesManager()
 
-    r1 = ResourceData(id="r1", type="R1", data={})
-    r2 = ResourceData(id="r2", type="R1", data={})
-    r3 = ResourceData(id="r3", type="R2", data={})
+    r1 = ResourceData(name="r1", type="R1", data={})
+    r2 = ResourceData(name="r2", type="R1", data={})
+    r3 = ResourceData(name="r3", type="R2", data={})
 
     await resources_manager.add(r1)
     await resources_manager.add(r2)
@@ -42,10 +42,10 @@ async def test_resources_manager_acquire() -> None:
 
 @pytest.mark.asyncio
 async def test_resources_manager_acquire_many(event_loop: TimeForwardLoop) -> None:
-    r1 = ResourceData(id="r1", type="R1", data={})
-    r2 = ResourceData(id="r2", type="R2", data={})
-    r3 = ResourceData(id="r3", type="R3", data={})
-    r4 = ResourceData(id="r4", type="R4", data={})
+    r1 = ResourceData(name="r1", type="R1", data={})
+    r2 = ResourceData(name="r2", type="R2", data={})
+    r3 = ResourceData(name="r3", type="R3", data={})
+    r4 = ResourceData(name="r4", type="R4", data={})
 
     resources_manager = ResourcesManager()
 

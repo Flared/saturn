@@ -1,37 +1,25 @@
-from abc import abstractmethod
 from collections.abc import AsyncGenerator
 from typing import AsyncContextManager
-from typing import TypeVar
-from typing import Union
 
 from saturn_engine.core import PipelineMessage
 from saturn_engine.core import QueuePipeline
-from saturn_engine.core import TopicMessage
-from saturn_engine.utils.options import OptionsSchema
 
-from ..executable_message import ExecutableMessage
-from ..parkers import Parkers
-
-T = TypeVar("T")
-
-QueueMessage = Union[AsyncContextManager[TopicMessage], TopicMessage]
-
-
-class TopicReader(OptionsSchema):
-    @abstractmethod
-    async def run(self) -> AsyncGenerator[QueueMessage, None]:
-        for _ in ():
-            yield _
+from .executable_message import ExecutableMessage
+from .parkers import Parkers
+from .topics import Topic
 
 
 class ExecutableQueue:
-    def __init__(self, queue: TopicReader, pipeline: QueuePipeline):
-        self.queue = queue
+    def __init__(
+        self, topic: Topic, pipeline: QueuePipeline, output: dict[str, list[Topic]]
+    ):
+        self.topic = topic
         self.parkers = Parkers()
         self.pipeline = pipeline
+        self.output = output
 
     async def run(self) -> AsyncGenerator[ExecutableMessage, None]:
-        async for message in self.queue.run():
+        async for message in self.topic.run():
             await self.parkers.wait()
             context = None
             if isinstance(message, AsyncContextManager):
@@ -45,11 +33,3 @@ class ExecutableQueue:
                 ),
                 message_context=context,
             )
-
-
-class Publisher(OptionsSchema):
-    def __init__(self, options: object) -> None:
-        pass
-
-    async def push(self, message: TopicMessage) -> None:
-        pass

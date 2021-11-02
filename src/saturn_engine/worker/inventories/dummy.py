@@ -11,7 +11,7 @@ class DummyInventory(Inventory):
     class Options:
         count: int
 
-    def __init__(self, options: Options) -> None:
+    def __init__(self, options: Options, **kwrags: object) -> None:
         self.count = options.count or 1000
 
     async def next_batch(self, after: Optional[str] = None) -> Iterable[Item]:

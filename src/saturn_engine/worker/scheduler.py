@@ -6,6 +6,7 @@ from collections.abc import AsyncIterator
 from typing import Generic
 from typing import TypeVar
 
+from saturn_engine.utils import TasksGroup
 from saturn_engine.utils.log import getLogger
 
 T = TypeVar("T")
@@ -32,12 +33,14 @@ class Scheduler(Generic[T]):
         self.logger = getLogger(__name__, self)
         self.schedule_slots = {}
         self.tasks = {}
+        self.tasks_group = TasksGroup()
 
     def add(self, item: Schedulable[T]) -> None:
         generator = item.iterable.__aiter__()
         task = asyncio.create_task(generator.__anext__())
         self.schedule_slots[item] = ScheduleSlot(task=task, generator=generator)
         self.tasks[task] = item
+        self.tasks_group.add(task)
 
     async def remove(self, item: Schedulable[T]) -> None:
         schedule_slot = self.schedule_slots.pop(item, None)
@@ -48,6 +51,7 @@ class Scheduler(Generic[T]):
     async def close(self) -> None:
         cleanup_tasks = []
 
+        await self.tasks_group.close()
         for item in self.schedule_slots.values():
             cleanup_tasks.append(self.stop_slot(item))
 
@@ -70,14 +74,7 @@ class Scheduler(Generic[T]):
 
     async def run(self) -> AsyncIterator[T]:
         while True:
-            if not self.tasks:
-                await asyncio.sleep(1)
-                continue
-
-            done, pending = await asyncio.wait(
-                self.tasks.keys(), return_when=asyncio.FIRST_COMPLETED
-            )
-
+            done = await self.tasks_group.wait()
             self.logger.debug("task ready: %s", done)
 
             for task in sorted(done, key=self.task_order):
@@ -87,6 +84,7 @@ class Scheduler(Generic[T]):
     async def process_task(self, task: asyncio.Task) -> AsyncIterator[T]:
         item = self.tasks[task]
         del self.tasks[task]
+        self.tasks_group.remove(task)
 
         try:
             # Even if the task finished, if the item was removed we
@@ -108,6 +106,7 @@ class Scheduler(Generic[T]):
             # cancellation. The task is put back in the item for later
             # processing.
             self.tasks[task] = item
+            self.tasks_group.add(task)
             raise
         else:
             # Requeue the __anext__ task to process next item.
@@ -119,6 +118,8 @@ class Scheduler(Generic[T]):
             return
         new_task = asyncio.create_task(schedule_slot.generator.__anext__())
         self.tasks[new_task] = item
+        self.tasks_group.add(new_task)
+
         schedule_slot.task = new_task
         schedule_slot.order += 1
 

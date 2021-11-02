@@ -123,7 +123,7 @@ class WorkManager:
         self, sync_response: SyncResponse
     ) -> ItemsSync[WorkItems]:
         current_items = set(self.worker_items_work.keys())
-        sync_items = {item.id: item for item in sync_response.items}
+        sync_items = {item.name: item for item in sync_response.items}
         sync_items_ids = set(sync_items.keys())
         add = sync_items_ids - current_items
         drop = current_items - sync_items_ids
@@ -135,13 +135,13 @@ class WorkManager:
 
         return ItemsSync(add=list(add_items), drop=drop_items)
 
-    def work_items_by_id(self, id: str) -> WorkItems:
-        return self.worker_items_work.get(id, WorkItems.empty())
+    def work_items_by_name(self, name: str) -> WorkItems:
+        return self.worker_items_work.get(name, WorkItems.empty())
 
     async def build_work_for_worker_items(
         self, items: Iterator[QueueItem]
     ) -> WorkerItemsWork:
-        return {item.id: self.build_work_for_worker_item(item) for item in items}
+        return {item.name: self.build_work_for_worker_item(item) for item in items}
 
     def build_work_for_worker_item(self, item: QueueItem) -> WorkItems:
         try:
@@ -154,7 +154,7 @@ class WorkManager:
         self, sync_response: SyncResponse
     ) -> ItemsSync[ResourceData]:
         current_items = set(self.worker_resources.keys())
-        sync_items = {item.id: item for item in sync_response.resources}
+        sync_items = {item.name: item for item in sync_response.resources}
         sync_items_ids = set(sync_items.keys())
         add = sync_items_ids - current_items
         drop = current_items - sync_items_ids
@@ -168,7 +168,7 @@ class WorkManager:
 
     def build_resource_data(self, item: ResourceItem) -> ResourceData:
         return ResourceData(
-            id=item.id,
+            name=item.name,
             type=item.type,
             data=item.data,
         )

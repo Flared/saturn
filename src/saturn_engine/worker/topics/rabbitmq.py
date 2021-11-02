@@ -1,8 +1,8 @@
 import dataclasses
 import json
+from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from aio_pika import IncomingMessage
 
@@ -10,11 +10,11 @@ from saturn_engine.core import TopicMessage
 from saturn_engine.utils.log import getLogger
 
 from ..context import Context
-from . import QueueMessage
-from . import TopicReader
+from . import Topic
+from . import TopicOutput
 
 
-class RabbitMQQueue(TopicReader):
+class RabbitMQTopic(Topic):
     """A queue that consume message from RabbitMQ"""
 
     @dataclasses.dataclass
@@ -26,7 +26,7 @@ class RabbitMQQueue(TopicReader):
         self.options = options
         self.context = context
 
-    async def run(self) -> AsyncGenerator[QueueMessage, None]:
+    async def run(self) -> AsyncGenerator[TopicOutput, None]:
         self.logger.info("Starting queue %s", self.options.queue_name)
         connection = await self.context.services.rabbitmq.connection
         async with connection.channel() as channel:

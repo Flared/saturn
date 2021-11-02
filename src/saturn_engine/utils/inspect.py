@@ -1,6 +1,7 @@
 import functools
 import inspect
 import sys
+from typing import Any
 from typing import Callable
 from typing import Type
 
@@ -105,7 +106,7 @@ def whichmodule(obj: object, name: str) -> str:
     return "__main__"
 
 
-def import_name(name: str) -> object:
+def import_name(name: str) -> Any:
     module, _, name = name.rpartition(".")
     while module:
         try:
