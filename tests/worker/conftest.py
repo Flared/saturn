@@ -5,18 +5,22 @@ from typing import Optional
 from unittest.mock import Mock
 from unittest.mock import create_autospec
 
+import asyncstdlib as alib
 import pytest
+from pytest_mock import MockerFixture
 
 from saturn_engine.client.worker_manager import WorkerManagerClient
+from saturn_engine.core import PipelineInfo
+from saturn_engine.core import PipelineMessage
+from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import SyncResponse
-from saturn_engine.core.message import Message
 from saturn_engine.worker.broker import Broker
 from saturn_engine.worker.broker import ExecutorInit
 from saturn_engine.worker.broker import WorkManagerInit
 from saturn_engine.worker.context import Context
+from saturn_engine.worker.executable_message import ExecutableMessage
 from saturn_engine.worker.executors import Executor
-from saturn_engine.worker.queues import Parkers
-from saturn_engine.worker.queues import Processable
+from saturn_engine.worker.parkers import Parkers
 from saturn_engine.worker.queues.memory import reset as reset_memory_queues
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.work_manager import WorkManager
@@ -72,10 +76,36 @@ async def broker(
     await _broker.close()
 
 
+def pipeline() -> None:
+    ...
+
+
 @pytest.fixture
-def processable_maker() -> Callable[..., Processable]:
-    def maker(body: str = "test-body", parker: Optional[Parkers] = None) -> Processable:
-        return Processable(Message(body=body), parker=parker)
+def fake_pipeline(mocker: MockerFixture) -> Iterator[Callable]:
+    mock = mocker.patch(__name__ + ".pipeline", autospec=True)
+    yield mock
+
+
+@pytest.fixture
+def fake_pipeline_info(fake_pipeline: Callable) -> PipelineInfo:
+    return PipelineInfo.from_pipeline(fake_pipeline)
+
+
+@pytest.fixture
+def executable_maker(
+    fake_pipeline_info: PipelineInfo,
+) -> Callable[..., ExecutableMessage]:
+    def maker(
+        args: Optional[dict[str, object]] = None, parker: Optional[Parkers] = None
+    ) -> ExecutableMessage:
+        return ExecutableMessage(
+            message=PipelineMessage(
+                info=fake_pipeline_info,
+                message=TopicMessage(args=args or {}),
+            ),
+            message_context=alib.nullcontext(),
+            parker=parker or Parkers(),
+        )
 
     return maker
 

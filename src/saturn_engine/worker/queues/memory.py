@@ -1,14 +1,15 @@
 import asyncio
 import dataclasses
 from collections.abc import AsyncGenerator
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Any
+from typing import AsyncContextManager
 
-from saturn_engine.core import Message
+from saturn_engine.core import TopicMessage
 
-from . import AckProcessable
-from . import Processable
 from . import Publisher
-from . import Queue
+from . import TopicReader
 
 _memory_queues: dict[str, asyncio.Queue] = {}
 
@@ -18,17 +19,26 @@ class MemoryOptions:
     id: str
 
 
-class MemoryQueue(Queue):
+class MemoryQueue(TopicReader):
     Options = MemoryOptions
 
     def __init__(self, options: MemoryOptions, **kwargs: Any):
         self.options = options
 
-    async def run(self) -> AsyncGenerator[Processable, None]:
+    async def run(self) -> AsyncGenerator[AsyncContextManager[TopicMessage], None]:
         queue = get_queue(self.options.id)
         while True:
             message = await queue.get()
-            yield AckProcessable(message, ack=queue.task_done)
+            yield self.message_context(message, queue=queue)
+
+    @asynccontextmanager
+    async def message_context(
+        self, message: TopicMessage, queue: asyncio.Queue
+    ) -> AsyncIterator[TopicMessage]:
+        try:
+            yield message
+        finally:
+            queue.task_done()
 
 
 class MemoryPublisher(Publisher):
@@ -37,7 +47,7 @@ class MemoryPublisher(Publisher):
     def __init__(self, options: MemoryOptions, **kwargs: Any):
         self.options = options
 
-    async def push(self, message: Message) -> None:
+    async def push(self, message: TopicMessage) -> None:
         queue = get_queue(self.options.id)
         await queue.put(message)
 

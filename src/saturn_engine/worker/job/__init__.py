@@ -1,6 +1,6 @@
 from typing import Optional
 
-from saturn_engine.core import Message
+from saturn_engine.core import TopicMessage
 from saturn_engine.utils.log import getLogger
 from saturn_engine.utils.options import OptionsSchema
 
@@ -33,7 +33,7 @@ class Job:
                 if self.after is not None and item.id <= self.after:
                     self.logger.error("Unordered items: %s <= %s", item.id, self.after)
                 self.after = item.id
-                message = Message(body=str(item.data))
+                message = TopicMessage(id=str(item.id), args=item.data)
                 await self.publisher.push(message)
         finally:
             if self.after is not None:

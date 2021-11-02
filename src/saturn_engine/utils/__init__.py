@@ -1,10 +1,12 @@
 import enum
 import threading
+from collections.abc import AsyncGenerator
+from collections.abc import AsyncIterator
+from collections.abc import Iterable
+from collections.abc import Iterator
 from functools import wraps
 from typing import Any
 from typing import Callable
-from typing import Iterable
-from typing import Iterator
 from typing import TypeVar
 from typing import Union
 
@@ -122,3 +124,11 @@ def has_own_attr(inst: object, attr: str) -> bool:
         return True
     except AttributeError:
         return False
+
+
+async def aiter2agen(iterator: AsyncIterator[T]) -> AsyncGenerator[T, None]:
+    """
+    Convert an async iterator into an async generator.
+    """
+    async for x in iterator:
+        yield x

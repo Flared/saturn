@@ -24,7 +24,7 @@ def main():
                 routing_key=queue_name,
             )
 
-    asyncio.run(main())
+    asyncio.run(main_task())
 
 
 if __name__ == "__main__":

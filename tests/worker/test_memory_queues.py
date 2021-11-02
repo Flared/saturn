@@ -1,7 +1,7 @@
 import asyncstdlib as alib
 import pytest
 
-from saturn_engine.core import Message
+from saturn_engine.core import TopicMessage
 from saturn_engine.worker.queues.memory import MemoryOptions
 from saturn_engine.worker.queues.memory import MemoryPublisher
 from saturn_engine.worker.queues.memory import MemoryQueue
@@ -17,17 +17,17 @@ async def test_memory_queues() -> None:
 
     queue1generator = queue1.run()
     for i in range(10):
-        await publisher1.push(Message(body=f"q1-{i}"))
-        await publisher2.push(Message(body=f"q2-{i}"))
+        await publisher1.push(TopicMessage(args={"id": i}))
+        await publisher2.push(TopicMessage(args={"id": i}))
         processable = await alib.anext(queue1generator)
-        async with processable.process() as message:
-            assert message.body == f"q1-{i}"
+        async with processable as message:
+            assert message.args["id"] == i
 
     queue2generator = queue2.run()
     for i in range(10):
         processable = await alib.anext(queue2generator)
-        async with processable.process() as message:
-            assert message.body == f"q2-{i}"
+        async with processable as message:
+            assert message.args["id"] == i
 
     await queue1generator.aclose()
     await queue2generator.aclose()

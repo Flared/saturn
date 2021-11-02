@@ -1,10 +1,11 @@
 import asyncio
+import sys
 from abc import abstractmethod
 
-from saturn_engine.core.message import Message
+from saturn_engine.core import PipelineMessage
 from saturn_engine.utils.log import getLogger
 
-from ..queues import Processable
+from ..executable_message import ExecutableMessage
 
 
 class Executor:
@@ -13,7 +14,7 @@ class Executor:
         ...
 
     @abstractmethod
-    async def submit(self, processable: Processable) -> None:
+    async def submit(self, processable: ExecutableMessage) -> None:
         ...
 
     @abstractmethod
@@ -25,7 +26,7 @@ class BaseExecutor(Executor):
     def __init__(self, concurrency: int = 8) -> None:
         self.logger = getLogger(__name__, self)
         self.concurrency = concurrency
-        self.queue: asyncio.Queue[Processable] = asyncio.Queue(maxsize=1)
+        self.queue: asyncio.Queue[ExecutableMessage] = asyncio.Queue(maxsize=1)
         self.submit_tasks: set[asyncio.Task] = set()
         self.processing_tasks: set[asyncio.Task] = set()
 
@@ -37,15 +38,15 @@ class BaseExecutor(Executor):
         while True:
             processable = await self.queue.get()
             try:
-                async with processable.process() as message:
-                    await self.process_message(message)
+                await self.process_message(processable.message)
             except Exception:
                 self.logger.exception("Failed to process: %s", processable)
             finally:
+                await processable.message_context.__aexit__(*sys.exc_info())
                 await self.release_resources(processable)
                 self.queue.task_done()
 
-    async def submit(self, processable: Processable) -> None:
+    async def submit(self, processable: ExecutableMessage) -> None:
         # Try first to check if we have the resources available so we can
         # then check if the executor queue is ready. That way, the scheduler
         # will pause until the executor is free again.
@@ -59,13 +60,17 @@ class BaseExecutor(Executor):
             # create a background task to wait on resources.
             self.submit_tasks.add(asyncio.create_task(self.delayed_submit(processable)))
 
-    async def acquire_resources(self, processable: Processable, *, wait: bool) -> bool:
+    async def acquire_resources(
+        self, processable: ExecutableMessage, *, wait: bool
+    ) -> bool:
+        missing_resources = processable.message.missing_resources
+        self.logger.debug("locking resources: %s", missing_resources)
         return True
 
-    async def release_resources(self, processable: Processable) -> None:
+    async def release_resources(self, processable: ExecutableMessage) -> None:
         return None
 
-    async def delayed_submit(self, processable: Processable) -> None:
+    async def delayed_submit(self, processable: ExecutableMessage) -> None:
         """Submit a pipeline after waiting to acquire its resources"""
         await self.acquire_resources(processable, wait=True)
         await processable.unpark()
@@ -79,5 +84,5 @@ class BaseExecutor(Executor):
             task.cancel()
 
     @abstractmethod
-    async def process_message(self, message: Message) -> None:
+    async def process_message(self, message: PipelineMessage) -> None:
         ...

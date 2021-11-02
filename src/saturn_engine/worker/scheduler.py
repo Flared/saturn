@@ -3,74 +3,79 @@ import contextlib
 import dataclasses
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
+from typing import Generic
+from typing import TypeVar
 
 from saturn_engine.utils.log import getLogger
 
-from .queues import BlockingQueue
-from .queues import Processable
-from .queues import Queue
+T = TypeVar("T")
+
+
+@dataclasses.dataclass(eq=False)
+class Schedulable(Generic[T]):
+    iterable: AsyncGenerator[T, None]
+    # property for scheduling such as "weight" or priority would come here.
 
 
 @dataclasses.dataclass
-class QueueSlot:
-    generator: AsyncGenerator[Processable, None]
+class ScheduleSlot(Generic[T]):
+    generator: AsyncGenerator[T, None]
     task: asyncio.Task
     order: int = 0
 
 
-class Scheduler:
-    queues: dict[Queue, QueueSlot]
-    tasks_queues: dict[asyncio.Task, BlockingQueue]
+class Scheduler(Generic[T]):
+    schedule_slots: dict[Schedulable[T], ScheduleSlot[T]]
+    tasks: dict[asyncio.Task, Schedulable[T]]
 
     def __init__(self) -> None:
         self.logger = getLogger(__name__, self)
-        self.queues = {}
-        self.tasks_queues = {}
+        self.schedule_slots = {}
+        self.tasks = {}
 
-    def add(self, queue: Queue) -> None:
-        task_queue = BlockingQueue(queue)
-        generator = task_queue.run().__aiter__()
+    def add(self, item: Schedulable[T]) -> None:
+        generator = item.iterable.__aiter__()
         task = asyncio.create_task(generator.__anext__())
-        self.queues[queue] = QueueSlot(task=task, generator=generator)
-        self.tasks_queues[task] = task_queue
+        self.schedule_slots[item] = ScheduleSlot(task=task, generator=generator)
+        self.tasks[task] = item
 
-    async def remove(self, queue: Queue) -> None:
-        queue_slot = self.queues.pop(queue, None)
-        if queue_slot is None:
+    async def remove(self, item: Schedulable[T]) -> None:
+        schedule_slot = self.schedule_slots.pop(item, None)
+        if schedule_slot is None:
             return
-        await self.stop_queue(queue_slot)
+        await self.stop_slot(schedule_slot)
 
     async def close(self) -> None:
         cleanup_tasks = []
 
-        for queue in self.queues.values():
-            cleanup_tasks.append(self.stop_queue(queue))
+        for item in self.schedule_slots.values():
+            cleanup_tasks.append(self.stop_slot(item))
 
         await asyncio.gather(*cleanup_tasks)
-        self.queues.clear()
-        self.tasks_queues.clear()
+        self.schedule_slots.clear()
+        self.tasks.clear()
 
-    async def stop_queue(self, queue_slot: QueueSlot) -> None:
+    async def stop_slot(self, schedule_slot: ScheduleSlot[T]) -> None:
         try:
-            queue_slot.task.cancel()
+            schedule_slot.task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
-                await queue_slot.task
+                await schedule_slot.task
         except Exception:
-            self.logger.exception("Failed to cancel queue: %s", queue_slot)
+            self.logger.exception("Failed to cancel item: %s", schedule_slot)
 
         try:
-            await queue_slot.generator.aclose()
+            await schedule_slot.generator.aclose()
         except Exception:
-            self.logger.exception("Failed to close queue: %s", queue_slot)
+            self.logger.exception("Failed to close item: %s", schedule_slot)
 
-    async def run(self) -> AsyncIterator[Processable]:
+    async def run(self) -> AsyncIterator[T]:
         while True:
-            if not self.tasks_queues:
+            if not self.tasks:
                 await asyncio.sleep(1)
                 continue
 
             done, pending = await asyncio.wait(
-                self.tasks_queues.keys(), return_when=asyncio.FIRST_COMPLETED
+                self.tasks.keys(), return_when=asyncio.FIRST_COMPLETED
             )
 
             self.logger.debug("task ready: %s", done)
@@ -79,48 +84,48 @@ class Scheduler:
                 async for item in self.process_task(task):
                     yield item
 
-    async def process_task(self, task: asyncio.Task) -> AsyncIterator[Processable]:
-        queue = self.tasks_queues[task]
-        del self.tasks_queues[task]
+    async def process_task(self, task: asyncio.Task) -> AsyncIterator[T]:
+        item = self.tasks[task]
+        del self.tasks[task]
 
         try:
-            # Even if the task finished, if the queue was removed we
+            # Even if the task finished, if the item was removed we
             # discard the item.
-            if task.cancelled() or queue.queue not in self.queues:
+            if task.cancelled() or item not in self.schedule_slots:
                 return
 
             exception = task.exception()
             if exception is None:
                 yield task.result()
             elif isinstance(exception, StopAsyncIteration):
-                await self.remove(queue.queue)
+                await self.remove(item)
             elif isinstance(exception, asyncio.CancelledError):
                 pass
             elif exception:
-                self.logger.error("Failed to iter queue item", exc_info=exception)
+                self.logger.error("Failed to iter item item", exc_info=exception)
         except BaseException:
             # This is an unexpected error, likely a closed generator or
-            # cancellation. The task is put back in the queue for later
+            # cancellation. The task is put back in the item for later
             # processing.
-            self.tasks_queues[task] = queue
+            self.tasks[task] = item
             raise
         else:
             # Requeue the __anext__ task to process next item.
-            self._requeue_queue_task(queue)
+            self._requeue_task(item)
 
-    def _requeue_queue_task(self, queue: BlockingQueue) -> None:
-        queue_slot = self.queues.get(queue.queue)
-        if queue_slot is None:
+    def _requeue_task(self, item: Schedulable[T]) -> None:
+        schedule_slot = self.schedule_slots.get(item)
+        if schedule_slot is None:
             return
-        new_task = asyncio.create_task(queue_slot.generator.__anext__())
-        self.tasks_queues[new_task] = queue
-        queue_slot.task = new_task
-        queue_slot.order += 1
+        new_task = asyncio.create_task(schedule_slot.generator.__anext__())
+        self.tasks[new_task] = item
+        schedule_slot.task = new_task
+        schedule_slot.order += 1
 
     def task_order(self, task: asyncio.Task) -> int:
-        queue = self.tasks_queues[task]
-        queue_slot = self.queues.get(queue.queue)
-        if queue_slot is None:
+        item = self.tasks[task]
+        schedule_slot = self.schedule_slots.get(item)
+        if schedule_slot is None:
             # Maximum priority so we clean the task as soon as possible.
             return -1
-        return queue_slot.order
+        return schedule_slot.order

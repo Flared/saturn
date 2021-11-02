@@ -3,44 +3,40 @@ import dataclasses
 import functools
 import uuid
 from dataclasses import field
-from typing import Protocol
 from typing import Type
-from typing import TypeVar
+from typing import cast
 
 from saturn_engine.core.api import DummyItem
 from saturn_engine.core.api import DummyJob
 from saturn_engine.core.api import MemoryItem
 from saturn_engine.core.api import QueueItem
-from saturn_engine.utils.options import OptionsSchema
 
 from .context import Context
 from .job import Job
 from .job.memory import MemoryJobStore
+from .queues import ExecutableQueue
+from .queues import TopicReader
 from .queues.dummy import DummyQueue
 from .queues.memory import MemoryPublisher
 from .queues.memory import MemoryQueue
 from .queues.rabbitmq import RabbitMQQueue
+from .work import SchedulableQueue
 from .work import WorkItems
-
-OptionsSchemaT = TypeVar("OptionsSchemaT", bound=OptionsSchema)
-
-
-class ItemProtocol(Protocol):
-    id: str
-    options: dict
 
 
 @dataclasses.dataclass
 class GeneratedItem:
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     options: dict = field(default_factory=dict)
+    pipeline: dict = field(default_factory=dict)
 
 
 def init_with_options(
-    cls: Type[OptionsSchemaT], item: ItemProtocol, *args: object, **kwargs: object
-) -> OptionsSchemaT:
+    cls: Type[TopicReader], item: QueueItem, *args: object, **kwargs: object
+) -> SchedulableQueue:
     options = {**{"id": item.id}, **item.options}
-    return cls.from_options(options, *args, **kwargs)
+    queue = cls.from_options(options, *args, **kwargs)
+    return SchedulableQueue(ExecutableQueue(queue=queue, pipeline=item.pipeline))
 
 
 @functools.singledispatch
@@ -68,10 +64,12 @@ def build_dummy(queue_item: DummyItem, *, context: Context) -> WorkItems:
     tasks_count = queue_item.options.get("tasks_count", 0)
     return WorkItems(
         queues=[
-            init_with_options(DummyQueue, GeneratedItem()) for i in range(queues_count)
+            init_with_options(DummyQueue, cast(QueueItem, GeneratedItem()))
+            for i in range(queues_count)
         ],
         tasks=[
-            init_with_options(DummyQueue, GeneratedItem()) for i in range(tasks_count)
+            init_with_options(DummyQueue, cast(QueueItem, GeneratedItem()))
+            for i in range(tasks_count)
         ],
     )
 
@@ -84,8 +82,13 @@ def build_job(job_item: DummyJob, *, context: Context) -> WorkItems:
         context=context,
     )
     publisher = MemoryPublisher(MemoryPublisher.Options(id=job_item.id))
-    queue = MemoryQueue(MemoryQueue.Options(id=job_item.id))
+    queue = ExecutableQueue(
+        queue=MemoryQueue(MemoryQueue.Options(id=job_item.id)),
+        pipeline=job_item.pipeline,
+    )
     store = MemoryJobStore()
     job = Job(inventory=inventory, publisher=publisher, store=store)
 
-    return WorkItems(queues=[queue], tasks=[asyncio.create_task(job.run())])
+    return WorkItems(
+        queues=[SchedulableQueue(queue)], tasks=[asyncio.create_task(job.run())]
+    )

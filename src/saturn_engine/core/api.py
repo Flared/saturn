@@ -1,11 +1,13 @@
 import dataclasses
 
+from saturn_engine.core import PipelineInfo  # noqa: F401  # Reexport for public API
+from saturn_engine.core import QueuePipeline
+
 
 @dataclasses.dataclass
 class QueueItem:
     id: str
-    pipeline: str
-    ressources: list[str]
+    pipeline: QueuePipeline
     options: dict
 
 
