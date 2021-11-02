@@ -2,6 +2,7 @@ import asyncio
 from abc import abstractmethod
 
 from saturn_engine.core import PipelineMessage
+from saturn_engine.core import PipelineOutput
 from saturn_engine.utils.log import getLogger
 
 from ..executable_message import ExecutableMessage
@@ -11,7 +12,7 @@ from ..resources_manager import ResourceUnavailable
 
 class Executor:
     @abstractmethod
-    async def process_message(self, message: PipelineMessage) -> None:
+    async def process_message(self, message: PipelineMessage) -> list[PipelineOutput]:
         ...
 
     async def close(self) -> None:
@@ -49,7 +50,10 @@ class ExecutorManager:
                     self.logger.debug(
                         "Processing message in executor: %s", processable.message
                     )
-                    await self.executor.process_message(processable.message)
+                    output = await self.executor.process_message(processable.message)
+                    asyncio.create_task(
+                        self.consume_output(processable=processable, output=output)
+                    )
             except Exception:
                 self.logger.exception("Failed to process: %s", processable)
 
@@ -93,14 +97,33 @@ class ExecutorManager:
 
     async def delayed_submit(self, processable: ExecutableMessage) -> None:
         """Submit a pipeline after waiting to acquire its resources"""
-        await self.acquire_resources(processable, wait=True)
-        await processable.unpark()
+        try:
+            await self.acquire_resources(processable, wait=True)
+        finally:
+            await processable.unpark()
+
         self.logger.debug(
             "Sending processable to queue: %s, blocking=%s",
             processable,
             self.queue.qsize(),
         )
         await self.queue.put(processable)
+
+    async def consume_output(
+        self, *, processable: ExecutableMessage, output: list[PipelineOutput]
+    ) -> None:
+        try:
+            for item in output:
+                topics = processable.output.get(item.channel, [])
+                for topic in topics:
+                    if topic is None:
+                        continue
+                    if await topic.publish(item.message, wait=False):
+                        continue
+                    processable.park()
+                    await topic.publish(item.message, wait=True)
+        finally:
+            await processable.unpark()
 
     async def close(self) -> None:
         for task in self.submit_tasks:

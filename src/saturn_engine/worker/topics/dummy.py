@@ -26,3 +26,7 @@ class DummyTopic(Topic):
             await asyncio.sleep(self.options.sleep_time)
             self.logger.info("get/after_sleep [q=%s]", self.options.name)
             yield TopicMessage(args={"msg": f"hello - {self.options.name}"})
+
+    async def publish(self, message: TopicMessage, wait: bool) -> bool:
+        self.logger.info("publish: %s", message)
+        return True

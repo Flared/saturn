@@ -36,3 +36,9 @@ class PipelineMessage:
         PipelineInfo.instancify_args(self.message.args, pipeline=pipeline)
 
         return pipeline(**self.message.args)
+
+
+@dataclasses.dataclass
+class PipelineOutput:
+    channel: str
+    message: TopicMessage
