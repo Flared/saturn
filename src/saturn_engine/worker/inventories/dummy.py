@@ -14,9 +14,9 @@ class DummyInventory(Inventory):
     def __init__(self, options: Options) -> None:
         self.count = options.count or 1000
 
-    async def next_batch(self, after: Optional[int] = None) -> Iterable[Item]:
-        n = after + 1 if after is not None else 0
+    async def next_batch(self, after: Optional[str] = None) -> Iterable[Item]:
+        n = int(after) + 1 if after is not None else 0
         n_end = min(n + 100, self.count)
         if n_end == n:
             return []
-        return [Item(id=i, data={"n": i}) for i in range(n, n_end)]
+        return [Item(id=str(i), data={"n": i}) for i in range(n, n_end)]
