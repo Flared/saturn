@@ -11,8 +11,11 @@ from typing import TypeVar
 
 from saturn_engine.client.worker_manager import QueueItem
 from saturn_engine.client.worker_manager import WorkerManagerClient
+from saturn_engine.core.api import ResourceItem
+from saturn_engine.core.api import SyncResponse
 from saturn_engine.utils import flatten
 from saturn_engine.utils.log import getLogger
+from saturn_engine.worker.resources_manager import ResourceData
 
 from . import work_factory
 from .context import Context
@@ -37,12 +40,14 @@ class ItemsSync(Generic[T]):
 class WorkSync:
     queues: ItemsSync[SchedulableQueue]
     tasks: ItemsSync[Task]
+    resources: ItemsSync[ResourceData]
 
     @classmethod
-    def from_work_items(
+    def from_sync(
         cls: Type["WorkSync"],
         items_added: Iterable[WorkItems],
         items_dropped: Iterable[WorkItems],
+        resources_sync: ItemsSync[ResourceData],
     ) -> "WorkSync":
         queues_added: list[SchedulableQueue] = []
         tasks_added: list[Task] = []
@@ -63,6 +68,7 @@ class WorkSync:
         return cls(
             queues=ItemsSync(add=queues_added, drop=queues_drop),
             tasks=ItemsSync(add=tasks_added, drop=tasks_drop),
+            resources=resources_sync,
         )
 
     @classmethod
@@ -70,6 +76,7 @@ class WorkSync:
         return cls(
             queues=ItemsSync.empty(),
             tasks=ItemsSync.empty(),
+            resources=ItemsSync.empty(),
         )
 
 
@@ -79,6 +86,7 @@ WorkerItemsWork = dict[str, WorkItems]
 class WorkManager:
     client: WorkerManagerClient
     worker_items_work: WorkerItemsWork
+    worker_resources: dict[str, ResourceData]
     last_sync_at: Optional[datetime]
 
     def __init__(
@@ -87,6 +95,7 @@ class WorkManager:
         self.logger = getLogger(__name__, self)
         self.client = client or WorkerManagerClient()
         self.worker_items_work = {}
+        self.worker_resources = {}
         self.last_sync_at = None
         self.sync_period = timedelta(seconds=60)
         self.context = context
@@ -101,6 +110,18 @@ class WorkManager:
         sync_response = await self.client.sync()
         self.last_sync_at = datetime.now()
 
+        work_items = await self.parse_work_items(sync_response)
+        resources_sync = await self.parse_resources(sync_response)
+
+        return WorkSync.from_sync(
+            items_added=work_items.add,
+            items_dropped=work_items.drop,
+            resources_sync=resources_sync,
+        )
+
+    async def parse_work_items(
+        self, sync_response: SyncResponse
+    ) -> ItemsSync[WorkItems]:
         current_items = set(self.worker_items_work.keys())
         sync_items = {item.id: item for item in sync_response.items}
         sync_items_ids = set(sync_items.keys())
@@ -112,7 +133,7 @@ class WorkManager:
         add_items = added_items.values()
         drop_items = [self.worker_items_work.pop(k) for k in drop]
 
-        return WorkSync.from_work_items(add_items, drop_items)
+        return ItemsSync(add=list(add_items), drop=drop_items)
 
     def work_items_by_id(self, id: str) -> WorkItems:
         return self.worker_items_work.get(id, WorkItems.empty())
@@ -126,5 +147,28 @@ class WorkManager:
         try:
             return work_factory.build(item, context=self.context)
         except Exception:
-            self.logger.exception("Failed to build queues for %s", item)
+            self.logger.exception("Failed to build item for %s", item)
             return WorkItems.empty()
+
+    async def parse_resources(
+        self, sync_response: SyncResponse
+    ) -> ItemsSync[ResourceData]:
+        current_items = set(self.worker_resources.keys())
+        sync_items = {item.id: item for item in sync_response.resources}
+        sync_items_ids = set(sync_items.keys())
+        add = sync_items_ids - current_items
+        drop = current_items - sync_items_ids
+
+        added_items = {i: self.build_resource_data(sync_items[i]) for i in add}
+        self.worker_resources.update(added_items)
+        add_items = list(added_items.values())
+        drop_items = [self.worker_resources.pop(k) for k in drop]
+
+        return ItemsSync(add=add_items, drop=drop_items)
+
+    def build_resource_data(self, item: ResourceItem) -> ResourceData:
+        return ResourceData(
+            id=item.id,
+            type=item.type,
+            data=item.data,
+        )

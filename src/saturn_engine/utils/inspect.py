@@ -1,3 +1,4 @@
+import functools
 import inspect
 import sys
 from typing import Callable
@@ -115,3 +116,10 @@ def import_name(name: str) -> object:
             module, _, name = module.rpartition(".")
             name += "." + prev_name
     raise ModuleNotFoundError(name)
+
+
+@functools.cache
+def signature(func: Callable) -> inspect.Signature:
+    _signature = inspect.signature(func)
+    _signature = eval_annotations(func, _signature)
+    return _signature

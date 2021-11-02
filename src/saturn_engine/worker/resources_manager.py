@@ -1,9 +1,16 @@
 import asyncio
 import contextlib
+import dataclasses
 from collections import defaultdict
+from collections.abc import Iterable
 from typing import Optional
 
-from saturn_engine.core import Resource
+
+@dataclasses.dataclass(eq=False)
+class ResourceData:
+    id: str
+    type: str
+    data: dict[str, object]
 
 
 class ResourceUnavailable(Exception):
@@ -11,17 +18,17 @@ class ResourceUnavailable(Exception):
 
 
 class ResourceContext:
-    def __init__(self, resource: Resource, manager: "ExclusiveResources") -> None:
-        self.resource: Optional[Resource] = resource
+    def __init__(self, resource: ResourceData, manager: "ExclusiveResources") -> None:
+        self.resource: Optional[ResourceData] = resource
         self.manager = manager
 
     async def release(self) -> None:
         # Add the resource back to the manager.
         if self.resource:
-            await self.manager.add(self.resource)
+            await self.manager.release(self.resource)
         self.resource = None
 
-    async def __aenter__(self) -> Resource:
+    async def __aenter__(self) -> ResourceData:
         if self.resource is None:
             raise ValueError("Cannot enter a released context")
         return self.resource
@@ -32,7 +39,7 @@ class ResourceContext:
 
 class ResourcesContext:
     def __init__(
-        self, resources: dict[str, Resource], exit_stack: contextlib.AsyncExitStack
+        self, resources: dict[str, ResourceData], exit_stack: contextlib.AsyncExitStack
     ) -> None:
         self.resources = resources
         self.exit_stack = exit_stack
@@ -41,7 +48,7 @@ class ResourcesContext:
         # Add the resource back to the manager.
         await self.exit_stack.aclose()
 
-    async def __aenter__(self) -> dict[str, Resource]:
+    async def __aenter__(self) -> dict[str, ResourceData]:
         return self.resources
 
     async def __aexit__(self, *exc: object) -> None:
@@ -50,7 +57,8 @@ class ResourcesContext:
 
 class ExclusiveResources:
     def __init__(self) -> None:
-        self.resources: set[Resource] = set()
+        self.availables: set[ResourceData] = set()
+        self.used: set[ResourceData] = set()
         self.condition = asyncio.Condition(asyncio.Lock())
 
     async def acquire(self, *, wait: bool = True) -> ResourceContext:
@@ -66,18 +74,31 @@ class ExclusiveResources:
             assert resource is not None  # noqa: S101
             return ResourceContext(resource, self)
 
-    async def add(self, resource: Resource) -> None:
-        if resource in self.resources:
+    async def add(self, resource: ResourceData) -> None:
+        if resource in self.availables or resource in self.used:
             raise ValueError("Cannot add a resource twice")
 
         async with self.condition:
-            self.resources.add(resource)
+            self.availables.add(resource)
             self.condition.notify()
 
-    def try_acquire(self) -> Optional[Resource]:
-        if self.resources:
-            return self.resources.pop()
+    async def remove(self, resource: ResourceData) -> None:
+        self.availables.discard(resource)
+        self.used.discard(resource)
+
+    def try_acquire(self) -> Optional[ResourceData]:
+        if self.availables:
+            resource = self.availables.pop()
+            self.used.add(resource)
+            return resource
         return None
+
+    async def release(self, resource: ResourceData) -> None:
+        if resource in self.used:
+            async with self.condition:
+                self.used.remove(resource)
+                self.availables.add(resource)
+                self.condition.notify()
 
 
 class ResourcesManager:
@@ -88,7 +109,7 @@ class ResourcesManager:
         return await self.resources[resource_type].acquire(wait=wait)
 
     async def acquire_many(
-        self, resource_types: list[str], wait: bool = True
+        self, resource_types: Iterable[str], wait: bool = True
     ) -> ResourcesContext:
         # Ensure we lock in sorted order to avoid deadlock.
         sorted_types = sorted(resource_types)
@@ -104,5 +125,11 @@ class ResourcesManager:
             stack = stack.pop_all()
         return ResourcesContext(resources, stack)
 
-    async def add(self, resource_type: str, resource: Resource) -> None:
-        await self.resources[resource_type].add(resource)
+    async def release(self, resource: ResourceData) -> None:
+        await self.resources[resource.type].release(resource)
+
+    async def add(self, resource: ResourceData) -> None:
+        await self.resources[resource.type].add(resource)
+
+    def remove(self, resource: ResourceData) -> None:
+        self.resources[resource.type].remove(resource)

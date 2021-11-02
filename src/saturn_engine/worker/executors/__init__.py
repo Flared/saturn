@@ -1,56 +1,68 @@
 import asyncio
-import sys
 from abc import abstractmethod
 
 from saturn_engine.core import PipelineMessage
 from saturn_engine.utils.log import getLogger
 
 from ..executable_message import ExecutableMessage
+from ..resources_manager import ResourcesManager
+from ..resources_manager import ResourceUnavailable
 
 
 class Executor:
     @abstractmethod
-    async def run(self) -> None:
+    async def process_message(self, message: PipelineMessage) -> None:
         ...
 
-    @abstractmethod
-    async def submit(self, processable: ExecutableMessage) -> None:
-        ...
-
-    @abstractmethod
     async def close(self) -> None:
-        ...
+        pass
 
 
-class BaseExecutor(Executor):
-    def __init__(self, concurrency: int = 8) -> None:
+class ExecutorManager:
+    def __init__(
+        self,
+        resources_manager: ResourcesManager,
+        executor: Executor,
+        concurrency: int = 8,
+    ) -> None:
         self.logger = getLogger(__name__, self)
         self.concurrency = concurrency
         self.queue: asyncio.Queue[ExecutableMessage] = asyncio.Queue(maxsize=1)
         self.submit_tasks: set[asyncio.Task] = set()
         self.processing_tasks: set[asyncio.Task] = set()
+        self.message_executor = executor
+        self.resources_manager = resources_manager
+        self.executor = executor
 
     def start(self) -> None:
         for _ in range(self.concurrency):
-            self.processing_tasks.add(asyncio.create_task(self.run()))
+            self.logger.debug("Spawning new queue task")
+            self.processing_tasks.add(asyncio.create_task(self.run_queue()))
 
-    async def run(self) -> None:
+    async def run_queue(self) -> None:
         while True:
             processable = await self.queue.get()
+            processable.context.callback(self.queue.task_done)
+
             try:
-                await self.process_message(processable.message)
+                async with processable.context:
+                    self.logger.debug(
+                        "Processing message in executor: %s", processable.message
+                    )
+                    await self.executor.process_message(processable.message)
             except Exception:
                 self.logger.exception("Failed to process: %s", processable)
-            finally:
-                await processable.message_context.__aexit__(*sys.exc_info())
-                await self.release_resources(processable)
-                self.queue.task_done()
 
     async def submit(self, processable: ExecutableMessage) -> None:
         # Try first to check if we have the resources available so we can
         # then check if the executor queue is ready. That way, the scheduler
         # will pause until the executor is free again.
         if await self.acquire_resources(processable, wait=False):
+            self.logger.debug(
+                "Sending processable to queue: %s, blocking=%s",
+                processable,
+                self.queue.qsize(),
+            )
             await self.queue.put(processable)
         else:
             # Park the queue from which the processable comes from.
@@ -64,16 +76,30 @@ class BaseExecutor(Executor):
         self, processable: ExecutableMessage, *, wait: bool
     ) -> bool:
         missing_resources = processable.message.missing_resources
-        self.logger.debug("locking resources: %s", missing_resources)
-        return True
+        if not missing_resources:
+            return True
 
-    async def release_resources(self, processable: ExecutableMessage) -> None:
-        return None
+        self.logger.debug("locking resources: %s", missing_resources)
+        try:
+            resources_context = await self.resources_manager.acquire_many(
+                missing_resources, wait=wait
+            )
+        except ResourceUnavailable:
+            return False
+
+        resources = await processable.attach_resources(resources_context)
+        self.logger.debug("locked resources: %s", resources)
+        return True
 
     async def delayed_submit(self, processable: ExecutableMessage) -> None:
         """Submit a pipeline after waiting to acquire its resources"""
         await self.acquire_resources(processable, wait=True)
         await processable.unpark()
+        self.logger.debug(
+            "Sending processable to queue: %s, blocking=%s",
+            processable,
+            self.queue.qsize(),
+        )
         await self.queue.put(processable)
 
     async def close(self) -> None:
@@ -82,7 +108,3 @@ class BaseExecutor(Executor):
 
         for task in self.processing_tasks:
             task.cancel()
-
-    @abstractmethod
-    async def process_message(self, message: PipelineMessage) -> None:
-        ...

@@ -5,6 +5,13 @@ from saturn_engine.core import QueuePipeline
 
 
 @dataclasses.dataclass
+class ResourceItem:
+    id: str
+    type: str
+    data: dict
+
+
+@dataclasses.dataclass
 class QueueItem:
     id: str
     pipeline: QueuePipeline
@@ -41,3 +48,4 @@ class MemoryItem(QueueItem):
 @dataclasses.dataclass
 class SyncResponse:
     items: list[QueueItem]
+    resources: list[ResourceItem]

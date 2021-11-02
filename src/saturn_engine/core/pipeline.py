@@ -4,6 +4,7 @@ from typing import Callable
 from typing import cast
 
 from saturn_engine.utils import inspect as extra_inspect
+from saturn_engine.utils.options import schema_for
 
 from .resource import Resource
 
@@ -20,8 +21,7 @@ class PipelineInfo:
     def from_pipeline(cls, pipeline: Callable) -> "PipelineInfo":
         name = extra_inspect.get_import_names(pipeline)
         try:
-            signature = inspect.signature(pipeline)
-            signature = extra_inspect.eval_annotations(pipeline, signature)
+            signature = extra_inspect.signature(pipeline)
         except Exception as e:
             raise ValueError("Can't parse signature") from e
         resources = cls.get_resources(signature)
@@ -34,6 +34,20 @@ class PipelineInfo:
             if issubclass(parameter.annotation, Resource):
                 resources[parameter.name] = parameter.annotation._typename()
         return resources
+
+    @staticmethod
+    def instancify_args(args: dict[str, object], pipeline: Callable) -> None:
+        signature = extra_inspect.signature(pipeline)
+        for parameter in signature.parameters.values():
+            if parameter.name not in args:
+                continue
+            data = args[parameter.name]
+            if not isinstance(data, dict):
+                continue
+
+            if dataclasses.is_dataclass(parameter.annotation):
+                schema = schema_for(parameter.annotation)
+                args[parameter.name] = schema.load(data)
 
 
 @dataclasses.dataclass
