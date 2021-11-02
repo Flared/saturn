@@ -33,6 +33,6 @@ class ExecutableMessage:
         self, resources_context: ResourcesContext
     ) -> dict[str, ResourceData]:
         resources = await self.context.enter_async_context(resources_context)
-        resources_data = {k: ({"id": r.id} | r.data) for k, r in resources.items()}
+        resources_data = {k: ({"name": r.name} | r.data) for k, r in resources.items()}
         self.message.update_with_resources(resources_data)
         return resources

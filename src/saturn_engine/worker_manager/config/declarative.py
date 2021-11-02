@@ -1,13 +1,14 @@
 import dataclasses
 import functools
 import os
+from typing import Any
 from typing import Optional
 
 import desert
 import marshmallow
 import yaml
 
-from saturn_engine.core.api import Inventory as CoreInventory
+from saturn_engine.core.api import InventoryItem
 
 
 @dataclasses.dataclass
@@ -25,7 +26,7 @@ class BaseObject:
 @dataclasses.dataclass
 class InventorySpec:
     type: str
-    options: dict[str, str]
+    options: dict[str, Any]
 
 
 @dataclasses.dataclass
@@ -37,8 +38,8 @@ class Inventory(BaseObject):
     def schema(cls) -> marshmallow.Schema:
         return desert.schema(cls)
 
-    def to_core_object(self) -> CoreInventory:
-        return CoreInventory(
+    def to_core_object(self) -> InventoryItem:
+        return InventoryItem(
             name=self.metadata.name,
             type=self.spec.type,
             options=self.spec.options,

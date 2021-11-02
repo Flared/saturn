@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 from collections.abc import AsyncIterator
 
 import pytest
@@ -83,6 +84,7 @@ async def test_task_manager(  # noqa: C901  # Ignore complexity errors.
     assert run_task in pending
 
     run_task.cancel()
-    await run_task
+    with contextlib.suppress(asyncio.CancelledError):
+        await run_task
     # The task still running at the end are the ones without error or completion.
-    assert task_manager.tasks == {forever_task, new_forever_task, cancel_task}
+    assert task_manager.tasks.all() == {forever_task, new_forever_task, cancel_task}

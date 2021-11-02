@@ -5,9 +5,9 @@ from unittest.mock import Mock
 import pytest
 
 from saturn_engine.core import PipelineMessage
-from saturn_engine.core.api import DummyJob
-from saturn_engine.core.api import Inventory
+from saturn_engine.core.api import InventoryItem
 from saturn_engine.core.api import PipelineInfo
+from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import QueuePipeline
 from saturn_engine.core.api import ResourceItem
 from saturn_engine.core.api import SyncResponse
@@ -33,7 +33,6 @@ def pipeline(resource: FakeResource) -> None:
 
 @pytest.mark.asyncio
 async def test_broker_dummy(
-    fake_resource_class: str,
     broker_maker: Callable[..., Broker],
     worker_manager_client: Mock,
 ) -> None:
@@ -42,21 +41,21 @@ async def test_broker_dummy(
     pipeline_info = PipelineInfo.from_pipeline(pipeline)
     worker_manager_client.sync.return_value = SyncResponse(
         items=[
-            DummyJob(
-                id="j1",
-                pipeline=QueuePipeline(args={}, info=pipeline_info),
-                inventory=Inventory(
-                    name="dummy", type="dummy", options={"count": 10000}
+            QueueItem(
+                name="j1",
+                input=InventoryItem(
+                    name="dummy", type="DummyInventory", options={"count": 10000}
                 ),
-                options={},
+                pipeline=QueuePipeline(args={}, info=pipeline_info),
+                output={},
             )
         ],
         resources=[
             ResourceItem(
-                id="r1",
+                name="r1",
                 type="FakeResource",
                 data={"data": "fake"},
-            )
+            ),
         ],
     )
 

@@ -1,94 +1,77 @@
 import asyncio
-import dataclasses
-import functools
-import uuid
-from dataclasses import field
-from typing import Type
-from typing import cast
+from typing import Optional
 
-from saturn_engine.core.api import DummyItem
-from saturn_engine.core.api import DummyJob
-from saturn_engine.core.api import MemoryItem
+from saturn_engine.core.api import InventoryItem
 from saturn_engine.core.api import QueueItem
+from saturn_engine.core.api import TopicItem
+from saturn_engine.utils import inspect as extra_inspect
 
+from . import inventories
+from . import topics
 from .context import Context
+from .inventories import Inventory
 from .job import Job
 from .job.memory import MemoryJobStore
-from .queues import ExecutableQueue
-from .queues import TopicReader
-from .queues.dummy import DummyQueue
-from .queues.memory import MemoryPublisher
-from .queues.memory import MemoryQueue
-from .queues.rabbitmq import RabbitMQQueue
+from .queue import ExecutableQueue
+from .topics import Topic
+from .topics.memory import MemoryTopic
 from .work import SchedulableQueue
 from .work import WorkItems
 
 
-@dataclasses.dataclass
-class GeneratedItem:
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    options: dict = field(default_factory=dict)
-    pipeline: dict = field(default_factory=dict)
+def build(queue_item: QueueItem, *, context: Context) -> WorkItems:
+    task: Optional[asyncio.Task] = None
+    if isinstance(queue_item.input, TopicItem):
+        queue_input = build_topic(queue_item.input, context=context)
+    if isinstance(queue_item.input, InventoryItem):
+        task, queue_input = build_inventory(
+            queue_item.input, queue_item=queue_item, context=context
+        )
 
+    output = {
+        k: [build_topic(t, context=context) for t in ts]
+        for k, ts in queue_item.output.items()
+    }
 
-def init_with_options(
-    cls: Type[TopicReader], item: QueueItem, *args: object, **kwargs: object
-) -> SchedulableQueue:
-    options = {**{"id": item.id}, **item.options}
-    queue = cls.from_options(options, *args, **kwargs)
-    return SchedulableQueue(ExecutableQueue(queue=queue, pipeline=item.pipeline))
-
-
-@functools.singledispatch
-def build(queue_item: object, *, context: Context) -> WorkItems:
-    raise ValueError("Cannot build queue for %s", queue_item)
-
-
-@build.register(QueueItem)
-def build_queue(queue_item: MemoryItem, *, context: Context) -> WorkItems:
-    return WorkItems(
-        queues=[init_with_options(RabbitMQQueue, queue_item, context=context)], tasks=[]
-    )
-
-
-@build.register(MemoryItem)
-def build_memory(queue_item: MemoryItem, *, context: Context) -> WorkItems:
-    return WorkItems(
-        queues=[init_with_options(MemoryQueue, queue_item, context=context)], tasks=[]
-    )
-
-
-@build.register(DummyItem)
-def build_dummy(queue_item: DummyItem, *, context: Context) -> WorkItems:
-    queues_count = queue_item.options.get("queues_count", 1)
-    tasks_count = queue_item.options.get("tasks_count", 0)
     return WorkItems(
         queues=[
-            init_with_options(DummyQueue, cast(QueueItem, GeneratedItem()))
-            for i in range(queues_count)
+            SchedulableQueue(
+                ExecutableQueue(
+                    topic=queue_input, pipeline=queue_item.pipeline, output=output
+                )
+            )
         ],
-        tasks=[
-            init_with_options(DummyQueue, cast(QueueItem, GeneratedItem()))
-            for i in range(tasks_count)
-        ],
+        tasks=[task] if task else [],
     )
 
 
-@build.register(DummyJob)
-def build_job(job_item: DummyJob, *, context: Context) -> WorkItems:
-    inventory = context.services.inventories.build(
-        type_name=job_item.inventory.type,
-        options=job_item.inventory.options,
-        context=context,
-    )
-    publisher = MemoryPublisher(MemoryPublisher.Options(id=job_item.id))
-    queue = ExecutableQueue(
-        queue=MemoryQueue(MemoryQueue.Options(id=job_item.id)),
-        pipeline=job_item.pipeline,
-    )
+def build_topic(topic_item: TopicItem, *, context: Context) -> Topic:
+    klass = topics.BUILTINS.get(topic_item.type)
+    if klass is None:
+        klass = extra_inspect.import_name(topic_item.type)
+    if klass is None:
+        raise ValueError(f"Unknown topic type: {topic_item.type}")
+    if not issubclass(klass, Topic):
+        raise ValueError(f"{klass} must be a Topic")
+    options = {"name": topic_item.name} | topic_item.options
+    return klass.from_options(options, context=context)
+
+
+def build_inventory(
+    inventory_item: InventoryItem, *, queue_item: QueueItem, context: Context
+) -> tuple[asyncio.Task, Topic]:
+    klass = inventories.BUILTINS.get(inventory_item.type)
+    if klass is None:
+        klass = extra_inspect.import_name(inventory_item.type)
+    if klass is None:
+        raise ValueError(f"Unknown inventory type: {inventory_item.type}")
+    if not issubclass(klass, Inventory):
+        raise ValueError(f"{klass} must be an Inventory")
+    options = {"name": inventory_item.name} | inventory_item.options
+
+    inventory_input = klass.from_options(options, context=context)
+    inventory_output = MemoryTopic(MemoryTopic.Options(name=queue_item.name))
     store = MemoryJobStore()
-    job = Job(inventory=inventory, publisher=publisher, store=store)
-
-    return WorkItems(
-        queues=[SchedulableQueue(queue)], tasks=[asyncio.create_task(job.run())]
-    )
+    job = Job(inventory=inventory_input, publisher=inventory_output, store=store)
+    input_topic = MemoryTopic(MemoryTopic.Options(name=queue_item.name))
+    return (asyncio.create_task(job.run()), input_topic)

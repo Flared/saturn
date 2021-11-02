@@ -3,6 +3,7 @@ from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import QueuePipeline
 from saturn_engine.core.api import ResourceItem
 from saturn_engine.core.api import SyncResponse
+from saturn_engine.core.api import TopicItem
 
 
 class WorkerManagerClient:
@@ -13,7 +14,10 @@ class WorkerManagerClient:
         return SyncResponse(
             items=[
                 QueueItem(
-                    id="q-1",
+                    name="q-1",
+                    input=TopicItem(
+                        name="t-1", type="RabbitMQ", options={"queue_name": "q1"}
+                    ),
                     pipeline=QueuePipeline(
                         info=PipelineInfo(
                             name="saturn_engine.examples.hello",
@@ -21,10 +25,20 @@ class WorkerManagerClient:
                         ),
                         args={"who": "world"},
                     ),
-                    options={"queue_name": "q1"},
+                    output={
+                        "default": [
+                            TopicItem(
+                                name="t-3",
+                                type="Stdout",
+                            )
+                        ]
+                    },
                 ),
                 QueueItem(
-                    id="q-2",
+                    name="q-2",
+                    input=TopicItem(
+                        name="t-2", type="RabbitMQ", options={"queue_name": "q2"}
+                    ),
                     pipeline=QueuePipeline(
                         info=PipelineInfo(
                             name="saturn_engine.examples.foobar",
@@ -32,12 +46,19 @@ class WorkerManagerClient:
                         ),
                         args={},
                     ),
-                    options={"queue_name": "q2"},
+                    output={
+                        "default": [
+                            TopicItem(
+                                name="t-3",
+                                type="Stdout",
+                            )
+                        ]
+                    },
                 ),
             ],
             resources=[
                 ResourceItem(
-                    id="r-1",
+                    name="r-1",
                     type="FoobarApiKey",
                     data={"key": "foobar-XXXXXXXX"},
                 )

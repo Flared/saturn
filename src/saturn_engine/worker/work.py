@@ -1,7 +1,7 @@
 import dataclasses
 from typing import Type
 
-from .queues import ExecutableQueue
+from .queue import ExecutableQueue
 from .scheduler import Schedulable
 
 

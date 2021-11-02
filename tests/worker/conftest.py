@@ -24,9 +24,9 @@ from saturn_engine.worker.executable_message import ExecutableMessage
 from saturn_engine.worker.executors import Executor
 from saturn_engine.worker.executors import ExecutorManager
 from saturn_engine.worker.parkers import Parkers
-from saturn_engine.worker.queues.memory import reset as reset_memory_queues
 from saturn_engine.worker.resources_manager import ResourcesManager
 from saturn_engine.worker.services.manager import ServicesManager
+from saturn_engine.worker.topics.memory import reset as reset_memory_queues
 from saturn_engine.worker.work_manager import WorkManager
 
 

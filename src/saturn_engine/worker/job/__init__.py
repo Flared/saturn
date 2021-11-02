@@ -6,7 +6,7 @@ from saturn_engine.utils.options import OptionsSchema
 
 from ..inventories import Inventory
 from ..inventories import Item
-from ..queues import Publisher
+from ..topics import Topic
 
 
 class JobStore(OptionsSchema):
@@ -19,7 +19,7 @@ class JobStore(OptionsSchema):
 
 class Job:
     def __init__(
-        self, *, inventory: Inventory, publisher: Publisher, store: JobStore
+        self, *, inventory: Inventory, publisher: Topic, store: JobStore
     ) -> None:
         self.logger = getLogger(__name__, self)
         self.inventory = inventory

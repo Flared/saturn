@@ -8,25 +8,24 @@ from typing import AsyncContextManager
 
 from saturn_engine.core import TopicMessage
 
-from . import Publisher
-from . import TopicReader
+from . import Topic
 
 _memory_queues: dict[str, asyncio.Queue] = {}
 
 
 @dataclasses.dataclass
 class MemoryOptions:
-    id: str
+    name: str
 
 
-class MemoryQueue(TopicReader):
+class MemoryTopic(Topic):
     Options = MemoryOptions
 
     def __init__(self, options: MemoryOptions, **kwargs: Any):
         self.options = options
 
     async def run(self) -> AsyncGenerator[AsyncContextManager[TopicMessage], None]:
-        queue = get_queue(self.options.id)
+        queue = get_queue(self.options.name)
         while True:
             message = await queue.get()
             yield self.message_context(message, queue=queue)
@@ -40,15 +39,8 @@ class MemoryQueue(TopicReader):
         finally:
             queue.task_done()
 
-
-class MemoryPublisher(Publisher):
-    Options = MemoryOptions
-
-    def __init__(self, options: MemoryOptions, **kwargs: Any):
-        self.options = options
-
     async def push(self, message: TopicMessage) -> None:
-        queue = get_queue(self.options.id)
+        queue = get_queue(self.options.name)
         await queue.put(message)
 
 
