@@ -35,6 +35,13 @@ class QueueItem:
 
 
 @dataclasses.dataclass
+class JobDefinition:
+    name: str
+    template: QueueItem
+    minimal_interval: str
+
+
+@dataclasses.dataclass
 class SyncResponse:
     items: list[QueueItem]
     resources: list[ResourceItem]
