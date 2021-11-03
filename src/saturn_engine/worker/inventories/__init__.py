@@ -1,3 +1,5 @@
+import abc
+import asyncio
 import dataclasses
 from collections.abc import Iterable
 from typing import Optional
@@ -16,6 +18,19 @@ class Item:
 class Inventory(OptionsSchema):
     async def next_batch(self, after: Optional[str] = None) -> Iterable[Item]:
         return []
+
+
+class BlockingInventory(Inventory, abc.ABC):
+    async def next_batch(self, after: Optional[str] = None) -> Iterable[Item]:
+        return await asyncio.get_event_loop().run_in_executor(
+            None,
+            self.next_batch_blocking,
+            (after,),
+        )
+
+    @abc.abstractmethod
+    def next_batch_blocking(self, after: Optional[str] = None) -> Iterable[Item]:
+        raise NotImplementedError()
 
 
 from .dummy import DummyInventory
