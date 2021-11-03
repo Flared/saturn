@@ -32,4 +32,5 @@ class ExecutableQueue:
                     info=self.pipeline.info, message=message.extend(self.pipeline.args)
                 ),
                 message_context=context,
+                output=self.output,
             )

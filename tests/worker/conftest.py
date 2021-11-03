@@ -26,6 +26,7 @@ from saturn_engine.worker.executors import ExecutorManager
 from saturn_engine.worker.parkers import Parkers
 from saturn_engine.worker.resources_manager import ResourcesManager
 from saturn_engine.worker.services.manager import ServicesManager
+from saturn_engine.worker.topics import Topic
 from saturn_engine.worker.topics.memory import reset as reset_memory_queues
 from saturn_engine.worker.work_manager import WorkManager
 
@@ -146,6 +147,7 @@ def executable_maker(
         args: Optional[dict[str, object]] = None,
         parker: Optional[Parkers] = None,
         pipeline_info: PipelineInfo = fake_pipeline_info,
+        output: Optional[dict[str, list[Topic]]] = None,
     ) -> ExecutableMessage:
         return ExecutableMessage(
             message=PipelineMessage(
@@ -153,6 +155,7 @@ def executable_maker(
                 message=TopicMessage(args=args or {}),
             ),
             parker=parker or Parkers(),
+            output=output or {},
         )
 
     return maker

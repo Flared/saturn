@@ -39,9 +39,17 @@ class MemoryTopic(Topic):
         finally:
             queue.task_done()
 
-    async def push(self, message: TopicMessage) -> None:
+    async def publish(self, message: TopicMessage, wait: bool) -> bool:
         queue = get_queue(self.options.name)
-        await queue.put(message)
+        if wait:
+            await queue.put(message)
+        else:
+            try:
+                queue.put_nowait(message)
+                return True
+            except asyncio.QueueFull:
+                return False
+        return True
 
 
 def get_queue(queue_id: str, *, maxsize: int = 10) -> asyncio.Queue:

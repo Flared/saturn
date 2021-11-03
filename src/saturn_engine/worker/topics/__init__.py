@@ -20,7 +20,7 @@ class Topic(OptionsSchema):
         raise NotImplementedError()
         yield
 
-    async def push(self, message: TopicMessage) -> None:
+    async def publish(self, message: TopicMessage, wait: bool) -> bool:
         raise NotImplementedError()
 
 

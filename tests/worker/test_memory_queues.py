@@ -16,8 +16,8 @@ async def test_memory_queues() -> None:
 
     queue1generator = queue1.run()
     for i in range(10):
-        await publisher1.push(TopicMessage(args={"id": i}))
-        await publisher2.push(TopicMessage(args={"id": i}))
+        await publisher1.publish(TopicMessage(args={"id": i}), wait=True)
+        await publisher2.publish(TopicMessage(args={"id": i}), wait=True)
         processable = await alib.anext(queue1generator)
         async with processable as message:
             assert message.args["id"] == i

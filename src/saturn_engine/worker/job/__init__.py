@@ -32,7 +32,7 @@ class Job:
             for item in items:
                 self.after = item.id
                 message = TopicMessage(id=str(item.id), args=item.data)
-                await self.publisher.push(message)
+                await self.publisher.publish(message, wait=True)
         finally:
             if self.after is not None:
                 await self.store.save_cursor(after=self.after)

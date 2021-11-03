@@ -4,6 +4,7 @@ from typing import Optional
 
 from saturn_engine.core import PipelineMessage
 from saturn_engine.worker.parkers import Parkers
+from saturn_engine.worker.topics import Topic
 
 from .resources_manager import ResourceData
 from .resources_manager import ResourcesContext
@@ -15,6 +16,7 @@ class ExecutableMessage:
         *,
         message: PipelineMessage,
         parker: Parkers,
+        output: dict[str, list[Topic]],
         message_context: Optional[AsyncContextManager] = None
     ):
         self.message = message
@@ -22,6 +24,7 @@ class ExecutableMessage:
         if message_context:
             self.context.push_async_exit(message_context)
         self.parker = parker
+        self.output = output
 
     def park(self) -> None:
         self.parker.park(id(self))
