@@ -1,5 +1,6 @@
 import dataclasses
 import inspect
+from typing import Any
 from typing import Callable
 from typing import cast
 
@@ -53,4 +54,4 @@ class PipelineInfo:
 @dataclasses.dataclass
 class QueuePipeline:
     info: PipelineInfo
-    args: dict[str, object]
+    args: dict[str, Any]

@@ -3,11 +3,11 @@ from unittest.mock import Mock
 import pytest
 
 from saturn_engine.core.api import InventoryItem
+from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import PipelineInfo
 from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import QueuePipeline
 from saturn_engine.core.api import ResourceItem
-from saturn_engine.core.api import SyncResponse
 from saturn_engine.core.api import TopicItem
 from saturn_engine.utils import flatten
 from saturn_engine.worker.work_manager import WorkManager
@@ -22,13 +22,13 @@ async def test_sync(
     worker_manager_client: Mock,
 ) -> None:
     # Sync does nothing.
-    worker_manager_client.sync.return_value = SyncResponse(items=[], resources=[])
+    worker_manager_client.lock.return_value = LockResponse(items=[], resources=[])
 
     work_sync = await work_manager.sync()
     assert work_sync == WorkSync.empty()
 
     # Sync add 3 new items.
-    worker_manager_client.sync.return_value = SyncResponse(
+    worker_manager_client.lock.return_value = LockResponse(
         items=[
             QueueItem(
                 name="q1",
@@ -85,7 +85,7 @@ async def test_sync(
     r2_resource = work_manager.worker_resources["r2"]
 
     # New sync add 1 and drop 2 items.
-    worker_manager_client.sync.return_value = SyncResponse(
+    worker_manager_client.lock.return_value = LockResponse(
         items=[
             QueueItem(
                 name="q2",

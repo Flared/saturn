@@ -1,35 +1,27 @@
-import dataclasses
 from datetime import datetime
 from datetime import timedelta
 
-import desert
-import flask
 import marshmallow
 from flask import Blueprint
-from flask import jsonify
 from flask import request
 
+from saturn_engine.core.api import LockInput
+from saturn_engine.core.api import LockResponse
 from saturn_engine.database import async_session_scope
 from saturn_engine.models.queue import Queue
 from saturn_engine.stores import queues_store
+from saturn_engine.utils.flask import Json
+from saturn_engine.utils.flask import jsonify
+from saturn_engine.utils.options import fromdict
 from saturn_engine.worker_manager.http_errors import abort
 
 bp = Blueprint("lock", __name__, url_prefix="/api/lock")
 
 
-@dataclasses.dataclass
-class LockInput:
-    worker_id: str
-
-    @classmethod
-    def schema(cls) -> marshmallow.Schema:
-        return desert.schema(cls)
-
-
 @bp.route("", methods=("POST",))
-async def post_lock() -> flask.Response:
+async def post_lock() -> Json[LockResponse]:
     try:
-        lock_input: LockInput = LockInput.schema().load(request.json or dict())
+        lock_input = fromdict(request.json or {}, LockInput)
     except marshmallow.ValidationError as validation_error:
         abort(
             http_code=400,
@@ -86,9 +78,10 @@ async def post_lock() -> flask.Response:
             assigned_item.assigned_to = lock_input.worker_id
 
         return jsonify(
-            {
-                "items": [
-                    assigned_item.as_work_item() for assigned_item in assigned_items
-                ]
-            }
+            LockResponse(
+                items=[
+                    assigned_item.as_core_item() for assigned_item in assigned_items
+                ],
+                resources=[],
+            )
         )

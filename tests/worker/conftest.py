@@ -15,7 +15,7 @@ from saturn_engine.core import PipelineInfo
 from saturn_engine.core import PipelineMessage
 from saturn_engine.core import Resource
 from saturn_engine.core import TopicMessage
-from saturn_engine.core.api import SyncResponse
+from saturn_engine.core.api import LockResponse
 from saturn_engine.worker.broker import Broker
 from saturn_engine.worker.broker import ExecutorInit
 from saturn_engine.worker.broker import WorkManagerInit
@@ -39,7 +39,7 @@ def context(services_manager: ServicesManager) -> Iterator[Context]:
 @pytest.fixture
 def worker_manager_client() -> Mock:
     _worker_manager_client = create_autospec(WorkerManagerClient, instance=True)
-    _worker_manager_client.sync.return_value = SyncResponse(items=[], resources=[])
+    _worker_manager_client.lock.return_value = LockResponse(items=[], resources=[])
     return _worker_manager_client
 
 

@@ -182,3 +182,13 @@ class TasksGroup:
 
     def all(self) -> set[asyncio.Task]:
         return self.tasks
+
+
+def urlcat(*args: str) -> str:
+    """
+    Like urljoin, without all the footguns.
+
+    >>> urlcat("http://foo.com/", "/biz", "baz", "buz")
+    'http://foo.com/biz/baz/buz'
+    """
+    return "/".join(s.strip("/") for s in args)

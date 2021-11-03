@@ -7,11 +7,11 @@ import pytest
 from saturn_engine.core import PipelineMessage
 from saturn_engine.core import PipelineOutput
 from saturn_engine.core.api import InventoryItem
+from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import PipelineInfo
 from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import QueuePipeline
 from saturn_engine.core.api import ResourceItem
-from saturn_engine.core.api import SyncResponse
 from saturn_engine.worker.broker import Broker
 from saturn_engine.worker.executors import Executor
 from tests.worker.conftest import FakeResource
@@ -41,7 +41,7 @@ async def test_broker_dummy(
     executor = FakeExecutor()
     broker = broker_maker(executor=lambda: executor)
     pipeline_info = PipelineInfo.from_pipeline(pipeline)
-    worker_manager_client.sync.return_value = SyncResponse(
+    worker_manager_client.lock.return_value = LockResponse(
         items=[
             QueueItem(
                 name="j1",

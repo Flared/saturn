@@ -1,66 +1,28 @@
-from saturn_engine.core.api import PipelineInfo
-from saturn_engine.core.api import QueueItem
-from saturn_engine.core.api import QueuePipeline
-from saturn_engine.core.api import ResourceItem
-from saturn_engine.core.api import SyncResponse
-from saturn_engine.core.api import TopicItem
+import socket
+from typing import Optional
+
+import aiohttp
+
+from saturn_engine.core.api import LockInput
+from saturn_engine.core.api import LockResponse
+from saturn_engine.utils import urlcat
+from saturn_engine.utils.options import asdict
+from saturn_engine.utils.options import fromdict
 
 
 class WorkerManagerClient:
-    def __init__(self) -> None:
-        pass
+    def __init__(
+        self,
+        http_client: aiohttp.ClientSession,
+        base_url: str,
+        worker_id: Optional[str] = None,
+    ) -> None:
+        self.worker_id: str = worker_id or socket.gethostname()
+        self.http_client = http_client
+        self.base_url = base_url
 
-    async def sync(self) -> SyncResponse:
-        return SyncResponse(
-            items=[
-                QueueItem(
-                    name="q-1",
-                    input=TopicItem(
-                        name="t-1", type="RabbitMQ", options={"queue_name": "q1"}
-                    ),
-                    pipeline=QueuePipeline(
-                        info=PipelineInfo(
-                            name="saturn_engine.examples.hello",
-                            resources={},
-                        ),
-                        args={"who": "world"},
-                    ),
-                    output={
-                        "default": [
-                            TopicItem(
-                                name="t-3",
-                                type="Stdout",
-                            )
-                        ]
-                    },
-                ),
-                QueueItem(
-                    name="q-2",
-                    input=TopicItem(
-                        name="t-2", type="RabbitMQ", options={"queue_name": "q2"}
-                    ),
-                    pipeline=QueuePipeline(
-                        info=PipelineInfo(
-                            name="saturn_engine.examples.foobar",
-                            resources={"api_key": "FoobarApiKey"},
-                        ),
-                        args={},
-                    ),
-                    output={
-                        "default": [
-                            TopicItem(
-                                name="t-3",
-                                type="Stdout",
-                            )
-                        ]
-                    },
-                ),
-            ],
-            resources=[
-                ResourceItem(
-                    name="r-1",
-                    type="FoobarApiKey",
-                    data={"key": "foobar-XXXXXXXX"},
-                )
-            ],
-        )
+    async def lock(self) -> LockResponse:
+        lock_url = urlcat(self.base_url, "api/lock")
+        json = asdict(LockInput(worker_id=self.worker_id))
+        async with self.http_client.post(lock_url, json=json) as response:
+            return fromdict(await response.json(), LockResponse)

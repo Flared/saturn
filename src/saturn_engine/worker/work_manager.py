@@ -9,10 +9,10 @@ from typing import Optional
 from typing import Type
 from typing import TypeVar
 
-from saturn_engine.client.worker_manager import QueueItem
 from saturn_engine.client.worker_manager import WorkerManagerClient
+from saturn_engine.core.api import LockResponse
+from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import ResourceItem
-from saturn_engine.core.api import SyncResponse
 from saturn_engine.utils import flatten
 from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.resources_manager import ResourceData
@@ -93,7 +93,10 @@ class WorkManager:
         self, *, context: Context, client: Optional[WorkerManagerClient] = None
     ) -> None:
         self.logger = getLogger(__name__, self)
-        self.client = client or WorkerManagerClient()
+        self.client = client or WorkerManagerClient(
+            http_client=context.services.http_client.session,
+            base_url=context.services.config.worker_manager.url,
+        )
         self.worker_items_work = {}
         self.worker_resources = {}
         self.last_sync_at = None
@@ -107,11 +110,11 @@ class WorkManager:
                 await asyncio.sleep(
                     (self.sync_period - last_sync_elapsed).total_seconds()
                 )
-        sync_response = await self.client.sync()
+        lock_response = await self.client.lock()
         self.last_sync_at = datetime.now()
 
-        work_items = await self.parse_work_items(sync_response)
-        resources_sync = await self.parse_resources(sync_response)
+        work_items = await self.parse_work_items(lock_response)
+        resources_sync = await self.parse_resources(lock_response)
 
         return WorkSync.from_sync(
             items_added=work_items.add,
@@ -120,10 +123,10 @@ class WorkManager:
         )
 
     async def parse_work_items(
-        self, sync_response: SyncResponse
+        self, lock_response: LockResponse
     ) -> ItemsSync[WorkItems]:
         current_items = set(self.worker_items_work.keys())
-        sync_items = {item.name: item for item in sync_response.items}
+        sync_items = {item.name: item for item in lock_response.items}
         sync_items_ids = set(sync_items.keys())
         add = sync_items_ids - current_items
         drop = current_items - sync_items_ids
@@ -151,10 +154,10 @@ class WorkManager:
             return WorkItems.empty()
 
     async def parse_resources(
-        self, sync_response: SyncResponse
+        self, lock_response: LockResponse
     ) -> ItemsSync[ResourceData]:
         current_items = set(self.worker_resources.keys())
-        sync_items = {item.name: item for item in sync_response.resources}
+        sync_items = {item.name: item for item in lock_response.resources}
         sync_items_ids = set(sync_items.keys())
         add = sync_items_ids - current_items
         drop = current_items - sync_items_ids

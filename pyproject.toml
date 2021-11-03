@@ -34,6 +34,7 @@ asyncpg = "^0.24.0"
 Flask = {extras = ["async"], version = "^2.0.2", optional = true }
 PyYAML = "^6.0"
 types-PyYAML = "^6.0.0"
+aiohttp = {extras = ["speedups"], version = "^3.8.0"}
 
 [tool.poetry.extras]
 worker-manager = [
