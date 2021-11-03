@@ -7,7 +7,7 @@ from saturn_engine.worker_manager.config.declarative import load_definitions_fro
 def test_api_inventories_empty(client: FlaskClient) -> None:
     resp = client.get("/api/inventories")
     assert resp.status_code == 200
-    assert resp.json == {"inventories": []}
+    assert resp.json == {"items": []}
 
 
 def test_api_inventories_loaded_from_file(
@@ -30,7 +30,7 @@ spec:
     resp = client.get("/api/inventories")
     assert resp.status_code == 200
     assert resp.json == {
-        "inventories": [
+        "items": [
             {
                 "name": "testinv",
                 "type": "something.saturn.inventories.AA",

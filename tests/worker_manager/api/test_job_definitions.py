@@ -7,7 +7,7 @@ from saturn_engine.worker_manager.config.declarative import load_definitions_fro
 def test_api_job_definitions_empty(client: FlaskClient) -> None:
     resp = client.get("/api/job_definitions")
     assert resp.status_code == 200
-    assert resp.json == {"job_definitions": []}
+    assert resp.json == {"items": []}
 
 
 def test_api_job_definitions_loaded_from_str(
@@ -57,15 +57,17 @@ spec:
     resp = client.get("/api/job_definitions")
     assert resp.status_code == 200
     assert resp.json == {
-        "job_definitions": [
+        "items": [
             {
                 "minimal_interval": "@weekly",
                 "name": "test-job-definition",
                 "template": {
                     "input": {
-                        "name": "test-inventory",
-                        "options": {},
-                        "type": "testtype",
+                        "inventory": {
+                            "name": "test-inventory",
+                            "options": {},
+                            "type": "testtype",
+                        },
                     },
                     "name": "test",
                     "output": {
