@@ -13,7 +13,7 @@ async def test_blocking_inventory() -> None:
         def next_batch_blocking(self, after: Optional[str] = None) -> Iterable[Item]:
             # Don't really block here as we want tests to be fast.
             # This still tests almost completely that BlockingInventory works.
-            return [Item(id="66", data=dict())]
+            return [Item(id="66", args=dict())]
 
     batch = list(await BI.from_options(dict()).next_batch())
     assert batch[0].id == "66"
