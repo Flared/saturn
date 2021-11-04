@@ -19,4 +19,4 @@ class DummyInventory(Inventory):
         n_end = min(n + 100, self.count)
         if n_end == n:
             return []
-        return [Item(id=str(i), data={"n": i}) for i in range(n, n_end)]
+        return [Item(id=str(i), args={"n": i}) for i in range(n, n_end)]

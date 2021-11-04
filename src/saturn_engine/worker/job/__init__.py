@@ -31,7 +31,7 @@ class Job:
         try:
             for item in items:
                 self.after = item.id
-                message = TopicMessage(id=str(item.id), args=item.data)
+                message = TopicMessage(id=str(item.id), args=item.args)
                 await self.publisher.publish(message, wait=True)
         finally:
             if self.after is not None:

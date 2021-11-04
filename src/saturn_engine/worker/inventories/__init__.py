@@ -2,6 +2,7 @@ import abc
 import asyncio
 import dataclasses
 from collections.abc import Iterable
+from typing import Any
 from typing import Optional
 
 from saturn_engine.utils.options import OptionsSchema
@@ -12,7 +13,7 @@ __all__ = ("Item", "Inventory", "BUILTINS")
 @dataclasses.dataclass
 class Item:
     id: str
-    data: dict[str, object]
+    args: dict[str, Any]
 
 
 class Inventory(OptionsSchema):
