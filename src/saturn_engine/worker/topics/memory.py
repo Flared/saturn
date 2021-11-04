@@ -52,7 +52,7 @@ class MemoryTopic(Topic):
         return True
 
 
-def get_queue(queue_id: str, *, maxsize: int = 10) -> asyncio.Queue:
+def get_queue(queue_id: str, *, maxsize: int = 100) -> asyncio.Queue:
     if queue_id not in _memory_queues:
         _memory_queues[queue_id] = asyncio.Queue(maxsize=maxsize)
     return _memory_queues[queue_id]

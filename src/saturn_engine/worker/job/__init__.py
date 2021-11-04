@@ -1,3 +1,4 @@
+import abc
 from typing import Optional
 
 from saturn_engine.core import TopicMessage
@@ -9,10 +10,12 @@ from ..inventories import Item
 from ..topics import Topic
 
 
-class JobStore(OptionsSchema):
+class JobStore(OptionsSchema, abc.ABC):
+    @abc.abstractmethod
     async def load_cursor(self) -> Optional[str]:
         pass
 
+    @abc.abstractmethod
     async def save_cursor(self, *, after: str) -> None:
         pass
 
@@ -38,6 +41,9 @@ class Job:
                 await self.store.save_cursor(after=self.after)
 
     async def run(self) -> None:
+        if self.after is None:
+            self.after = await self.store.load_cursor()
+
         while True:
             items = list(await self.inventory.next_batch(after=self.after))
             if not items:

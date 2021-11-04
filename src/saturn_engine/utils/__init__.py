@@ -4,17 +4,22 @@ import enum
 import threading
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
+from collections.abc import Awaitable
 from collections.abc import Iterable
 from collections.abc import Iterator
 from functools import wraps
 from typing import Any
 from typing import Callable
+from typing import Generic
+from typing import Optional
 from typing import TypeVar
 from typing import Union
 
 from saturn_engine.utils.log import getLogger
 
 T = TypeVar("T")
+
+AsyncFNone = TypeVar("AsyncFNone", bound=Callable[..., Awaitable[None]])
 
 
 class Sentinel(enum.Enum):
@@ -192,3 +197,36 @@ def urlcat(*args: str) -> str:
     'http://foo.com/biz/baz/buz'
     """
     return "/".join(s.strip("/") for s in args)
+
+
+class DelayedThrottle(Generic[AsyncFNone]):
+    __call__: AsyncFNone
+
+    def __init__(self, func: AsyncFNone, *, delay: float) -> None:
+        self.func = func
+        self.delay = delay
+        self.delayed_task: Optional[asyncio.Task] = None
+        self.delayed_lock = asyncio.Lock()
+        self.delayed_args: tuple[Any, ...] = ()
+        self.delayed_kwargs: dict[str, Any] = {}
+
+    async def __call__(self, *args: Any, **kwargs: Any) -> None:  # type: ignore
+        async with self.delayed_lock:
+            self.delayed_args = args
+            self.delayed_kwargs = kwargs
+
+            if self.delayed_task is None:
+                self.delayed_task = asyncio.create_task(self._delay_call())
+
+    async def _delay_call(self) -> None:
+        await asyncio.sleep(self.delay)
+        async with self.delayed_lock:
+            await self.func(*self.delayed_args, **self.delayed_kwargs)
+            self.delayed_task = None
+
+    async def cancel(self) -> None:
+        if self.delayed_task is None:
+            return
+        self.delayed_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await self.delayed_task

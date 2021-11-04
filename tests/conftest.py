@@ -10,7 +10,13 @@ from sqlalchemy.orm import Session
 
 from saturn_engine import database
 
+from .utils import HttpClientMock
 from .utils import TimeForwardLoop
+
+
+@pytest.fixture
+def http_client_mock(event_loop: TimeForwardLoop) -> HttpClientMock:
+    return HttpClientMock(loop=event_loop)
 
 
 @pytest.fixture
