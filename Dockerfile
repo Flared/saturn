@@ -4,7 +4,7 @@
 FROM python:3.10-slim-bullseye as build
 
 RUN apt-get update \
-    && apt-get install -y git \
+    && apt-get install -y git build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 ENV POETRY_VERSION=1.1.11
@@ -23,7 +23,7 @@ RUN poetry build
 FROM python:3.10-slim-bullseye
 
 RUN apt-get update \
-    && apt-get install -y git \
+    && apt-get install -y git build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /opt/saturn/dist/*.whl /opt/saturn/
