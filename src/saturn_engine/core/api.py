@@ -1,6 +1,8 @@
 import dataclasses
+from datetime import datetime
 from typing import Any
 from typing import Generic
+from typing import Optional
 from typing import TypeVar
 from typing import Union
 
@@ -67,6 +69,11 @@ class ListResponse(Generic[T]):
 
 
 @dataclasses.dataclass
+class ItemResponse(Generic[T]):
+    data: T
+
+
+@dataclasses.dataclass
 class JobDefinitionsResponse(ListResponse[JobDefinition]):
     items: list[JobDefinition]
 
@@ -74,3 +81,30 @@ class JobDefinitionsResponse(ListResponse[JobDefinition]):
 @dataclasses.dataclass
 class InventoriesResponse(ListResponse[InventoryItem]):
     items: list[InventoryItem]
+
+
+@dataclasses.dataclass
+class JobItem:
+    id: int
+    completed_at: Optional[datetime]
+    cursor: Optional[str]
+
+
+@dataclasses.dataclass
+class JobInput:
+    cursor: str
+
+
+@dataclasses.dataclass
+class JobsResponse(ListResponse[JobItem]):
+    items: list[JobItem]
+
+
+@dataclasses.dataclass
+class JobResponse(ItemResponse[JobItem]):
+    data: JobItem
+
+
+@dataclasses.dataclass
+class UpdateResponse:
+    pass

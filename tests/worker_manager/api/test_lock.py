@@ -21,8 +21,8 @@ def test_api_lock_bad_input(client: FlaskClient) -> None:
     assert resp.status_code == 400
     assert resp.json == {
         "error": {
-            "code": "BAD_LOCK_INPUT",
-            "message": "Bad lock input",
+            "code": "INVALID_INPUT",
+            "message": "Invalid input",
             "data": {"worker_id": ["Missing data for required field."]},
         },
     }

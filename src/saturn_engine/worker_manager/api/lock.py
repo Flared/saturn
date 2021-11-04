@@ -1,9 +1,7 @@
 from datetime import datetime
 from datetime import timedelta
 
-import marshmallow
 from flask import Blueprint
-from flask import request
 
 from saturn_engine.core.api import LockInput
 from saturn_engine.core.api import LockResponse
@@ -12,23 +10,14 @@ from saturn_engine.models.queue import Queue
 from saturn_engine.stores import queues_store
 from saturn_engine.utils.flask import Json
 from saturn_engine.utils.flask import jsonify
-from saturn_engine.utils.options import fromdict
-from saturn_engine.worker_manager.http_errors import abort
+from saturn_engine.utils.flask import marshall_request
 
 bp = Blueprint("lock", __name__, url_prefix="/api/lock")
 
 
 @bp.route("", methods=("POST",))
 async def post_lock() -> Json[LockResponse]:
-    try:
-        lock_input = fromdict(request.json or {}, LockInput)
-    except marshmallow.ValidationError as validation_error:
-        abort(
-            http_code=400,
-            error_code="BAD_LOCK_INPUT",
-            message="Bad lock input",
-            data=validation_error.messages,
-        )
+    lock_input = marshall_request(LockInput)
 
     # Note:
     # - For now, we just assign 10 items per worker.
