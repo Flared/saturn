@@ -5,10 +5,8 @@ from flask import Flask
 
 from saturn_engine.database import async_scoped_session
 from saturn_engine.database import create_all
+from saturn_engine.utils.flask import register_http_exception_error_handler
 from saturn_engine.worker_manager.config import config
-from saturn_engine.worker_manager.http_errors import (
-    register_http_exception_error_handler,
-)
 
 
 def get_app() -> Flask:
