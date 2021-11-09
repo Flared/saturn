@@ -1,7 +1,10 @@
+import asyncio
 from typing import Any
+from unittest.mock import AsyncMock
 
 import pytest
 
+from saturn_engine.utils import DelayedThrottle
 from saturn_engine.utils import get_own_attr
 from saturn_engine.utils import has_own_attr
 
@@ -53,3 +56,31 @@ def test_get_own_attr() -> None:
     assert has_own_attr(b, "a") is True
     assert has_own_attr(b, "b") is False
     assert has_own_attr(b, "c") is False
+
+
+@pytest.mark.asyncio
+async def test_delayed_throttle() -> None:
+    mock = AsyncMock()
+    throttle = DelayedThrottle(mock, delay=1.0)
+    await throttle(1, a=2)
+    await asyncio.sleep(0.9)
+    await throttle(2, a=3)
+    mock.assert_not_awaited()
+    await asyncio.sleep(0.2)
+    mock.assert_awaited_once_with(2, a=3)
+    mock.reset_mock()
+
+    await throttle(3, b=4)
+    await asyncio.sleep(0.9)
+    mock.assert_not_awaited()
+    await asyncio.sleep(0.2)
+    mock.assert_awaited_once_with(3, b=4)
+    mock.reset_mock()
+
+    await throttle(4, b=5)
+    await asyncio.sleep(0.9)
+    mock.assert_not_awaited()
+    await throttle.cancel()
+    await asyncio.sleep(0.2)
+    mock.assert_not_awaited()
+    mock.reset_mock()
