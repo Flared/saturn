@@ -1,5 +1,8 @@
+import abc
+import asyncio
 from collections.abc import AsyncGenerator
 from typing import AsyncContextManager
+from typing import Optional
 from typing import Type
 from typing import Union
 
@@ -21,6 +24,32 @@ class Topic(OptionsSchema):
         yield
 
     async def publish(self, message: TopicMessage, wait: bool) -> bool:
+        raise NotImplementedError()
+
+
+class BlockingTopic(Topic, abc.ABC):
+    async def run(self) -> AsyncGenerator[TopicOutput, None]:
+        while True:
+            message = await asyncio.get_event_loop().run_in_executor(
+                None,
+                self.run_once_blocking,
+            )
+            if message is None:
+                break
+            yield message
+
+    async def publish(self, message: TopicMessage, wait: bool) -> bool:
+        return await asyncio.get_event_loop().run_in_executor(
+            None,
+            self.publish_blocking,
+            message,
+            wait,
+        )
+
+    def run_once_blocking(self) -> Optional[TopicOutput]:
+        raise NotImplementedError()
+
+    def publish_blocking(self, message: TopicMessage, wait: bool) -> bool:
         raise NotImplementedError()
 
 
