@@ -7,6 +7,8 @@ from collections.abc import AsyncIterator
 from collections.abc import Awaitable
 from collections.abc import Iterable
 from collections.abc import Iterator
+from datetime import datetime
+from datetime import timezone
 from functools import wraps
 from typing import Any
 from typing import Callable
@@ -230,3 +232,13 @@ class DelayedThrottle(Generic[AsyncFNone]):
         self.delayed_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await self.delayed_task
+
+
+def utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def default_utc(date: datetime) -> datetime:
+    if date.tzinfo is None:
+        return date.replace(tzinfo=timezone.utc)
+    return date

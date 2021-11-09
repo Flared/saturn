@@ -42,7 +42,7 @@ def test_api_job(client: FlaskClient, session: Session) -> None:
     assert resp.json == {"data": {"id": job.id, "completed_at": None, "cursor": None}}
 
 
-def test_api_upodate_job(client: FlaskClient, session: Session) -> None:
+def test_api_update_job(client: FlaskClient, session: Session) -> None:
     # Empty
     resp = client.put("/api/job/1")
     assert resp.status_code == 404
@@ -61,3 +61,21 @@ def test_api_upodate_job(client: FlaskClient, session: Session) -> None:
     resp = client.get(f"/api/jobs/{job.id}")
     assert resp.status_code == 200
     assert resp.json == {"data": {"id": job.id, "completed_at": None, "cursor": "1"}}
+
+    # Complete the job
+    resp = client.put(
+        f"/api/jobs/{job.id}",
+        json={"cursor": "2", "completed_at": "2018-01-02T00:00:00+00:00"},
+    )
+    assert resp.status_code == 200
+
+    # Get the job
+    resp = client.get(f"/api/jobs/{job.id}")
+    assert resp.status_code == 200
+    assert resp.json == {
+        "data": {
+            "id": job.id,
+            "completed_at": "2018-01-02T00:00:00+00:00",
+            "cursor": "2",
+        }
+    }

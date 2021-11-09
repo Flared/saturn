@@ -38,5 +38,10 @@ async def get_job(job_id: int) -> Json[JobResponse]:
 async def update_job(job_id: int) -> Json[UpdateResponse]:
     update_input = marshall_request(JobInput)
     async with async_session_scope() as session:
-        await jobs_store.update_job(job_id, cursor=update_input.cursor, session=session)
+        await jobs_store.update_job(
+            job_id,
+            cursor=update_input.cursor,
+            completed_at=update_input.completed_at,
+            session=session,
+        )
         return jsonify(UpdateResponse())
