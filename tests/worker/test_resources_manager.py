@@ -114,3 +114,22 @@ async def test_resources_manager_release_later(event_loop: TimeForwardLoop) -> N
 
     await asyncio.sleep(1)
     await resources_manager.acquire("R", wait=False)
+
+
+@pytest.mark.asyncio
+async def test_resources_manager_default_delay(event_loop: TimeForwardLoop) -> None:
+    r1 = ResourceData(name="r1", type="R", data={}, default_delay=1)
+    resources_manager = ResourcesManager()
+    await resources_manager.add(r1)
+
+    resource = await resources_manager.acquire("R", wait=False)
+    async with resource:
+        pass
+
+    await asyncio.sleep(0.5)
+
+    with pytest.raises(ResourceUnavailable):
+        await resources_manager.acquire("R", wait=False)
+
+    await asyncio.sleep(1)
+    await resources_manager.acquire("R", wait=False)

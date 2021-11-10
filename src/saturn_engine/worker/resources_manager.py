@@ -12,6 +12,7 @@ class ResourceData:
     name: str
     type: str
     data: dict[str, object]
+    default_delay: float = 0
 
 
 class ResourceUnavailable(Exception):
@@ -47,6 +48,8 @@ class ResourceContext:
     async def __aenter__(self) -> "ResourceContext":
         if self.resource is None:
             raise ValueError("Cannot enter a released context")
+        if self.resource.default_delay:
+            self.release_at = time.time() + self.resource.default_delay
         return self
 
     async def __aexit__(self, *exc: object) -> None:
