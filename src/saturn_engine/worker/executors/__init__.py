@@ -1,9 +1,10 @@
 import asyncio
 from abc import abstractmethod
 
-from saturn_engine.core import PipelineMessage
 from saturn_engine.core import PipelineOutput
+from saturn_engine.core import PipelineResult
 from saturn_engine.utils.log import getLogger
+from saturn_engine.worker.pipeline_message import PipelineMessage
 
 from ..executable_message import ExecutableMessage
 from ..resources_manager import ResourcesManager
@@ -12,7 +13,7 @@ from ..resources_manager import ResourceUnavailable
 
 class Executor:
     @abstractmethod
-    async def process_message(self, message: PipelineMessage) -> list[PipelineOutput]:
+    async def process_message(self, message: PipelineMessage) -> PipelineResult:
         ...
 
     async def close(self) -> None:
@@ -51,8 +52,11 @@ class ExecutorManager:
                         "Processing message in executor: %s", processable.message
                     )
                     output = await self.executor.process_message(processable.message)
+                    processable.update_resources_used(output.resources)
                     asyncio.create_task(
-                        self.consume_output(processable=processable, output=output)
+                        self.consume_output(
+                            processable=processable, output=output.outputs
+                        )
                     )
             except Exception:
                 self.logger.exception("Failed to process: %s", processable)

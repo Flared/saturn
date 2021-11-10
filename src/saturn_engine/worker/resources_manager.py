@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import dataclasses
+import time
 from collections import defaultdict
 from collections.abc import Iterable
 from typing import Optional
@@ -21,17 +22,32 @@ class ResourceContext:
     def __init__(self, resource: ResourceData, manager: "ExclusiveResources") -> None:
         self.resource: Optional[ResourceData] = resource
         self.manager = manager
+        self.release_at: Optional[float] = None
 
     async def release(self) -> None:
         # Add the resource back to the manager.
-        if self.resource:
+        if not self.resource:
+            return
+
+        if self.release_at:
+            asyncio.create_task(self._delayed_release(self.resource))
+        else:
             await self.manager.release(self.resource)
+
         self.resource = None
 
-    async def __aenter__(self) -> ResourceData:
+    def release_later(self, when: float) -> None:
+        self.release_at = when
+
+    async def _delayed_release(self, resource: ResourceData) -> None:
+        if self.release_at:
+            await asyncio.sleep(self.release_at - time.time())
+        await self.manager.release(resource)
+
+    async def __aenter__(self) -> "ResourceContext":
         if self.resource is None:
             raise ValueError("Cannot enter a released context")
-        return self.resource
+        return self
 
     async def __aexit__(self, *exc: object) -> None:
         await self.release()
@@ -39,7 +55,9 @@ class ResourceContext:
 
 class ResourcesContext:
     def __init__(
-        self, resources: dict[str, ResourceData], exit_stack: contextlib.AsyncExitStack
+        self,
+        resources: dict[str, ResourceContext],
+        exit_stack: contextlib.AsyncExitStack,
     ) -> None:
         self.resources = resources
         self.exit_stack = exit_stack
@@ -48,7 +66,7 @@ class ResourcesContext:
         # Add the resource back to the manager.
         await self.exit_stack.aclose()
 
-    async def __aenter__(self) -> dict[str, ResourceData]:
+    async def __aenter__(self) -> dict[str, ResourceContext]:
         return self.resources
 
     async def __aexit__(self, *exc: object) -> None:

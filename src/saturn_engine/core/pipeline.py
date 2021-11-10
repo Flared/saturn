@@ -8,6 +8,7 @@ from saturn_engine.utils import inspect as extra_inspect
 from saturn_engine.utils.options import schema_for
 
 from .resource import Resource
+from .topic import TopicMessage
 
 
 @dataclasses.dataclass
@@ -55,3 +56,25 @@ class PipelineInfo:
 class QueuePipeline:
     info: PipelineInfo
     args: dict[str, Any]
+
+
+@dataclasses.dataclass
+class PipelineOutput:
+    channel: str
+    message: TopicMessage
+
+
+@dataclasses.dataclass
+class ResourceUsed:
+    type: str
+    release_at: float
+
+    @classmethod
+    def from_resource(cls, resource: Resource, release_at: float) -> "ResourceUsed":
+        return cls(type=resource._typename(), release_at=release_at)
+
+
+@dataclasses.dataclass
+class PipelineResult:
+    outputs: list[PipelineOutput]
+    resources: list[ResourceUsed]

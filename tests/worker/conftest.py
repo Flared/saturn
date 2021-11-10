@@ -12,7 +12,6 @@ from pytest_mock import MockerFixture
 
 from saturn_engine.client.worker_manager import WorkerManagerClient
 from saturn_engine.core import PipelineInfo
-from saturn_engine.core import PipelineMessage
 from saturn_engine.core import Resource
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import LockResponse
@@ -24,6 +23,7 @@ from saturn_engine.worker.executable_message import ExecutableMessage
 from saturn_engine.worker.executors import Executor
 from saturn_engine.worker.executors import ExecutorManager
 from saturn_engine.worker.parkers import Parkers
+from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources_manager import ResourcesManager
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.topics import Topic

@@ -6,7 +6,7 @@ from collections.abc import AsyncIterator
 from typing import Generic
 from typing import TypeVar
 
-from saturn_engine.utils import TasksGroup
+from saturn_engine.utils.asyncutils import TasksGroup
 from saturn_engine.utils.log import getLogger
 
 T = TypeVar("T")

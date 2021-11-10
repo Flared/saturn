@@ -57,6 +57,7 @@ pytest-icdiff = "^0.5"
 freezegun = "^1.1.0"
 types-freezegun = "^1.1.2"
 pytest-mock = "^3.6.1"
+flake8-breakpoint = "^1.1.0"
 
 [tool.pytest.ini_options]
 addopts = "--doctest-modules"
