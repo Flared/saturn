@@ -175,6 +175,11 @@ class HttpClientMock:
         self.responses[method].setdefault(path, Mock())
         return self.responses[method][path]
 
+    def reset_mock(self) -> None:
+        for mocks in self.responses.values():
+            for req_mock in mocks.values():
+                req_mock.reset_mock()
+
     def client(self) -> aiohttp.ClientSession:
         return cast(
             aiohttp.ClientSession,

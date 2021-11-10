@@ -1,15 +1,17 @@
+from datetime import datetime
+
 from sqlalchemy import Column
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import backref
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.sqltypes import DateTime
 from sqlalchemy.sql.sqltypes import Integer
 from sqlalchemy.sql.sqltypes import Text
 
 from saturn_engine.core.api import JobItem
 
 from .base import Base
+from .types import UTCDateTime
 
 
 class Job(Base):
@@ -17,7 +19,7 @@ class Job(Base):
 
     id: Mapped[int] = Column(Integer, primary_key=True, autoincrement=False)
     cursor = Column(Text, nullable=True)
-    completed_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime] = Column(UTCDateTime, nullable=True)  # type: ignore
     queue_id = Column(Integer, ForeignKey("queues.id"), nullable=False)
     queue: "Queue" = relationship(
         "Queue",

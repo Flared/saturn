@@ -7,6 +7,7 @@ from saturn_engine.core.api import JobInput
 from saturn_engine.core.api import JobResponse
 from saturn_engine.utils import DelayedThrottle
 from saturn_engine.utils import urlcat
+from saturn_engine.utils import utcnow
 from saturn_engine.utils.log import getLogger
 from saturn_engine.utils.options import asdict
 from saturn_engine.utils.options import fromdict
@@ -32,8 +33,7 @@ class ApiJobStore(JobStore):
         self.throttle_save_cursor = DelayedThrottle(self.delayed_save_cursor, delay=1)
 
     async def load_cursor(self) -> Optional[str]:
-        job_url = urlcat(self.base_url, "api/jobs", str(self.job_id))
-        async with self.http_client.get(job_url) as response:
+        async with self.http_client.get(self.job_url) as response:
             return fromdict(await response.json(), JobResponse).data.cursor
 
     async def save_cursor(self, *, after: str) -> None:
@@ -42,9 +42,18 @@ class ApiJobStore(JobStore):
 
     async def delayed_save_cursor(self, *, after: str) -> None:
         try:
-            job_url = urlcat(self.base_url, "api/jobs", str(self.job_id))
             json = asdict(JobInput(cursor=after))
-            async with self.http_client.put(job_url, json=json) as response:
+            async with self.http_client.put(self.job_url, json=json) as response:
                 response.raise_for_status()
         except Exception:
             self.logger.exception("Failed to save cursor")
+
+    async def set_completed(self) -> None:
+        await self.throttle_save_cursor.cancel()
+        json = asdict(JobInput(cursor=self.after, completed_at=utcnow()))
+        async with self.http_client.put(self.job_url, json=json) as response:
+            response.raise_for_status()
+
+    @property
+    def job_url(self) -> str:
+        return urlcat(self.base_url, "api/jobs", str(self.job_id))

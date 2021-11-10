@@ -19,6 +19,10 @@ class JobStore(OptionsSchema, abc.ABC):
     async def save_cursor(self, *, after: str) -> None:
         pass
 
+    @abc.abstractmethod
+    async def set_completed(self) -> None:
+        pass
+
 
 class Job:
     def __init__(
@@ -49,3 +53,5 @@ class Job:
             if not items:
                 break
             await self.push_batch(items)
+
+        await self.store.set_completed()
