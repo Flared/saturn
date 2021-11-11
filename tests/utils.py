@@ -53,6 +53,12 @@ class TimeForwardLoop(asyncio.SelectorEventLoop):  # type: ignore
         await self.idled.wait()
         self.idled.clear()
 
+    @asynccontextmanager
+    async def until_idle(self) -> AsyncIterator[None]:
+        self.idled.clear()
+        yield
+        await self.wait_idle()
+
 
 class FakeHttpClient:
     def __init__(

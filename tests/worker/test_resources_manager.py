@@ -74,13 +74,13 @@ async def test_resources_manager_acquire_many(event_loop: TimeForwardLoop) -> No
     # Philosopher 1 lock r1 and r2.
     # Philosopher 2 lock r2 and r3
     # Philosopher 3 lock r3 and r1
-    philosophers = {
-        asyncio.create_task(resources_manager.acquire_many(["R1", "R2"])),
-        asyncio.create_task(resources_manager.acquire_many(["R2", "R3"])),
-        asyncio.create_task(resources_manager.acquire_many(["R3", "R4"])),
-        asyncio.create_task(resources_manager.acquire_many(["R4", "R1"])),
-    }
-    await event_loop.wait_idle()
+    async with event_loop.until_idle():
+        philosophers = {
+            asyncio.create_task(resources_manager.acquire_many(["R1", "R2"])),
+            asyncio.create_task(resources_manager.acquire_many(["R2", "R3"])),
+            asyncio.create_task(resources_manager.acquire_many(["R3", "R4"])),
+            asyncio.create_task(resources_manager.acquire_many(["R4", "R1"])),
+        }
 
     # All resource should be locked.
     for i in range(1, 5):

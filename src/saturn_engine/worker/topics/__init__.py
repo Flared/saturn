@@ -28,6 +28,9 @@ class Topic(OptionsSchema):
 
 
 class BlockingTopic(Topic, abc.ABC):
+    def __init__(self, max_concurrency: int = 1):
+        self.semaphore = asyncio.Semaphore(max_concurrency)
+
     async def run(self) -> AsyncGenerator[TopicOutput, None]:
         while True:
             message = await asyncio.get_event_loop().run_in_executor(
@@ -39,12 +42,16 @@ class BlockingTopic(Topic, abc.ABC):
             yield message
 
     async def publish(self, message: TopicMessage, wait: bool) -> bool:
-        return await asyncio.get_event_loop().run_in_executor(
-            None,
-            self.publish_blocking,
-            message,
-            wait,
-        )
+        if not wait and self.semaphore.locked():
+            return False
+
+        async with self.semaphore:
+            return await asyncio.get_event_loop().run_in_executor(
+                None,
+                self.publish_blocking,
+                message,
+                wait,
+            )
 
     def run_once_blocking(self) -> Optional[TopicOutput]:
         raise NotImplementedError()

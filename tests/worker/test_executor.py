@@ -49,16 +49,16 @@ async def test_base_executor(
     executor = FakeExecutor()
     executor_manager = executor_manager_maker(executor=executor)
 
-    for _ in range(10):
-        asyncio.create_task(executor_manager.submit(executable_maker()))
+    async with event_loop.until_idle():
+        for _ in range(10):
+            asyncio.create_task(executor_manager.submit(executable_maker()))
 
-    await event_loop.wait_idle()
     assert executor.processing == 5
     assert executor.processed == 0
 
-    for _ in range(10):
-        executor.execute_semaphore.release()
-    await event_loop.wait_idle()
+    async with event_loop.until_idle():
+        for _ in range(10):
+            executor.execute_semaphore.release()
     assert executor.processed == 10
 
 
@@ -90,36 +90,36 @@ async def test_executor_wait_resources_and_queue(
     # Set up a scenario where there's 2 resource and 1 executor slot.
     # Queuing 3 items should have 1 waiting on the executor and 1 waiting on
     # the resources.
-    for _ in range(2):
-        await executor_manager.submit(executable_maker())
+    async with event_loop.until_idle():
+        for _ in range(2):
+            await executor_manager.submit(executable_maker())
 
-    await event_loop.wait_idle()
     assert executor.processing == 1
     assert not parker.locked()
 
     # Submit another task, stuck locking a resource, park the processable.
-    await executor_manager.submit(executable_maker())
+    async with event_loop.until_idle():
+        await executor_manager.submit(executable_maker())
 
-    await event_loop.wait_idle()
     assert executor.processing == 1
     assert parker.locked()
 
     # Process the task pending in the executor and release the resource.
-    executor.execute_semaphore.release()
-    await event_loop.wait_idle()
+    async with event_loop.until_idle():
+        executor.execute_semaphore.release()
     assert executor.processed == 1
     assert executor.processing == 2
     assert not parker.locked()
 
     # Process the other task, release the resource.
-    executor.execute_semaphore.release()
-    await event_loop.wait_idle()
+    async with event_loop.until_idle():
+        executor.execute_semaphore.release()
     assert executor.processed == 2
     assert executor.processing == 3
     assert not parker.locked()
 
-    executor.execute_semaphore.release()
-    await event_loop.wait_idle()
+    async with event_loop.until_idle():
+        executor.execute_semaphore.release()
 
 
 @pytest.mark.asyncio
@@ -149,9 +149,9 @@ async def test_executor_wait_pusblish_and_queue(
     # Set up a scenario where there's 2 task, 1 executor slot and 1 publish slot.
     # Queuing 2 items should have 1 waiting on the executor and 1 waiting on publish
     # the resources.
-    for _ in range(2):
-        await executor_manager.submit(executable_maker())
-    await event_loop.wait_idle()
+    async with event_loop.until_idle():
+        for _ in range(2):
+            await executor_manager.submit(executable_maker())
 
     assert executor.processing == 1
     assert executor.processed == 0
@@ -159,8 +159,8 @@ async def test_executor_wait_pusblish_and_queue(
     assert not parker.locked()
 
     # Process one task, take publish slot.
-    executor.execute_semaphore.release()
-    await event_loop.wait_idle()
+    async with event_loop.until_idle():
+        executor.execute_semaphore.release()
 
     assert executor.processing == 2
     assert executor.processed == 1
@@ -168,8 +168,8 @@ async def test_executor_wait_pusblish_and_queue(
     assert not parker.locked()
 
     # Process the other task, get stuck on publishing
-    executor.execute_semaphore.release()
-    await event_loop.wait_idle()
+    async with event_loop.until_idle():
+        executor.execute_semaphore.release()
 
     assert executor.processing == 2
     assert executor.processed == 2
@@ -177,8 +177,8 @@ async def test_executor_wait_pusblish_and_queue(
     assert parker.locked()
 
     # Pop the item in the publish queue, leaving room for the next item.
-    assert output_queue.get_nowait().args == {"n": 1}
-    await event_loop.wait_idle()
+    async with event_loop.until_idle():
+        assert output_queue.get_nowait().args == {"n": 1}
 
     assert executor.processing == 2
     assert executor.processed == 2
@@ -186,8 +186,8 @@ async def test_executor_wait_pusblish_and_queue(
     assert not parker.locked()
 
     # Pop the other item in the publish queue, clearing the queue.
-    assert output_queue.get_nowait().args == {"n": 2}
-    await event_loop.wait_idle()
+    async with event_loop.until_idle():
+        assert output_queue.get_nowait().args == {"n": 2}
 
     assert executor.processing == 2
     assert executor.processed == 2
