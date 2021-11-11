@@ -89,6 +89,9 @@ def load_definitions_from_directory(config_dir: str) -> StaticDefinitions:
     uncompiled_objects: list[UncompiledObject] = list()
 
     for config_file in os.listdir(config_dir):
+        if not config_file.endswith(".yaml"):
+            continue
+
         with open(os.path.join(config_dir, config_file), "r", encoding="utf-8") as f:
             uncompiled_objects.extend(_load_uncompiled_objects_from_str(f.read()))
 
