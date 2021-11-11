@@ -7,6 +7,7 @@ from datetime import timezone
 from functools import wraps
 from typing import Any
 from typing import Callable
+from typing import Generic
 from typing import TypeVar
 from typing import Union
 
@@ -24,13 +25,30 @@ class Scope:
     value: Any
 
 
-F_NOARGS = Callable[[], T]
+class _Lazy(Generic[T]):
+    def __init__(
+        self,
+        *,
+        scope: Union[Scope, threading.local],
+        init: Callable[[], T],
+    ) -> None:
+        self.scope = scope
+        self.init = init
+
+    def __call__(self) -> T:
+        if not hasattr(self.scope, "value"):
+            self.scope.value = self.init()
+        return self.scope.value
+
+    def clear(self) -> None:
+        if hasattr(self.scope, "value"):
+            del self.scope.value
 
 
 def lazy(
     *,
     threadlocal: bool = False,
-) -> Callable[[F_NOARGS], F_NOARGS]:
+) -> Callable[[Callable[[], T]], _Lazy[T]]:
     """
     Ensure a function is called only once. Useful to lazilly setup some global.
 
@@ -46,6 +64,10 @@ def lazy(
     1
     >>> say_hi_once()
     1
+    >>> say_hi_once.clear()
+    >>> say_hi_once()
+    hi
+    1
     """
 
     scope: Union[Scope, threading.local]
@@ -54,14 +76,13 @@ def lazy(
     else:
         scope = Scope()
 
-    def decorator(init: F_NOARGS) -> F_NOARGS:
-        @wraps(init)
-        def wrapper() -> T:
-            if not hasattr(scope, "value"):
-                scope.value = init()
-            return scope.value
-
-        return wrapper
+    def decorator(init: Callable[[], T]) -> _Lazy[T]:
+        return wraps(init)(
+            _Lazy[T](
+                init=init,
+                scope=scope,
+            ),
+        )
 
     return decorator
 
