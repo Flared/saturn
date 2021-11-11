@@ -8,7 +8,7 @@ from unittest.mock import sentinel
 import asyncstdlib as alib
 import pytest
 
-from saturn_engine.utils import aiter2agen
+from saturn_engine.utils.asyncutils import aiter2agen
 from saturn_engine.worker.scheduler import Schedulable as SchedulableT
 from saturn_engine.worker.scheduler import Scheduler
 

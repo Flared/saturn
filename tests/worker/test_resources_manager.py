@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 import pytest
 
@@ -30,14 +31,14 @@ async def test_resources_manager_acquire() -> None:
 
     async with resource1 as locked_r1:
         async with resource2 as locked_r2:
-            assert {locked_r1, locked_r2} == {r1, r2}
-            assert locked_r1 not in {locked_r2, r3}
+            assert {locked_r1.resource, locked_r2.resource} == {r1, r2}
+            assert locked_r1.resource not in {locked_r2.resource, r3}
 
         # r2 should be released, lock again.
         resource3 = await resources_manager.acquire("R1")
         async with resource3 as locked_r3:
-            assert {locked_r1, locked_r3} == {r1, r2}
-            assert locked_r1 not in {locked_r3, r3}
+            assert {locked_r1.resource, locked_r3.resource} == {r1, r2}
+            assert locked_r1.resource not in {locked_r3.resource, r3}
 
 
 @pytest.mark.asyncio
@@ -62,12 +63,12 @@ async def test_resources_manager_acquire_many(event_loop: TimeForwardLoop) -> No
     resource4 = await resources_manager.acquire_many(["R3", "R4"], wait=False)
 
     async with resource1 as locked_r1:
-        assert locked_r1["R1"] is r1
-        assert locked_r1["R2"] is r2
+        assert locked_r1["R1"].resource is r1
+        assert locked_r1["R2"].resource is r2
 
     async with resource4 as locked_r4:
-        assert locked_r4["R3"] is r3
-        assert locked_r4["R4"] is r4
+        assert locked_r4["R3"].resource is r3
+        assert locked_r4["R4"].resource is r4
 
     # Check for philosopher diner.
     # Philosopher 1 lock r1 and r2.
@@ -94,3 +95,41 @@ async def test_resources_manager_acquire_many(event_loop: TimeForwardLoop) -> No
         for philosopher in done:
             async with philosopher.result() as resources:
                 assert len(resources) == 2
+
+
+@pytest.mark.asyncio
+async def test_resources_manager_release_later(event_loop: TimeForwardLoop) -> None:
+    r1 = ResourceData(name="r1", type="R", data={})
+    resources_manager = ResourcesManager()
+    await resources_manager.add(r1)
+
+    resource = await resources_manager.acquire("R", wait=False)
+    async with resource:
+        resource.release_later(time.time() + 1)
+
+    await asyncio.sleep(0.5)
+
+    with pytest.raises(ResourceUnavailable):
+        await resources_manager.acquire("R", wait=False)
+
+    await asyncio.sleep(1)
+    await resources_manager.acquire("R", wait=False)
+
+
+@pytest.mark.asyncio
+async def test_resources_manager_default_delay(event_loop: TimeForwardLoop) -> None:
+    r1 = ResourceData(name="r1", type="R", data={}, default_delay=1)
+    resources_manager = ResourcesManager()
+    await resources_manager.add(r1)
+
+    resource = await resources_manager.acquire("R", wait=False)
+    async with resource:
+        pass
+
+    await asyncio.sleep(0.5)
+
+    with pytest.raises(ResourceUnavailable):
+        await resources_manager.acquire("R", wait=False)
+
+    await asyncio.sleep(1)
+    await resources_manager.acquire("R", wait=False)

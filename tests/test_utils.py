@@ -4,9 +4,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from saturn_engine.utils import DelayedThrottle
 from saturn_engine.utils import get_own_attr
 from saturn_engine.utils import has_own_attr
+from saturn_engine.utils.asyncutils import DelayedThrottle
 
 
 def test_get_own_attr() -> None:

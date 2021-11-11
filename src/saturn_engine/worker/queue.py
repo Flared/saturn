@@ -1,11 +1,11 @@
 from collections.abc import AsyncGenerator
 from typing import AsyncContextManager
 
-from saturn_engine.core import PipelineMessage
 from saturn_engine.core import QueuePipeline
 
 from .executable_message import ExecutableMessage
 from .parkers import Parkers
+from .pipeline_message import PipelineMessage
 from .topics import Topic
 
 

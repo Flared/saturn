@@ -1,15 +1,17 @@
-from .message import PipelineMessage
-from .message import PipelineOutput
-from .message import TopicMessage
 from .pipeline import PipelineInfo
+from .pipeline import PipelineOutput
+from .pipeline import PipelineResult
 from .pipeline import QueuePipeline
+from .pipeline import ResourceUsed
 from .resource import Resource
+from .topic import TopicMessage
 
 __all__ = [
-    "TopicMessage",
-    "PipelineMessage",
-    "PipelineOutput",
-    "QueuePipeline",
     "PipelineInfo",
+    "PipelineOutput",
+    "PipelineResult",
+    "QueuePipeline",
     "Resource",
+    "ResourceUsed",
+    "TopicMessage",
 ]

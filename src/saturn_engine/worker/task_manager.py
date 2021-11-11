@@ -2,7 +2,7 @@ import asyncio
 from collections.abc import Coroutine
 from typing import Union
 
-from saturn_engine.utils import TasksGroup
+from saturn_engine.utils.asyncutils import TasksGroup
 from saturn_engine.utils.log import getLogger
 
 

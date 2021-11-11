@@ -5,13 +5,14 @@ from typing import Callable
 import pytest
 
 from saturn_engine.core import PipelineInfo
-from saturn_engine.core.message import PipelineMessage
-from saturn_engine.core.message import PipelineOutput
-from saturn_engine.core.message import TopicMessage
+from saturn_engine.core import PipelineOutput
+from saturn_engine.core import PipelineResult
+from saturn_engine.core import TopicMessage
 from saturn_engine.worker.executors import ExecutableMessage
 from saturn_engine.worker.executors import Executor
 from saturn_engine.worker.executors import ExecutorManager
 from saturn_engine.worker.parkers import Parkers
+from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources_manager import ResourceData
 from saturn_engine.worker.topics.memory import MemoryTopic
 from saturn_engine.worker.topics.memory import get_queue
@@ -25,15 +26,18 @@ class FakeExecutor(Executor):
         self.processing = 0
         self.processed = 0
 
-    async def process_message(self, message: PipelineMessage) -> list[PipelineOutput]:
+    async def process_message(self, message: PipelineMessage) -> PipelineResult:
         self.processing += 1
         await self.execute_semaphore.acquire()
         self.processed += 1
-        return [
-            PipelineOutput(
-                channel="default", message=TopicMessage(args={"n": self.processed})
-            )
-        ]
+        return PipelineResult(
+            outputs=[
+                PipelineOutput(
+                    channel="default", message=TopicMessage(args={"n": self.processed})
+                )
+            ],
+            resources=[],
+        )
 
 
 @pytest.mark.asyncio

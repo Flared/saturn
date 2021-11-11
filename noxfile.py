@@ -75,6 +75,7 @@ def lint(session: Session) -> None:
         "flake8",
         "flake8-bandit",
         "flake8-black",
+        "flake8-breakpoint",
         "flake8-bugbear",
         "flake8-isort",
     )

@@ -5,9 +5,9 @@ import aiohttp
 
 from saturn_engine.core.api import JobInput
 from saturn_engine.core.api import JobResponse
-from saturn_engine.utils import DelayedThrottle
 from saturn_engine.utils import urlcat
 from saturn_engine.utils import utcnow
+from saturn_engine.utils.asyncutils import DelayedThrottle
 from saturn_engine.utils.log import getLogger
 from saturn_engine.utils.options import asdict
 from saturn_engine.utils.options import fromdict
