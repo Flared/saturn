@@ -6,6 +6,7 @@ import pytest
 
 from saturn_engine.utils import get_own_attr
 from saturn_engine.utils import has_own_attr
+from saturn_engine.utils import lazy
 from saturn_engine.utils.asyncutils import DelayedThrottle
 
 
@@ -84,3 +85,23 @@ async def test_delayed_throttle() -> None:
     await asyncio.sleep(0.2)
     mock.assert_not_awaited()
     mock.reset_mock()
+
+
+def test_lazy() -> None:
+    count: int = 0
+
+    @lazy()
+    def compute() -> str:
+        nonlocal count
+        count = count + 1
+        return "aa"
+
+    assert compute() == "aa"
+    assert count == 1
+
+    assert compute() == "aa"
+    assert count == 1
+
+    compute.clear()
+    assert compute() == "aa"
+    assert count == 2
