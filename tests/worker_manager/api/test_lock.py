@@ -132,13 +132,22 @@ def test_api_lock_with_resources(
     queue_item = queue_item_maker()
     queue_item.pipeline.info.resources["key"] = "TestApiKey"
     queues_store.create_queue(session=session, name="test", spec=queue_item)
+    session.commit()
+
+    # Try to lock the queue_item, but resources are missing, so skipped.
+    resp = client.post("/api/lock", json={"worker_id": "worker-1"})
+    assert resp.status_code == 200
+    assert resp.json
+    assert not resp.json["items"]
+    assert not resp.json["resources"]
+
+    # Add resources to the static definitions.
     resource = api.ResourceItem(name="test", type="TestApiKey", data={})
     static_definitions.resources["test"] = resource
     static_definitions.resources_by_type["TestApiKey"] = [resource]
-    session.commit()
 
-    # Get items
-    resp = client.post("/api/lock", json={"worker_id": "worker-1"})
+    # Now lock return the pipeline with its resource.
+    resp = client.post("/api/lock", json={"worker_id": "worker-2"})
     assert resp.status_code == 200
     assert resp.json
     assert resp.json["items"][0]["name"] == "test"
