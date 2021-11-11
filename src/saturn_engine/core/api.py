@@ -110,3 +110,8 @@ class JobResponse(ItemResponse[JobItem]):
 @dataclasses.dataclass
 class UpdateResponse:
     pass
+
+
+@dataclasses.dataclass
+class JobsSyncResponse:
+    pass

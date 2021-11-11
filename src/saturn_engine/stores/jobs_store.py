@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import Optional
-from typing import Union
 
 from sqlalchemy import select
 from sqlalchemy import update
@@ -12,9 +11,21 @@ from saturn_engine.models import Job
 
 
 def create_job(
-    *, session: Union[AnySession], queue_name: str, job_definition_name: str
+    *,
+    session: AnySession,
+    name: str,
+    queue_name: str,
+    job_definition_name: str,
+    completed_at: Optional[datetime] = None,
+    started_at: Optional[datetime] = None,
 ) -> Job:
-    job = Job(queue_name=queue_name, job_definition_name=job_definition_name)
+    job = Job(
+        name=name,
+        queue_name=queue_name,
+        job_definition_name=job_definition_name,
+        completed_at=completed_at,
+        started_at=started_at,
+    )
     session.add(job)
     return job
 
@@ -29,6 +40,23 @@ async def get_jobs(*, session: AnyAsyncSession) -> list[Job]:
 
 async def get_job(name: str, session: AnyAsyncSession) -> Optional[Job]:
     return await session.get(Job, name)
+
+
+async def get_last_job(
+    *, session: AnyAsyncSession, job_definition_name: str
+) -> Optional[Job]:
+    return (
+        (
+            await session.execute(
+                select(Job)
+                .where(Job.job_definition_name == job_definition_name)
+                .order_by(Job.started_at.desc())
+                .options(joinedload(Job.queue))
+            )
+        )
+        .scalars()
+        .first()
+    )
 
 
 async def update_job(

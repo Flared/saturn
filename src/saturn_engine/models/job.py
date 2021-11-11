@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import Column
 from sqlalchemy import ForeignKey
@@ -8,6 +9,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql.sqltypes import Text
 
 from saturn_engine.core.api import JobItem
+from saturn_engine.utils import utcnow
 
 from .base import Base
 from .types import UTCDateTime
@@ -18,7 +20,8 @@ class Job(Base):
 
     name: Mapped[str] = Column(Text, primary_key=True)
     cursor = Column(Text, nullable=True)
-    completed_at: Mapped[datetime] = Column(UTCDateTime, nullable=True)  # type: ignore[assignment]  # noqa: B950
+    completed_at: Mapped[Optional[datetime]] = Column(UTCDateTime, nullable=True)  # type: ignore[assignment]  # noqa: B950
+    started_at: Mapped[datetime] = Column(UTCDateTime, nullable=False)  # type: ignore[assignment]  # noqa: B950
     queue_name = Column(Text, ForeignKey("queues.name"), nullable=False)
     queue: "Queue" = relationship(
         "Queue",
@@ -27,10 +30,20 @@ class Job(Base):
     )
     job_definition_name: Mapped[str] = Column(Text, nullable=False)
 
-    def __init__(self, *, queue_name: str, job_definition_name: str) -> None:
-        self.name = queue_name
+    def __init__(
+        self,
+        *,
+        name: str,
+        queue_name: str,
+        job_definition_name: str,
+        completed_at: Optional[datetime] = None,
+        started_at: Optional[datetime] = None,
+    ) -> None:
+        self.name = name
         self.queue_name = queue_name
         self.job_definition_name = job_definition_name
+        self.completed_at = completed_at
+        self.started_at = started_at or utcnow()
 
     def as_core_item(self) -> JobItem:
         return JobItem(
