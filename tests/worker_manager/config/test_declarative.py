@@ -41,7 +41,6 @@ metadata:
   name: test-topic
 spec:
   type: RabbitMQ
-  options: {}
 ---
 apiVersion: saturn.github.io/v1alpha1
 kind: SaturnInventory

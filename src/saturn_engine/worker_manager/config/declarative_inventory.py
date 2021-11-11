@@ -9,7 +9,7 @@ from .declarative_base import BaseObject
 @dataclasses.dataclass
 class InventorySpec:
     type: str
-    options: dict[str, Any]
+    options: dict[str, Any] = dataclasses.field(default_factory=dict)
 
 
 @dataclasses.dataclass
