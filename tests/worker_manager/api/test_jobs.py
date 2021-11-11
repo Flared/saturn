@@ -1,15 +1,13 @@
-from typing import Callable
-
 from flask.testing import FlaskClient
 from sqlalchemy.orm import Session
 
-from saturn_engine.core.api import QueueItem
+from saturn_engine.core import api
 from saturn_engine.stores import jobs_store
 from saturn_engine.stores import queues_store
 
 
 def test_api_jobs(
-    client: FlaskClient, session: Session, queue_item_maker: Callable[..., QueueItem]
+    client: FlaskClient, session: Session, fake_job_definition: api.JobDefinition
 ) -> None:
     # Empty
     resp = client.get("/api/jobs")
@@ -17,11 +15,13 @@ def test_api_jobs(
     assert resp.json == {"items": []}
 
     # Add a job
-    queue = queues_store.create_queue(
-        session=session, name="test", spec=queue_item_maker()
-    )
+    queue = queues_store.create_queue(session=session, name="test")
     session.flush()
-    job = jobs_store.create_job(session=session, queue_name=queue.name)
+    job = jobs_store.create_job(
+        session=session,
+        queue_name=queue.name,
+        job_definition_name=fake_job_definition.name,
+    )
     session.commit()
 
     # Contains one job
@@ -33,18 +33,20 @@ def test_api_jobs(
 
 
 def test_api_job(
-    client: FlaskClient, session: Session, queue_item_maker: Callable[..., QueueItem]
+    client: FlaskClient, session: Session, fake_job_definition: api.JobDefinition
 ) -> None:
     # Empty
     resp = client.get("/api/job/1")
     assert resp.status_code == 404
 
     # Add a job
-    queue = queues_store.create_queue(
-        session=session, name="test", spec=queue_item_maker()
-    )
+    queue = queues_store.create_queue(session=session, name="test")
     session.flush()
-    job = jobs_store.create_job(session=session, queue_name=queue.name)
+    job = jobs_store.create_job(
+        session=session,
+        queue_name=queue.name,
+        job_definition_name=fake_job_definition.name,
+    )
     session.commit()
 
     # Get the job
@@ -56,18 +58,20 @@ def test_api_job(
 
 
 def test_api_update_job(
-    client: FlaskClient, session: Session, queue_item_maker: Callable[..., QueueItem]
+    client: FlaskClient, session: Session, fake_job_definition: api.JobDefinition
 ) -> None:
     # Empty
     resp = client.put("/api/job/1")
     assert resp.status_code == 404
 
     # Add a job
-    queue = queues_store.create_queue(
-        session=session, name="test", spec=queue_item_maker()
-    )
+    queue = queues_store.create_queue(session=session, name="test")
     session.flush()
-    job = jobs_store.create_job(session=session, queue_name=queue.name)
+    job = jobs_store.create_job(
+        session=session,
+        queue_name=queue.name,
+        job_definition_name=fake_job_definition.name,
+    )
     session.commit()
 
     # Update the job

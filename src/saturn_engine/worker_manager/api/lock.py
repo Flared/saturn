@@ -63,21 +63,24 @@ async def post_lock() -> Json[LockResponse]:
                 )
             )
 
+        for item in assigned_items:
+            item.join_definitions(config().static_definitions)
+
         # Collect resource for assigned work
         static_definitions = config().static_definitions
         resources = {}
         # Copy list since the iteration could drop items from assigned_items.
         for item in assigned_items.copy():
             item_resources = {}
-            for resource_type in item.spec.pipeline.info.resources.values():
+            for resource_type in item.queue_item.pipeline.info.resources.values():
                 pipeline_resources = static_definitions.resources_by_type.get(
                     resource_type
                 )
                 if not pipeline_resources:
                     logger.error(
-                        "Skipping queue item, resource missing: pipeline=%s, "
+                        "Skipping queue item, resource missing: item=%s, "
                         "resource=%s",
-                        item.spec.name,
+                        item.name,
                         resource_type,
                     )
                     # Do not update assign the object in the database.
@@ -97,8 +100,7 @@ async def post_lock() -> Json[LockResponse]:
 
         queue_items = []
         for item in assigned_items:
-            item.spec.name = item.name
-            queue_items.append(item.spec)
+            queue_items.append(item.queue_item)
 
     return jsonify(
         LockResponse(

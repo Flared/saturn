@@ -25,10 +25,12 @@ class Job(Base):
         uselist=False,
         backref=backref("job", uselist=False),
     )
+    job_definition_name: Mapped[str] = Column(Text, nullable=False)
 
-    def __init__(self, *, queue_name: str) -> None:
+    def __init__(self, *, queue_name: str, job_definition_name: str) -> None:
         self.name = queue_name
         self.queue_name = queue_name
+        self.job_definition_name = job_definition_name
 
     def as_core_item(self) -> JobItem:
         return JobItem(

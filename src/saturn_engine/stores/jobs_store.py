@@ -12,11 +12,9 @@ from saturn_engine.models import Job
 
 
 def create_job(
-    *,
-    session: Union[AnySession],
-    queue_name: str,
+    *, session: Union[AnySession], queue_name: str, job_definition_name: str
 ) -> Job:
-    job = Job(queue_name=queue_name)
+    job = Job(queue_name=queue_name, job_definition_name=job_definition_name)
     session.add(job)
     return job
 

@@ -100,3 +100,15 @@ def queue_item_maker(
         )
 
     return maker
+
+
+@pytest.fixture
+def job_definition_maker(
+    queue_item_maker: Callable[..., api.QueueItem]
+) -> Callable[..., api.JobDefinition]:
+    def maker() -> api.JobDefinition:
+        return api.JobDefinition(
+            name="test", template=queue_item_maker(), minimal_interval="@weekly"
+        )
+
+    return maker

@@ -5,7 +5,6 @@ from sqlalchemy import or_
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from saturn_engine.core.api import QueueItem
 from saturn_engine.database import AnyAsyncSession
 from saturn_engine.database import AnySession
 from saturn_engine.models import Queue
@@ -15,9 +14,8 @@ def create_queue(
     *,
     session: Union[AnySession],
     name: str,
-    spec: QueueItem,
 ) -> Queue:
-    queue = Queue(name=name, spec=spec)
+    queue = Queue(name=name)
     session.add(queue)
     return queue
 

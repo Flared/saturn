@@ -35,44 +35,44 @@ def test_api_lock(
     client: FlaskClient,
     session: Session,
     frozen_time: FreezeTime,
-    queue_item_maker: Callable[..., api.QueueItem],
+    fake_job_definition: api.JobDefinition,
 ) -> None:
     def create_queue(name: str) -> Queue:
-        queue = queues_store.create_queue(
-            session=session, name=name, spec=queue_item_maker()
-        )
+        queue = queues_store.create_queue(session=session, name=name)
         session.flush()
         return queue
 
     def create_job(name: str) -> Job:
         queue = create_queue(name)
-        job = jobs_store.create_job(session=session, queue_name=queue.name)
+        job = jobs_store.create_job(
+            session=session,
+            queue_name=queue.name,
+            job_definition_name=fake_job_definition.name,
+        )
         return job
 
-    for i in range(7):
-        create_queue(f"queue-{i}")
-
-    for i in range(5):
+    for i in range(13):
         create_job(f"job-{i}")
 
     session.commit()
 
     expected_items_worker1 = {
-        "queue-0",
-        "queue-1",
-        "queue-2",
-        "queue-3",
-        "queue-4",
-        "queue-5",
-        "queue-6",
         "job-0",
         "job-1",
         "job-2",
+        "job-3",
+        "job-4",
+        "job-5",
+        "job-6",
+        "job-7",
+        "job-8",
+        "job-9",
     }
 
     expected_items_worker2 = {
-        "job-3",
-        "job-4",
+        "job-10",
+        "job-11",
+        "job-12",
     }
 
     # Get items
@@ -94,10 +94,10 @@ def test_api_lock(
     assert ids(resp) == expected_items_worker2
 
     # Create new work. It should be picked by worker2.
-    create_queue("queue-7")
+    create_job("job-13")
     session.commit()
 
-    expected_items_worker2.add("queue-7")
+    expected_items_worker2.add("job-13")
     resp = client.post("/api/lock", json={"worker_id": "worker-2"})
     assert resp.status_code == 200
     assert ids(resp) == expected_items_worker2
@@ -109,16 +109,16 @@ def test_api_lock(
     resp = client.post("/api/lock", json={"worker_id": "worker-2"})
     assert resp.status_code == 200
     assert ids(resp) == {
-        "queue-0",
-        "queue-1",
-        "queue-2",
-        "queue-3",
-        "queue-4",
-        "queue-5",
-        "queue-6",
         "job-0",
         "job-1",
         "job-2",
+        "job-3",
+        "job-4",
+        "job-5",
+        "job-6",
+        "job-7",
+        "job-8",
+        "job-9",
     }
 
 
@@ -128,10 +128,14 @@ def test_api_lock_with_resources(
     frozen_time: FreezeTime,
     queue_item_maker: Callable[..., api.QueueItem],
     static_definitions: StaticDefinitions,
+    fake_job_definition: api.JobDefinition,
 ) -> None:
     queue_item = queue_item_maker()
     queue_item.pipeline.info.resources["key"] = "TestApiKey"
-    queues_store.create_queue(session=session, name="test", spec=queue_item)
+    queues_store.create_queue(session=session, name="test")
+    jobs_store.create_job(
+        session=session, queue_name="test", job_definition_name=fake_job_definition.name
+    )
     session.commit()
 
     # Try to lock the queue_item, but resources are missing, so skipped.

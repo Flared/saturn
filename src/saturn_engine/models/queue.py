@@ -1,4 +1,4 @@
-from typing import Any
+import dataclasses
 from typing import Optional
 
 from sqlalchemy import Column
@@ -7,11 +7,9 @@ from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.sqltypes import DateTime
 
 from saturn_engine.core.api import QueueItem
-from saturn_engine.utils.options import asdict
-from saturn_engine.utils.options import fromdict
+from saturn_engine.worker_manager.config.static_definitions import StaticDefinitions
 
 from .base import Base
-from .types import JSON
 
 
 class Queue(Base):
@@ -20,24 +18,25 @@ class Queue(Base):
     name: Mapped[str] = Column(Text, primary_key=True)
     assigned_at = Column(DateTime(timezone=True))
     assigned_to = Column(Text)
-    _spec: Mapped[dict[str, Any]] = Column("spec", JSON, nullable=False)  # type: ignore[assignment]  # noqa: B950
     job: Optional["Job"]
-    _cached_spec: Optional[QueueItem] = None
-
-    def __init__(self, *, name: str, spec: QueueItem) -> None:
-        self.name = name
-        self.spec = spec
+    _queue_item: Optional[QueueItem] = None
 
     @property
-    def spec(self) -> QueueItem:
-        if self._cached_spec is None:
-            self._cached_spec = fromdict(self._spec, QueueItem)
-        return self._cached_spec
+    def queue_item(self) -> QueueItem:
+        if self._queue_item is None:
+            raise ValueError("Must .join_definitions() first")
+        return self._queue_item
 
-    @spec.setter
-    def spec(self, value: QueueItem) -> None:
-        self._cached_spec = value
-        self._spec = asdict(value)
+    def join_definitions(self, static_definitions: StaticDefinitions) -> None:
+        if self.job:
+            self._queue_item = dataclasses.replace(
+                static_definitions.job_definitions[
+                    self.job.job_definition_name
+                ].template,
+                name=self.name,
+            )
+        else:
+            raise NotImplementedError("Only support Job queue")
 
 
 from .job import Job
