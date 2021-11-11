@@ -1,50 +1,43 @@
+from typing import Any
 from typing import Optional
 
 from sqlalchemy import Column
 from sqlalchemy import Text
 from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.sqltypes import DateTime
-from sqlalchemy.sql.sqltypes import Integer
 
-from saturn_engine.core.api import InventoryItem
-from saturn_engine.core.api import PipelineInfo
 from saturn_engine.core.api import QueueItem
-from saturn_engine.core.api import QueuePipeline
-from saturn_engine.utils import StrEnum
+from saturn_engine.utils.options import asdict
+from saturn_engine.utils.options import fromdict
 
 from .base import Base
-
-
-class WorkType(StrEnum):
-    JOB = "job"
-    QUEUE = "queue"
+from .types import JSON
 
 
 class Queue(Base):
     __tablename__ = "queues"
 
-    id: Mapped[int] = Column(Integer, primary_key=True)
+    name: Mapped[str] = Column(Text, primary_key=True)
     assigned_at = Column(DateTime(timezone=True))
     assigned_to = Column(Text)
-    pipeline: Mapped[str] = Column(Text, nullable=False)
+    _spec: Mapped[dict[str, Any]] = Column("spec", JSON, nullable=False)  # type: ignore[assignment]  # noqa: B950
     job: Optional["Job"]
+    _cached_spec: Optional[QueueItem] = None
 
-    def __init__(self, pipeline: str) -> None:
-        self.pipeline = pipeline
+    def __init__(self, *, name: str, spec: QueueItem) -> None:
+        self.name = name
+        self.spec = spec
 
     @property
-    def work_type(self) -> WorkType:
-        return WorkType.JOB if self.job else WorkType.QUEUE
+    def spec(self) -> QueueItem:
+        if self._cached_spec is None:
+            self._cached_spec = fromdict(self._spec, QueueItem)
+        return self._cached_spec
 
-    def as_core_item(self) -> QueueItem:
-        return QueueItem(
-            name=f"{self.work_type}-{self.id}",
-            input=InventoryItem(name="", type=""),
-            pipeline=QueuePipeline(
-                info=PipelineInfo(name=self.pipeline, resources={}), args={}
-            ),
-            output={},
-        )
+    @spec.setter
+    def spec(self, value: QueueItem) -> None:
+        self._cached_spec = value
+        self._spec = asdict(value)
 
 
 from .job import Job

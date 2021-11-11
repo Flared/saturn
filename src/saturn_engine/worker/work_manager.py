@@ -174,4 +174,5 @@ class WorkManager:
             name=item.name,
             type=item.type,
             data=item.data,
+            default_delay=item.default_delay,
         )

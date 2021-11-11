@@ -1,3 +1,5 @@
+import json
+import typing
 from datetime import datetime
 from datetime import timezone
 from typing import Any
@@ -32,3 +34,26 @@ class UTCfyDateTime(types.TypeDecorator[datetime]):
 
 
 UTCDateTime = types.DateTime(timezone=True).with_variant(UTCfyDateTime, "sqlite")
+
+
+class StringyJSON(types.TypeDecorator[dict[str, Any]]):
+    """Stores and retrieves JSON as TEXT."""
+
+    impl = types.TEXT
+
+    def process_bind_param(
+        self, value: Optional[dict[str, Any]], dialect: Dialect
+    ) -> Optional[typing.Text]:
+        if value is not None:
+            return json.dumps(value)
+        return None
+
+    def process_result_value(
+        self, value: Optional[Any], dialect: Dialect
+    ) -> Optional[dict[str, Any]]:
+        if value is not None:
+            value = json.loads(value)
+        return value
+
+
+JSON = types.JSON().with_variant(StringyJSON, "sqlite")

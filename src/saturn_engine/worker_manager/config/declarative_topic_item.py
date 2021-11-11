@@ -1,9 +1,5 @@
 import dataclasses
-import functools
 from typing import Any
-
-import desert
-import marshmallow
 
 from saturn_engine.core import api
 
@@ -19,11 +15,6 @@ class TopicSpec:
 @dataclasses.dataclass
 class TopicItem(BaseObject):
     spec: TopicSpec
-
-    @classmethod
-    @functools.cache
-    def schema(cls) -> marshmallow.Schema:
-        return desert.schema(cls)
 
     def to_core_object(self) -> api.TopicItem:
         return api.TopicItem(

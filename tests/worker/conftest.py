@@ -8,7 +8,6 @@ from unittest.mock import Mock
 from unittest.mock import create_autospec
 
 import pytest
-from pytest_mock import MockerFixture
 
 from saturn_engine.client.worker_manager import WorkerManagerClient
 from saturn_engine.core import PipelineInfo
@@ -122,21 +121,6 @@ async def broker_maker(
 @pytest.fixture
 async def broker(broker_maker: Callable[..., Broker]) -> AsyncIterator[Broker]:
     yield broker_maker()
-
-
-def pipeline() -> None:
-    ...
-
-
-@pytest.fixture
-def fake_pipeline(mocker: MockerFixture) -> Iterator[Callable]:
-    mock = mocker.patch(__name__ + ".pipeline", autospec=True)
-    yield mock
-
-
-@pytest.fixture
-def fake_pipeline_info(fake_pipeline: Callable) -> PipelineInfo:
-    return PipelineInfo.from_pipeline(fake_pipeline)
 
 
 @pytest.fixture

@@ -14,9 +14,9 @@ from saturn_engine.models import Job
 def create_job(
     *,
     session: Union[AnySession],
-    queue_id: int,
+    queue_name: str,
 ) -> Job:
-    job = Job(queue_id=queue_id)
+    job = Job(queue_name=queue_name)
     session.add(job)
     return job
 
@@ -29,18 +29,18 @@ async def get_jobs(*, session: AnyAsyncSession) -> list[Job]:
     )
 
 
-async def get_job(job_id: int, session: AnyAsyncSession) -> Optional[Job]:
-    return await session.get(Job, job_id)
+async def get_job(name: str, session: AnyAsyncSession) -> Optional[Job]:
+    return await session.get(Job, name)
 
 
 async def update_job(
-    job_id: int,
+    name: str,
     *,
     cursor: Optional[str],
     completed_at: Optional[datetime],
     session: AnyAsyncSession,
 ) -> None:
-    noop_stmt = stmt = update(Job).where(Job.id == job_id)
+    noop_stmt = stmt = update(Job).where(Job.name == name)
     if cursor:
         stmt = stmt.values(cursor=cursor)
     if completed_at:

@@ -5,6 +5,7 @@ from sqlalchemy import or_
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
+from saturn_engine.core.api import QueueItem
 from saturn_engine.database import AnyAsyncSession
 from saturn_engine.database import AnySession
 from saturn_engine.models import Queue
@@ -13,9 +14,10 @@ from saturn_engine.models import Queue
 def create_queue(
     *,
     session: Union[AnySession],
-    pipeline: str,
+    name: str,
+    spec: QueueItem,
 ) -> Queue:
-    queue = Queue(pipeline=pipeline)
+    queue = Queue(name=name, spec=spec)
     session.add(queue)
     return queue
 
@@ -35,7 +37,7 @@ async def get_assigned_queues(
                 )
                 .where(Queue.assigned_to == worker_id)
                 .where(Queue.assigned_at >= assigned_after)
-                .order_by(Queue.id)
+                .order_by(Queue.name)
             )
         )
         .scalars()

@@ -6,8 +6,11 @@ from typing import Optional
 
 import yaml
 
+from saturn_engine.utils.options import fromdict
+
 from .declarative_inventory import Inventory
 from .declarative_job_definition import JobDefinition
+from .declarative_resource import Resource
 from .declarative_topic_item import TopicItem
 from .static_definitions import StaticDefinitions
 
@@ -60,20 +63,26 @@ def _compile_objects(uncompiled_objects: list[UncompiledObject]) -> StaticDefini
     definitions: StaticDefinitions = StaticDefinitions()
 
     for uncompiled_inventory in objects_by_kind.pop("SaturnInventory", list()):
-        inventory: Inventory = Inventory.schema().load(uncompiled_inventory.data)
+        inventory: Inventory = fromdict(uncompiled_inventory.data, Inventory)
         definitions.inventories[inventory.metadata.name] = inventory.to_core_object()
 
     for uncompiled_topic in objects_by_kind.pop("SaturnTopic", list()):
-        topic_item: TopicItem = TopicItem.schema().load(uncompiled_topic.data)
+        topic_item: TopicItem = fromdict(uncompiled_topic.data, TopicItem)
         definitions.topics[topic_item.metadata.name] = topic_item.to_core_object()
 
     for uncompiled_job_definition in objects_by_kind.pop("SaturnJobDefinition", list()):
-        job_definition: JobDefinition = JobDefinition.schema().load(
-            uncompiled_job_definition.data
+        job_definition: JobDefinition = fromdict(
+            uncompiled_job_definition.data, JobDefinition
         )
         definitions.job_definitions[
             job_definition.metadata.name
         ] = job_definition.to_core_object(definitions)
+
+    for uncompiled_resource in objects_by_kind.pop("SaturnResource", list()):
+        resource: Resource = fromdict(uncompiled_resource.data, Resource)
+        resource_item = resource.to_core_object()
+        definitions.resources[resource.metadata.name] = resource_item
+        definitions.resources_by_type[resource_item.type].append(resource_item)
 
     for object_kind in objects_by_kind.keys():
         raise Exception(f"Unsupported kind {object_kind}")

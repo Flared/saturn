@@ -1,8 +1,4 @@
 import dataclasses
-import functools
-
-import desert
-import marshmallow
 
 from saturn_engine.core import api
 
@@ -74,11 +70,6 @@ class JobDefinitionSpec:
 @dataclasses.dataclass
 class JobDefinition(BaseObject):
     spec: JobDefinitionSpec
-
-    @classmethod
-    @functools.cache
-    def schema(cls) -> marshmallow.Schema:
-        return desert.schema(cls)
 
     def to_core_object(
         self,
