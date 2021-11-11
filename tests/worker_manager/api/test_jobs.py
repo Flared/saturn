@@ -13,7 +13,10 @@ from tests.conftest import FreezeTime
 
 
 def test_api_jobs(
-    client: FlaskClient, session: Session, fake_job_definition: api.JobDefinition
+    client: FlaskClient,
+    session: Session,
+    fake_job_definition: api.JobDefinition,
+    frozen_time: FreezeTime,
 ) -> None:
     # Empty
     resp = client.get("/api/jobs")
@@ -35,12 +38,22 @@ def test_api_jobs(
     resp = client.get("/api/jobs")
     assert resp.status_code == 200
     assert resp.json == {
-        "items": [{"name": job.name, "completed_at": None, "cursor": None}]
+        "items": [
+            {
+                "name": job.name,
+                "completed_at": None,
+                "cursor": None,
+                "started_at": "2018-01-02T00:00:00+00:00",
+            }
+        ]
     }
 
 
 def test_api_job(
-    client: FlaskClient, session: Session, fake_job_definition: api.JobDefinition
+    client: FlaskClient,
+    session: Session,
+    fake_job_definition: api.JobDefinition,
+    frozen_time: FreezeTime,
 ) -> None:
     # Empty
     resp = client.get("/api/job/1")
@@ -61,12 +74,20 @@ def test_api_job(
     resp = client.get(f"/api/jobs/{job.name}")
     assert resp.status_code == 200
     assert resp.json == {
-        "data": {"name": job.name, "completed_at": None, "cursor": None}
+        "data": {
+            "name": job.name,
+            "completed_at": None,
+            "cursor": None,
+            "started_at": "2018-01-02T00:00:00+00:00",
+        }
     }
 
 
 def test_api_update_job(
-    client: FlaskClient, session: Session, fake_job_definition: api.JobDefinition
+    client: FlaskClient,
+    session: Session,
+    fake_job_definition: api.JobDefinition,
+    frozen_time: FreezeTime,
 ) -> None:
     # Empty
     resp = client.put("/api/job/1")
@@ -91,7 +112,12 @@ def test_api_update_job(
     resp = client.get(f"/api/jobs/{job.name}")
     assert resp.status_code == 200
     assert resp.json == {
-        "data": {"name": job.name, "completed_at": None, "cursor": "1"}
+        "data": {
+            "name": job.name,
+            "completed_at": None,
+            "cursor": "1",
+            "started_at": "2018-01-02T00:00:00+00:00",
+        }
     }
 
     # Complete the job
@@ -109,6 +135,7 @@ def test_api_update_job(
             "name": job.name,
             "completed_at": "2018-01-02T00:00:00+00:00",
             "cursor": "2",
+            "started_at": "2018-01-02T00:00:00+00:00",
         }
     }
 
@@ -237,14 +264,21 @@ spec:
     assert resp.status_code == 200
     assert resp.json == {
         "items": [
-            {"completed_at": None, "cursor": None, "name": "running"},
+            {
+                "completed_at": None,
+                "started_at": "2018-01-02T00:00:00+00:00",
+                "cursor": None,
+                "name": "running",
+            },
             {
                 "completed_at": "2018-01-01T00:00:00+00:00",
+                "started_at": "2017-12-25T00:00:00+00:00",
                 "cursor": None,
                 "name": "due",
             },
             {
                 "completed_at": "2018-01-01T00:00:00+00:00",
+                "started_at": "2017-12-31T00:00:00+00:00",
                 "cursor": None,
                 "name": "not-due",
             },
@@ -259,34 +293,44 @@ spec:
     # Job was created
     expected_response = {
         "items": [
-            # Running job was untouched
-            {"completed_at": None, "cursor": None, "name": "running"},
-            # The old due job, untouched
             {
+                # Running job was untouched
+                "completed_at": None,
+                "cursor": None,
+                "name": "running",
+                "started_at": "2018-01-02T00:00:00+00:00",
+            },
+            {
+                # The old due job, untouched
                 "completed_at": "2018-01-01T00:00:00+00:00",
                 "cursor": None,
                 "name": "due",
+                "started_at": "2017-12-25T00:00:00+00:00",
             },
-            # The not-due job, untouched
             {
+                # The not-due job, untouched
                 "completed_at": "2018-01-01T00:00:00+00:00",
                 "cursor": None,
                 "name": "not-due",
+                "started_at": "2017-12-31T00:00:00+00:00",
             },
-            # Unscheduled job was scheduled
             {
+                # Unscheduled job was scheduled
                 "completed_at": None,
                 "cursor": None,
                 "name": "unscheduled-1514851200",
+                "started_at": "2018-01-02T00:00:00+00:00",
             },
-            # The due job was scheduled
             {
+                # The due job was scheduled
                 "completed_at": None,
                 "cursor": None,
                 "name": "due-1514851200",
+                "started_at": "2018-01-02T00:00:00+00:00",
             },
         ]
     }
+
     resp = client.get("/api/jobs")
     assert resp.status_code == 200
     assert resp.json == expected_response

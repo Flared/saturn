@@ -49,6 +49,7 @@ class Job(Base):
         return JobItem(
             name=self.name,
             completed_at=self.completed_at,
+            started_at=self.started_at,
             cursor=self.cursor,
         )
 

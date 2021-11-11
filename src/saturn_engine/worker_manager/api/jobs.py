@@ -62,29 +62,30 @@ _SYNC_LOCK = threading.Lock()
 @bp.route("/sync", methods=("POST",))
 async def post_sync() -> Json[JobsSyncResponse]:
     """Create jobs that are due to be scheduled."""
-    with _SYNC_LOCK:
-        static_definitions: StaticDefinitions = config().static_definitions
+    if not _SYNC_LOCK.locked():
+        with _SYNC_LOCK:
+            static_definitions: StaticDefinitions = config().static_definitions
 
-        async with async_session_scope() as session:
-            for job_definition in static_definitions.job_definitions.values():
-                last_job = await jobs_store.get_last_job(
-                    session=session,
-                    job_definition_name=job_definition.name,
-                )
-
-                if (
-                    not last_job
-                    or croniter(
-                        job_definition.minimal_interval,
-                        last_job.started_at,
-                    ).get_next(ret_type=datetime)
-                    < utcnow()
-                ):
-                    jobs_store.create_job(
-                        name=f"{job_definition.name}-{int(time.time())}",
+            async with async_session_scope() as session:
+                for job_definition in static_definitions.job_definitions.values():
+                    last_job = await jobs_store.get_last_job(
                         session=session,
-                        queue_name=job_definition.template.input.name,
                         job_definition_name=job_definition.name,
                     )
 
-        return jsonify(JobsSyncResponse())
+                    if (
+                        not last_job
+                        or croniter(
+                            job_definition.minimal_interval,
+                            last_job.started_at,
+                        ).get_next(ret_type=datetime)
+                        < utcnow()
+                    ):
+                        job_name: str = f"{job_definition.name}-{int(time.time())}"
+                        jobs_store.create_job(
+                            name=job_name,
+                            session=session,
+                            queue_name=job_name,
+                            job_definition_name=job_definition.name,
+                        )
+    return jsonify(JobsSyncResponse())

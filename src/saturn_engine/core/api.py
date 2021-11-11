@@ -88,6 +88,7 @@ class InventoriesResponse(ListResponse[InventoryItem]):
 class JobItem:
     name: str
     completed_at: Optional[datetime]
+    started_at: datetime
     cursor: Optional[str]
 
 
