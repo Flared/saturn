@@ -13,9 +13,9 @@ from saturn_engine.models import Queue
 def create_queue(
     *,
     session: Union[AnySession],
-    pipeline: str,
+    name: str,
 ) -> Queue:
-    queue = Queue(pipeline=pipeline)
+    queue = Queue(name=name)
     session.add(queue)
     return queue
 
@@ -35,7 +35,7 @@ async def get_assigned_queues(
                 )
                 .where(Queue.assigned_to == worker_id)
                 .where(Queue.assigned_at >= assigned_after)
-                .order_by(Queue.id)
+                .order_by(Queue.name)
             )
         )
         .scalars()

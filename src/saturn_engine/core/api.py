@@ -33,6 +33,7 @@ class ResourceItem:
     name: str
     type: str
     data: dict[str, Any]
+    default_delay: float = 0
 
 
 @dataclasses.dataclass
@@ -85,7 +86,7 @@ class InventoriesResponse(ListResponse[InventoryItem]):
 
 @dataclasses.dataclass
 class JobItem:
-    id: int
+    name: str
     completed_at: Optional[datetime]
     cursor: Optional[str]
 

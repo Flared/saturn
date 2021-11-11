@@ -1,80 +1,103 @@
 from flask.testing import FlaskClient
 from sqlalchemy.orm import Session
 
+from saturn_engine.core import api
 from saturn_engine.stores import jobs_store
 from saturn_engine.stores import queues_store
 
 
-def test_api_jobs(client: FlaskClient, session: Session) -> None:
+def test_api_jobs(
+    client: FlaskClient, session: Session, fake_job_definition: api.JobDefinition
+) -> None:
     # Empty
     resp = client.get("/api/jobs")
     assert resp.status_code == 200
     assert resp.json == {"items": []}
 
     # Add a job
-    queue = queues_store.create_queue(session=session, pipeline="test")
+    queue = queues_store.create_queue(session=session, name="test")
     session.flush()
-    job = jobs_store.create_job(session=session, queue_id=queue.id)
+    job = jobs_store.create_job(
+        session=session,
+        queue_name=queue.name,
+        job_definition_name=fake_job_definition.name,
+    )
     session.commit()
 
     # Contains one job
     resp = client.get("/api/jobs")
     assert resp.status_code == 200
     assert resp.json == {
-        "items": [{"id": job.id, "completed_at": None, "cursor": None}]
+        "items": [{"name": job.name, "completed_at": None, "cursor": None}]
     }
 
 
-def test_api_job(client: FlaskClient, session: Session) -> None:
+def test_api_job(
+    client: FlaskClient, session: Session, fake_job_definition: api.JobDefinition
+) -> None:
     # Empty
     resp = client.get("/api/job/1")
     assert resp.status_code == 404
 
     # Add a job
-    queue = queues_store.create_queue(session=session, pipeline="test")
+    queue = queues_store.create_queue(session=session, name="test")
     session.flush()
-    job = jobs_store.create_job(session=session, queue_id=queue.id)
+    job = jobs_store.create_job(
+        session=session,
+        queue_name=queue.name,
+        job_definition_name=fake_job_definition.name,
+    )
     session.commit()
 
     # Get the job
-    resp = client.get(f"/api/jobs/{job.id}")
+    resp = client.get(f"/api/jobs/{job.name}")
     assert resp.status_code == 200
-    assert resp.json == {"data": {"id": job.id, "completed_at": None, "cursor": None}}
+    assert resp.json == {
+        "data": {"name": job.name, "completed_at": None, "cursor": None}
+    }
 
 
-def test_api_update_job(client: FlaskClient, session: Session) -> None:
+def test_api_update_job(
+    client: FlaskClient, session: Session, fake_job_definition: api.JobDefinition
+) -> None:
     # Empty
     resp = client.put("/api/job/1")
     assert resp.status_code == 404
 
     # Add a job
-    queue = queues_store.create_queue(session=session, pipeline="test")
+    queue = queues_store.create_queue(session=session, name="test")
     session.flush()
-    job = jobs_store.create_job(session=session, queue_id=queue.id)
+    job = jobs_store.create_job(
+        session=session,
+        queue_name=queue.name,
+        job_definition_name=fake_job_definition.name,
+    )
     session.commit()
 
     # Update the job
-    resp = client.put(f"/api/jobs/{job.id}", json={"cursor": "1"})
+    resp = client.put(f"/api/jobs/{job.name}", json={"cursor": "1"})
     assert resp.status_code == 200
 
     # Get the job
-    resp = client.get(f"/api/jobs/{job.id}")
+    resp = client.get(f"/api/jobs/{job.name}")
     assert resp.status_code == 200
-    assert resp.json == {"data": {"id": job.id, "completed_at": None, "cursor": "1"}}
+    assert resp.json == {
+        "data": {"name": job.name, "completed_at": None, "cursor": "1"}
+    }
 
     # Complete the job
     resp = client.put(
-        f"/api/jobs/{job.id}",
+        f"/api/jobs/{job.name}",
         json={"cursor": "2", "completed_at": "2018-01-02T00:00:00+00:00"},
     )
     assert resp.status_code == 200
 
     # Get the job
-    resp = client.get(f"/api/jobs/{job.id}")
+    resp = client.get(f"/api/jobs/{job.name}")
     assert resp.status_code == 200
     assert resp.json == {
         "data": {
-            "id": job.id,
+            "name": job.name,
             "completed_at": "2018-01-02T00:00:00+00:00",
             "cursor": "2",
         }

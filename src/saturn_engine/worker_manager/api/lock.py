@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from datetime import timedelta
 
@@ -11,12 +12,14 @@ from saturn_engine.stores import queues_store
 from saturn_engine.utils.flask import Json
 from saturn_engine.utils.flask import jsonify
 from saturn_engine.utils.flask import marshall_request
+from saturn_engine.worker_manager.config import config
 
 bp = Blueprint("lock", __name__, url_prefix="/api/lock")
 
 
 @bp.route("", methods=("POST",))
 async def post_lock() -> Json[LockResponse]:
+    logger = logging.getLogger(f"{__name__}.post_lock")
     lock_input = marshall_request(LockInput)
 
     # Note:
@@ -60,17 +63,48 @@ async def post_lock() -> Json[LockResponse]:
                 )
             )
 
+        for item in assigned_items:
+            item.join_definitions(config().static_definitions)
+
+        # Collect resource for assigned work
+        static_definitions = config().static_definitions
+        resources = {}
+        # Copy list since the iteration could drop items from assigned_items.
+        for item in assigned_items.copy():
+            item_resources = {}
+            for resource_type in item.queue_item.pipeline.info.resources.values():
+                pipeline_resources = static_definitions.resources_by_type.get(
+                    resource_type
+                )
+                if not pipeline_resources:
+                    logger.error(
+                        "Skipping queue item, resource missing: item=%s, "
+                        "resource=%s",
+                        item.name,
+                        resource_type,
+                    )
+                    # Do not update assign the object in the database.
+                    assigned_items.remove(item)
+                    break
+
+                item_resources.update({r.name: r for r in pipeline_resources})
+            # Didn't break out due to resource missing.
+            else:
+                resources.update(item_resources)
+
         # Refresh assignments
         new_assigned_at = datetime.now()
         for assigned_item in assigned_items:
             assigned_item.assigned_at = new_assigned_at
             assigned_item.assigned_to = lock_input.worker_id
 
-        return jsonify(
-            LockResponse(
-                items=[
-                    assigned_item.as_core_item() for assigned_item in assigned_items
-                ],
-                resources=[],
-            )
+        queue_items = []
+        for item in assigned_items:
+            queue_items.append(item.queue_item)
+
+    return jsonify(
+        LockResponse(
+            items=queue_items,
+            resources=list(sorted(resources.values(), key=lambda r: r.name)),
         )
+    )

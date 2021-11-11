@@ -21,11 +21,11 @@ class ApiJobStore(JobStore):
         *,
         http_client: aiohttp.ClientSession,
         base_url: str,
-        job_id: int,
+        job_name: str,
         **kwargs: Any
     ) -> None:
         self.http_client = http_client
-        self.job_id = job_id
+        self.job_name = job_name
         self.base_url = base_url
         self.logger = getLogger(__name__, self)
 
@@ -56,4 +56,4 @@ class ApiJobStore(JobStore):
 
     @property
     def job_url(self) -> str:
-        return urlcat(self.base_url, "api/jobs", str(self.job_id))
+        return urlcat(self.base_url, "api/jobs", self.job_name)

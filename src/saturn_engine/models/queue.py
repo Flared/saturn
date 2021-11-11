@@ -1,50 +1,42 @@
+import dataclasses
 from typing import Optional
 
 from sqlalchemy import Column
 from sqlalchemy import Text
 from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.sqltypes import DateTime
-from sqlalchemy.sql.sqltypes import Integer
 
-from saturn_engine.core.api import InventoryItem
-from saturn_engine.core.api import PipelineInfo
 from saturn_engine.core.api import QueueItem
-from saturn_engine.core.api import QueuePipeline
-from saturn_engine.utils import StrEnum
+from saturn_engine.worker_manager.config.static_definitions import StaticDefinitions
 
 from .base import Base
-
-
-class WorkType(StrEnum):
-    JOB = "job"
-    QUEUE = "queue"
 
 
 class Queue(Base):
     __tablename__ = "queues"
 
-    id: Mapped[int] = Column(Integer, primary_key=True)
+    name: Mapped[str] = Column(Text, primary_key=True)
     assigned_at = Column(DateTime(timezone=True))
     assigned_to = Column(Text)
-    pipeline: Mapped[str] = Column(Text, nullable=False)
     job: Optional["Job"]
-
-    def __init__(self, pipeline: str) -> None:
-        self.pipeline = pipeline
+    _queue_item: Optional[QueueItem] = None
 
     @property
-    def work_type(self) -> WorkType:
-        return WorkType.JOB if self.job else WorkType.QUEUE
+    def queue_item(self) -> QueueItem:
+        if self._queue_item is None:
+            raise ValueError("Must .join_definitions() first")
+        return self._queue_item
 
-    def as_core_item(self) -> QueueItem:
-        return QueueItem(
-            name=f"{self.work_type}-{self.id}",
-            input=InventoryItem(name="", type=""),
-            pipeline=QueuePipeline(
-                info=PipelineInfo(name=self.pipeline, resources={}), args={}
-            ),
-            output={},
-        )
+    def join_definitions(self, static_definitions: StaticDefinitions) -> None:
+        if self.job:
+            self._queue_item = dataclasses.replace(
+                static_definitions.job_definitions[
+                    self.job.job_definition_name
+                ].template,
+                name=self.name,
+            )
+        else:
+            raise NotImplementedError("Only support Job queue")
 
 
 from .job import Job

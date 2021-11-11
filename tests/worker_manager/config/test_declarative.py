@@ -2,6 +2,7 @@ import os
 
 from saturn_engine.core.api import InventoryItem
 from saturn_engine.core.api import JobDefinition
+from saturn_engine.core.api import ResourceItem
 from saturn_engine.core.api import TopicItem
 from saturn_engine.worker_manager.config.declarative import (
     load_definitions_from_directory,
@@ -24,6 +25,16 @@ def test_load_definitions_from_directory_simple() -> None:
 
 def test_load_job_definition() -> None:
     job_definition_str: str = """
+apiVersion: saturn.github.io/v1alpha1
+kind: SaturnResource
+metadata:
+  name: test-resource
+spec:
+  type: TestApiKey
+  data:
+    key: "qwe"
+  default_delay: 10
+---
 apiVersion: saturn.github.io/v1alpha1
 kind: SaturnTopic
 metadata:
@@ -76,6 +87,8 @@ spec:
     assert isinstance(
         static_definitions.job_definitions["test-job-definition"], JobDefinition
     )
+    assert isinstance(static_definitions.resources["test-resource"], ResourceItem)
+    assert len(static_definitions.resources_by_type["TestApiKey"]) == 1
 
 
 def test_load_job_definition_unordered() -> None:
