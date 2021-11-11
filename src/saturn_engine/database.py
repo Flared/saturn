@@ -5,6 +5,7 @@ from typing import Callable
 from typing import Optional
 from typing import Union
 
+import sqlalchemy.orm
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine import create_engine
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -24,6 +25,10 @@ AnyAsyncSession = Union[AsyncSession, _sqlalchemy_async_scoped_session]
 AnySession = Union[Session, AnyAsyncSession]
 
 
+def init() -> None:
+    sqlalchemy.orm.configure_mappers()
+
+
 async def create_all() -> None:
     async with async_engine().begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -36,10 +41,12 @@ async def drop_all() -> None:
 
 @lazy(threadlocal=True)
 def async_engine() -> AsyncEngine:
+    init()
     return create_async_engine(config().async_database_url, future=True)
 
 
 def engine() -> Engine:
+    init()
     return create_engine(config().database_url, future=True)
 
 
