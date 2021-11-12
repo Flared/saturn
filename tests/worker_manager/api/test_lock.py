@@ -45,6 +45,7 @@ def test_api_lock(
     def create_job(name: str) -> Job:
         queue = create_queue(name)
         job = jobs_store.create_job(
+            name=queue.name,
             session=session,
             queue_name=queue.name,
             job_definition_name=fake_job_definition.name,
@@ -134,7 +135,10 @@ def test_api_lock_with_resources(
     queue_item.pipeline.info.resources["key"] = "TestApiKey"
     queues_store.create_queue(session=session, name="test")
     jobs_store.create_job(
-        session=session, queue_name="test", job_definition_name=fake_job_definition.name
+        session=session,
+        name="test",
+        queue_name="test",
+        job_definition_name=fake_job_definition.name,
     )
     session.commit()
 

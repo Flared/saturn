@@ -88,6 +88,7 @@ class InventoriesResponse(ListResponse[InventoryItem]):
 class JobItem:
     name: str
     completed_at: Optional[datetime]
+    started_at: datetime
     cursor: Optional[str]
 
 
@@ -109,4 +110,9 @@ class JobResponse(ItemResponse[JobItem]):
 
 @dataclasses.dataclass
 class UpdateResponse:
+    pass
+
+
+@dataclasses.dataclass
+class JobsSyncResponse:
     pass

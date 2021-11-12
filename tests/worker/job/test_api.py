@@ -12,7 +12,11 @@ async def test_api_jobstore(
     http_client_mock: HttpClientMock, frozen_time: FreezeTime
 ) -> None:
     http_client_mock.get("/api/jobs/test").return_value = {
-        "data": {"name": "test", "cursor": None}
+        "data": {
+            "name": "test",
+            "cursor": None,
+            "started_at": "2018-01-02T00:00:00+00:00",
+        }
     }
 
     job_store = ApiJobStore(
@@ -24,7 +28,12 @@ async def test_api_jobstore(
     assert await job_store.load_cursor() is None
 
     http_client_mock.get("/api/jobs/test").return_value = {
-        "data": {"name": "test", "cursor": "10"}
+        "data": {
+            "name": "test",
+            "cursor": "10",
+            "completed_at": "2018-01-02T00:00:00+00:00",
+            "started_at": "2018-01-02T00:00:00+00:00",
+        }
     }
     assert await job_store.load_cursor() == "10"
 
@@ -50,7 +59,10 @@ async def test_api_jobstore(
     await job_store.save_cursor(after="40")
     await job_store.set_completed()
     http_client_mock.put("/api/jobs/test").assert_called_once_with(
-        json={"cursor": "40", "completed_at": "2018-01-02T00:00:00+00:00"}
+        json={
+            "cursor": "40",
+            "completed_at": "2018-01-02T00:00:00+00:00",
+        }
     )
     http_client_mock.reset_mock()
 
