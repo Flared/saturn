@@ -16,6 +16,7 @@ _memory_queues: dict[str, asyncio.Queue] = {}
 @dataclasses.dataclass
 class MemoryOptions:
     name: str
+    buffer_size: int = 100
 
 
 class MemoryTopic(Topic):
@@ -25,7 +26,7 @@ class MemoryTopic(Topic):
         self.options = options
 
     async def run(self) -> AsyncGenerator[AsyncContextManager[TopicMessage], None]:
-        queue = get_queue(self.options.name)
+        queue = get_queue(self.options.name, maxsize=self.options.buffer_size)
         while True:
             message = await queue.get()
             yield self.message_context(message, queue=queue)
@@ -40,7 +41,7 @@ class MemoryTopic(Topic):
             queue.task_done()
 
     async def publish(self, message: TopicMessage, wait: bool) -> bool:
-        queue = get_queue(self.options.name)
+        queue = get_queue(self.options.name, maxsize=self.options.buffer_size)
         if wait:
             await queue.put(message)
         else:

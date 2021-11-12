@@ -16,7 +16,9 @@ def bootstrap_pipeline(message: PipelineMessage) -> PipelineResult:
 
     # Ensure result is an iterator.
     results: Iterator
-    if isinstance(execute_result, Iterable):
+    if execute_result is None:
+        results = iter([])
+    elif isinstance(execute_result, Iterable):
         results = iter(execute_result)
     elif not isinstance(execute_result, Iterator):
         if isinstance(execute_result, (TopicMessage, PipelineOutput, ResourceUsed)):
