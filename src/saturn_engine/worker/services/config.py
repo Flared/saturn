@@ -1,30 +1,42 @@
-import dataclasses
 import os
-from functools import cached_property
+from enum import Enum
+from typing import Any
+from typing import Type
 
 
-@dataclasses.dataclass
-class RabbitMQConfig:
-    url: str
+class Env(Enum):
+    DEVELOPMENT = "development"
+    TEST = "test"
+    PRODUCTION = "production"
 
 
-@dataclasses.dataclass
-class WorkerManagerConfig:
-    url: str
+class BaseConfig:
+    env = "development"
+
+    class worker:
+        job_store_cls = "ApiJobStore"
+
+    class rabbitmq:
+        url = os.environ.get("SATURN_AMQP_URL", "amqp://127.0.0.1/")
+
+    class worker_manager:
+        url = os.environ.get("SATURN_WORKER_MANAGER_URL", "http://localhost:5000")
+
+
+class TestConfig(BaseConfig):
+    class worker(BaseConfig.worker):
+        job_store_cls = "MemoryJobStore"
 
 
 class ConfigService:
+    _config: Type[BaseConfig]
+
     def __init__(self) -> None:
-        pass
+        env = Env(os.environ["ENV"])
+        if env is Env.TEST:
+            self._config = TestConfig
+        else:
+            self._config = BaseConfig
 
-    @cached_property
-    def rabbitmq(self) -> RabbitMQConfig:
-        return RabbitMQConfig(
-            url=os.environ.get("SATURN_AMQP_URL", "amqp://127.0.0.1/"),
-        )
-
-    @cached_property
-    def worker_manager(self) -> WorkerManagerConfig:
-        return WorkerManagerConfig(
-            url=os.environ.get("SATURN_WORKER_MANAGER_URL", "http://localhost:5000"),
-        )
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._config, name)
