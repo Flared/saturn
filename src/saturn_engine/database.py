@@ -1,5 +1,6 @@
 from asyncio import current_task
 from contextlib import asynccontextmanager
+from typing import Any
 from typing import AsyncIterator
 from typing import Callable
 from typing import Optional
@@ -22,6 +23,31 @@ from saturn_engine.worker_manager.config import config
 
 AnyAsyncSession = Union[AsyncSession, _sqlalchemy_async_scoped_session]
 AnySession = Union[Session, AnyAsyncSession]
+
+import sqlite3
+
+from sqlalchemy import event
+
+
+def is_sqlite3_connection(connection: Any) -> bool:
+    from sqlalchemy.dialects.sqlite import aiosqlite  # type: ignore
+
+    return isinstance(
+        connection,
+        (
+            aiosqlite.AsyncAdapt_aiosqlite_connection,
+            sqlite3.Connection,
+        ),
+    )
+
+
+@event.listens_for(Engine, "connect")
+def _set_sqlite_pragma(dbapi_connection: Any, connection_record: Any) -> None:
+    if is_sqlite3_connection(dbapi_connection):
+        # Enables foreign key support for sqlite.
+        cursor = dbapi_connection.cursor()
+        cursor.execute("pragma foreign_keys=on;")
+        cursor.close()
 
 
 async def create_all() -> None:

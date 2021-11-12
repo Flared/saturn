@@ -12,6 +12,7 @@ from saturn_engine.core.api import JobsSyncResponse
 from saturn_engine.core.api import UpdateResponse
 from saturn_engine.database import async_session_scope
 from saturn_engine.stores import jobs_store
+from saturn_engine.stores import queues_store
 from saturn_engine.utils import utcnow
 from saturn_engine.utils.flask import Json
 from saturn_engine.utils.flask import check_found
@@ -82,10 +83,13 @@ async def post_sync() -> Json[JobsSyncResponse]:
                         < utcnow()
                     ):
                         job_name: str = f"{job_definition.name}-{int(time.time())}"
+                        queue = queues_store.create_queue(
+                            session=session, name=job_name
+                        )
                         jobs_store.create_job(
                             name=job_name,
                             session=session,
-                            queue_name=job_name,
+                            queue_name=queue.name,
                             job_definition_name=job_definition.name,
                         )
     return jsonify(JobsSyncResponse())
