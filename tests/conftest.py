@@ -1,4 +1,5 @@
 import asyncio
+import os
 from collections.abc import Iterator
 from typing import Callable
 from typing import Union
@@ -15,6 +16,10 @@ from saturn_engine.core import api
 
 from .utils import HttpClientMock
 from .utils import TimeForwardLoop
+
+
+def pytest_configure() -> None:
+    os.environ["ENV"] = "test"
 
 
 @pytest.fixture
