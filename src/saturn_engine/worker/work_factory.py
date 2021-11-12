@@ -69,8 +69,10 @@ def build_inventory(
     options = {"name": inventory_item.name} | inventory_item.options
 
     inventory_input = klass.from_options(options, context=context)
-    inventory_output = MemoryTopic(MemoryTopic.Options(name=queue_item.name))
+    inventory_output = MemoryTopic(
+        MemoryTopic.Options(name=queue_item.name, buffer_size=1)
+    )
     store = context.services.job_store.for_queue(queue_item)
     job = Job(inventory=inventory_input, publisher=inventory_output, store=store)
-    input_topic = MemoryTopic(MemoryTopic.Options(name=queue_item.name))
+    input_topic = MemoryTopic(MemoryTopic.Options(name=queue_item.name, buffer_size=1))
     return (asyncio.create_task(job.run()), input_topic)
