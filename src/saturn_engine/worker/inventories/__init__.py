@@ -4,6 +4,7 @@ import dataclasses
 from collections.abc import Iterable
 from typing import Any
 from typing import Optional
+from typing import Type
 
 from saturn_engine.utils.options import OptionsSchema
 
@@ -35,5 +36,9 @@ class BlockingInventory(Inventory, abc.ABC):
 
 
 from .dummy import DummyInventory
+from .static import StaticInventory
 
-BUILTINS = {"DummyInventory": DummyInventory}
+BUILTINS: dict[str, Type[Inventory]] = {
+    "DummyInventory": DummyInventory,
+    "StaticInventory": StaticInventory,
+}

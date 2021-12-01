@@ -1,0 +1,48 @@
+---
+apiVersion: saturn.github.io/v1alpha1
+kind: SaturnTopic
+metadata:
+  name: stdout
+spec:
+  type: FileTopic
+  options:
+    path: "-"
+    mode: "w"
+---
+apiVersion: saturn.github.io/v1alpha1
+kind: SaturnInventory
+metadata:
+  name: static-inventory
+spec:
+  type: StaticInventory
+  options:
+    items:
+    - {message: hello-0}
+    - {message: hello-1}
+    - {message: hello-2}
+    - {message: hello-3}
+    - {message: hello-4}
+    - {message: hello-5}
+    - {message: hello-6}
+    - {message: hello-7}
+    - {message: hello-8}
+    - {message: hello-9}
+---
+apiVersion: saturn.github.io/v1alpha1
+kind: SaturnJobDefinition
+metadata:
+  name: example-job-definition
+spec:
+  minimalInterval: "@weekly"
+  template:
+    name: example-job
+
+    input:
+      inventory: static-inventory
+
+    output:
+      default:
+        - topic: stdout
+
+    pipeline:
+      name: example.pipelines.echo

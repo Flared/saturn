@@ -30,13 +30,6 @@ class JobOutput:
 
 
 @dataclasses.dataclass
-class JobDefinitionTemplatePipeline:
-    name: str
-    args: dict[str, object]
-    resources: dict[str, str]
-
-
-@dataclasses.dataclass
 class JobDefinitionTemplate:
     name: str
     input: JobInput

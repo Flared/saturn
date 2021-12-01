@@ -19,18 +19,29 @@ class ExecutableQueue:
         self.output = output
 
     async def run(self) -> AsyncGenerator[ExecutableMessage, None]:
-        async for message in self.topic.run():
-            await self.parkers.wait()
-            context = None
-            if isinstance(message, AsyncContextManager):
-                context = message
-                message = await message.__aenter__()
+        try:
+            async for message in self.topic.run():
+                await self.parkers.wait()
+                context = None
+                if isinstance(message, AsyncContextManager):
+                    context = message
+                    message = await message.__aenter__()
 
-            yield ExecutableMessage(
-                parker=self.parkers,
-                message=PipelineMessage(
-                    info=self.pipeline.info, message=message.extend(self.pipeline.args)
-                ),
-                message_context=context,
-                output=self.output,
-            )
+                yield ExecutableMessage(
+                    parker=self.parkers,
+                    message=PipelineMessage(
+                        info=self.pipeline.info,
+                        message=message.extend(self.pipeline.args),
+                    ),
+                    message_context=context,
+                    output=self.output,
+                )
+        finally:
+            await self.close()
+
+    async def close(self) -> None:
+        # TODO: don't clean topics here once topics are shared between jobs.
+        await self.topic.close()
+        for topics in self.output.values():
+            for topic in topics:
+                await topic.close()

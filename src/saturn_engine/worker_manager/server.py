@@ -7,6 +7,7 @@ from saturn_engine.database import async_scoped_session
 from saturn_engine.database import create_all
 from saturn_engine.utils.flask import register_http_exception_error_handler
 from saturn_engine.worker_manager.config import config
+from saturn_engine.worker_manager.services.sync import sync_jobs
 
 
 def get_app() -> Flask:
@@ -33,9 +34,14 @@ def get_app() -> Flask:
     return app
 
 
+async def init_all() -> None:
+    await sync_jobs()
+
+
 def main() -> None:
     app = get_app()
     asyncio.run(create_all())
+    asyncio.run(init_all())
     app.run(
         host=config().flask_host,
         port=config().flask_port,

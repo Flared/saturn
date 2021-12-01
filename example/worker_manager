@@ -1,0 +1,9 @@
+#!/bin/bash
+set -ex
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+ROOT_DIR="$( cd ${DIR}/.. && pwd )"
+
+export SATURN_ENV="${SATURN_ENV:-development}"
+export SATURN_STATIC_DEFINITIONS_DIR="${SATURN_STATIC_DEFINITIONS_DIR:-${DIR}/definitions}"
+${ROOT_DIR}/bin/worker_manager
+

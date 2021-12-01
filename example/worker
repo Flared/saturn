@@ -1,0 +1,8 @@
+#!/bin/bash
+set -ex
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+ROOT_DIR="$( cd ${DIR}/.. && pwd )"
+
+export SATURN_ENV="${SATURN_ENV:-development}"
+export PYTHONPATH="${PYTHONPATH}:$DIR/src"
+${ROOT_DIR}/bin/worker

@@ -113,6 +113,7 @@ class Broker:
         await self.executor.close()
 
     def stop(self) -> None:
+        self.logger.info("Stopping broker")
         if not self.running_task:
             return
         self.running_task.cancel()

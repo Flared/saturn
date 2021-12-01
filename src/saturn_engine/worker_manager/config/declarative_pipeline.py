@@ -7,7 +7,7 @@ from saturn_engine.core import api
 @dataclasses.dataclass
 class PipelineInfo:
     name: str
-    resources: dict[str, str]
+    resources: dict[str, str] = dataclasses.field(default_factory=dict)
 
     def to_core_object(self) -> api.PipelineInfo:
         return api.PipelineInfo(
@@ -19,7 +19,7 @@ class PipelineInfo:
 @dataclasses.dataclass
 class PipelineSpec:
     info: PipelineInfo
-    args: dict[str, Any]
+    args: dict[str, Any] = dataclasses.field(default_factory=dict)
 
     def to_core_object(self) -> api.QueuePipeline:
         return api.QueuePipeline(
