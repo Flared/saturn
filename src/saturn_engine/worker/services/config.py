@@ -32,7 +32,7 @@ class ConfigService:
     _config: Type[BaseConfig]
 
     def __init__(self) -> None:
-        env = Env(os.environ["ENV"])
+        env = Env(os.environ["SATURN_ENV"])
         if env is Env.TEST:
             self._config = TestConfig
         else:

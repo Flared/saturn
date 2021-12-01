@@ -19,7 +19,7 @@ from .utils import TimeForwardLoop
 
 
 def pytest_configure() -> None:
-    os.environ["ENV"] = "test"
+    os.environ["SATURN_ENV"] = "test"
 
 
 @pytest.fixture
