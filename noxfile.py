@@ -15,7 +15,7 @@ nox.options.reuse_existing_virtualenvs = True
 
 python_all_versions = ["3.9"]
 python_tool_version = "3.9"
-pyfiles_locations = "src", "tests", "noxfile.py", "mypy_stubs"
+pyfiles_locations = "example", "src", "tests", "noxfile.py", "mypy_stubs"
 
 
 def install_project(
@@ -31,7 +31,7 @@ def install_project(
     # session.run("poetry", "install", *poetry_options, external=True)
     poetry_command: list[str] = ["poetry", "install"]
     if worker_manager:
-        poetry_command.extend(["--extras", "worker-manager"])
+        poetry_command.extend(["--extras", "worker-manager", "--extras", "ray"])
     session.run(*poetry_command, external=True)
 
 

@@ -4,12 +4,13 @@ from typing import Optional
 from typing import Protocol
 
 from saturn_engine.utils.log import getLogger
+from saturn_engine.worker.services.config import BaseConfig
 
 from .context import Context
 from .executable_message import ExecutableMessage
 from .executors import Executor
 from .executors import ExecutorManager
-from .executors.process import ProcessExecutor
+from .executors import get_executor_class
 from .resources_manager import ResourcesManager
 from .scheduler import Scheduler
 from .services.manager import ServicesManager
@@ -22,7 +23,7 @@ class WorkManagerInit(Protocol):
         ...
 
 
-ExecutorInit = Callable[[], Executor]
+ExecutorInit = Callable[[BaseConfig], Executor]
 
 
 class Broker:
@@ -32,7 +33,7 @@ class Broker:
         self,
         *,
         work_manager: WorkManagerInit = WorkManager,
-        executor: ExecutorInit = ProcessExecutor
+        executor: Optional[ExecutorInit] = None,
     ) -> None:
         self.logger = getLogger(__name__, self)
         self.is_running = False
@@ -41,14 +42,18 @@ class Broker:
         # Build context
         self.services_manager = ServicesManager()
         self.context = Context(services=self.services_manager)
+        config = self.services_manager.config
 
         # Init subsystem
         self.work_manager = work_manager(context=self.context)
         self.resources_manager = ResourcesManager()
         self.task_manager = TaskManager()
         self.scheduler: Scheduler[ExecutableMessage] = Scheduler()
+        if executor is None:
+            executor = get_executor_class(config.worker.executor_cls)
         self.executor = ExecutorManager(
-            resources_manager=self.resources_manager, executor=executor()
+            resources_manager=self.resources_manager,
+            executor=executor(config),
         )
 
     async def run(self) -> None:

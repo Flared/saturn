@@ -1,10 +1,13 @@
 import asyncio
 from abc import abstractmethod
+from typing import Type
 
 from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResult
+from saturn_engine.utils.inspect import import_name
 from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.pipeline_message import PipelineMessage
+from saturn_engine.worker.services.config import BaseConfig
 
 from ..executable_message import ExecutableMessage
 from ..resources_manager import ResourcesManager
@@ -12,12 +15,23 @@ from ..resources_manager import ResourceUnavailable
 
 
 class Executor:
+    def __init__(self, config: BaseConfig) -> None:
+        pass
+
     @abstractmethod
     async def process_message(self, message: PipelineMessage) -> PipelineResult:
         ...
 
     async def close(self) -> None:
         pass
+
+
+def get_executor_class(path: str) -> Type[Executor]:
+    klass = BUILTINS.get(path)
+    if klass:
+        return klass
+
+    return import_name(path)
 
 
 class ExecutorManager:
@@ -135,3 +149,17 @@ class ExecutorManager:
 
         for task in self.processing_tasks:
             task.cancel()
+
+
+from .process import ProcessExecutor
+
+BUILTINS: dict[str, Type[Executor]] = {
+    "ProcessExecutor": ProcessExecutor,
+}
+
+try:
+    from .ray import RayExecutor
+
+    BUILTINS["RayExecutor"] = RayExecutor
+except ImportError:
+    pass

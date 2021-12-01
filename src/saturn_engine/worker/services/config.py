@@ -15,6 +15,7 @@ class BaseConfig:
 
     class worker:
         job_store_cls = "ApiJobStore"
+        executor_cls = os.environ.get("SATURN_WORKER__EXECUTOR_CLS", "ProcessExecutor")
 
     class rabbitmq:
         url = os.environ.get("SATURN_AMQP_URL", "amqp://127.0.0.1/")
@@ -22,10 +23,18 @@ class BaseConfig:
     class worker_manager:
         url = os.environ.get("SATURN_WORKER_MANAGER_URL", "http://localhost:5000")
 
+    class ray:
+        local = os.environ.get("SATURN_RAY__LOCAL", "0") == "1"
+        address = os.environ.get("SATURN_RAY__ADDRESS", "auto")
+
 
 class TestConfig(BaseConfig):
     class worker(BaseConfig.worker):
         job_store_cls = "MemoryJobStore"
+
+    class ray(BaseConfig.ray):
+        local = True
+        address = ""
 
 
 class ConfigService:
