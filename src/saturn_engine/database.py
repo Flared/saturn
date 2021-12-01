@@ -68,7 +68,17 @@ async def drop_all() -> None:
 @lazy(threadlocal=True)
 def async_engine() -> AsyncEngine:
     init()
-    return create_async_engine(config().async_database_url, future=True)
+    async_database_url: str = config().async_database_url
+    connect_args: dict = {}
+    if "postgresql" in async_database_url:
+        # https://magicstack.github.io/asyncpg/current/faq.html
+        # See "why-am-i-getting-prepared-statement-errors"
+        connect_args["statement_cache_size"] = 0
+    return create_async_engine(
+        config().async_database_url,
+        future=True,
+        connect_args=connect_args,
+    )
 
 
 def engine() -> Engine:
