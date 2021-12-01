@@ -7,6 +7,7 @@ from saturn_engine.worker.parkers import Parkers
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.topics import Topic
 
+from .resources_manager import ResourceContext
 from .resources_manager import ResourcesContext
 
 
@@ -25,6 +26,7 @@ class ExecutableMessage:
             self.context.push_async_exit(message_context)
         self.parker = parker
         self.output = output
+        self.resources: dict[str, ResourceContext] = {}
 
     def park(self) -> None:
         self.parker.park(id(self))

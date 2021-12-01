@@ -26,6 +26,9 @@ class Topic(OptionsSchema):
     async def publish(self, message: TopicMessage, wait: bool) -> bool:
         raise NotImplementedError()
 
+    async def close(self) -> None:
+        pass
+
 
 class BlockingTopic(Topic, abc.ABC):
     def __init__(self, max_concurrency: int = 1):
@@ -62,6 +65,7 @@ class BlockingTopic(Topic, abc.ABC):
 
 # Expose common topic through this module.
 from .dummy import DummyTopic
+from .file import FileTopic
 from .memory import MemoryTopic
 from .rabbitmq import RabbitMQTopic
 
@@ -69,4 +73,5 @@ BUILTINS: dict[str, Type[Topic]] = {
     "DummyTopic": DummyTopic,
     "MemoryTopic": MemoryTopic,
     "RabbitMQTopic": RabbitMQTopic,
+    "FileTopic": FileTopic,
 }

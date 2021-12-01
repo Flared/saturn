@@ -1,5 +1,5 @@
 __pycache__/
-/test.db
+test.db
 /.venv-tools
 /dist
 *.egg-info

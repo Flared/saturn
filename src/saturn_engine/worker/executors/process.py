@@ -9,9 +9,19 @@ from . import Executor
 from .bootstrap import bootstrap_pipeline
 
 
+def process_initializer() -> None:
+    # Ignore signals in the process pool since we handle it from the worker
+    # process.
+    import signal
+
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+
 class ProcessExecutor(Executor):
     def __init__(self, concurrency: int = 8) -> None:
-        self.pool_executor = concurrent.futures.ProcessPoolExecutor()
+        self.pool_executor = concurrent.futures.ProcessPoolExecutor(
+            initializer=process_initializer
+        )
 
     async def process_message(self, message: PipelineMessage) -> PipelineResult:
         loop = asyncio.get_running_loop()
