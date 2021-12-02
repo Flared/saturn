@@ -21,17 +21,16 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.9"
-SQLAlchemy = {extras = ["asyncio", "mypy"], version = "^1.4.25"}
+SQLAlchemy = {extras = ["mypy"], version = "^1.4.25"}
 aiosqlite = "^0.17.0"
 marshmallow = "^3.13.0"
 desert = "^2020.11.18"
 asyncstdlib = "^3.10.2"
 aio-pika = "^6.8.0"
-asyncpg = "^0.24.0"
 ####################
 ## worker-manager ##
 ####################
-Flask = {extras = ["async"], version = "^2.0.2", optional = true }
+Flask = {version = "^2.0.2", optional = true }
 PyYAML = "^6.0"
 types-PyYAML = "^6.0.0"
 aiohttp = {extras = ["speedups"], version = "^3.8.0"}
