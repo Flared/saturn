@@ -18,7 +18,7 @@ from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.resources_manager import ResourceData
 
 from . import work_factory
-from .context import Context
+from .services.manager import ServicesManager
 from .work import SchedulableQueue
 from .work import WorkItems
 
@@ -90,18 +90,18 @@ class WorkManager:
     last_sync_at: Optional[datetime]
 
     def __init__(
-        self, *, context: Context, client: Optional[WorkerManagerClient] = None
+        self, *, services: ServicesManager, client: Optional[WorkerManagerClient] = None
     ) -> None:
         self.logger = getLogger(__name__, self)
         self.client = client or WorkerManagerClient(
-            http_client=context.services.http_client.session,
-            base_url=context.services.config.worker_manager.url,
+            http_client=services.http_client.session,
+            base_url=services.config.c.worker.worker_manager_url,
         )
         self.worker_items_work = {}
         self.worker_resources = {}
         self.last_sync_at = None
         self.sync_period = timedelta(seconds=60)
-        self.context = context
+        self.services = services
 
     async def sync(self) -> WorkSync:
         if self.last_sync_at:
@@ -148,7 +148,7 @@ class WorkManager:
 
     def build_work_for_worker_item(self, item: QueueItem) -> WorkItems:
         try:
-            return work_factory.build(item, context=self.context)
+            return work_factory.build(item, services=self.services)
         except Exception:
             self.logger.exception("Failed to build item for %s", item)
             return WorkItems.empty()

@@ -3,10 +3,9 @@ from typing import Callable
 from typing import Optional
 from typing import Protocol
 
+from saturn_engine.config import Config
 from saturn_engine.utils.log import getLogger
-from saturn_engine.worker.services.config import BaseConfig
 
-from .context import Context
 from .executable_message import ExecutableMessage
 from .executors import Executor
 from .executors import ExecutorManager
@@ -19,11 +18,11 @@ from .work_manager import WorkManager
 
 
 class WorkManagerInit(Protocol):
-    def __call__(self, context: Context) -> WorkManager:
+    def __call__(self, services: ServicesManager) -> WorkManager:
         ...
 
 
-ExecutorInit = Callable[[BaseConfig], Executor]
+ExecutorInit = Callable[[ServicesManager], Executor]
 
 
 class Broker:
@@ -31,6 +30,7 @@ class Broker:
 
     def __init__(
         self,
+        config: Config,
         *,
         work_manager: WorkManagerInit = WorkManager,
         executor: Optional[ExecutorInit] = None,
@@ -39,21 +39,18 @@ class Broker:
         self.is_running = False
         self.running_task = None
 
-        # Build context
-        self.services_manager = ServicesManager()
-        self.context = Context(services=self.services_manager)
-        config = self.services_manager.config
+        self.services = ServicesManager(config=config)
 
         # Init subsystem
-        self.work_manager = work_manager(context=self.context)
+        self.work_manager = work_manager(services=self.services)
         self.resources_manager = ResourcesManager()
         self.task_manager = TaskManager()
         self.scheduler: Scheduler[ExecutableMessage] = Scheduler()
         if executor is None:
-            executor = get_executor_class(config.worker.executor_cls)
+            executor = get_executor_class(config.c.worker.executor_cls)
         self.executor = ExecutorManager(
             resources_manager=self.resources_manager,
-            executor=executor(config),
+            executor=executor(self.services),
         )
 
     async def run(self) -> None:
@@ -114,7 +111,7 @@ class Broker:
     async def close(self) -> None:
         await self.scheduler.close()
         await self.task_manager.close()
-        await self.services_manager.close()
+        await self.services.close()
         await self.executor.close()
 
     def stop(self) -> None:

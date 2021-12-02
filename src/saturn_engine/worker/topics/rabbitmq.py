@@ -8,8 +8,8 @@ from aio_pika import IncomingMessage
 
 from saturn_engine.core import TopicMessage
 from saturn_engine.utils.log import getLogger
+from saturn_engine.worker.services.manager import ServicesManager
 
-from ..context import Context
 from . import Topic
 from . import TopicOutput
 
@@ -21,14 +21,16 @@ class RabbitMQTopic(Topic):
     class Options:
         queue_name: str
 
-    def __init__(self, options: Options, context: Context, **kwargs: object) -> None:
+    def __init__(
+        self, options: Options, services: ServicesManager, **kwargs: object
+    ) -> None:
         self.logger = getLogger(__name__, self)
         self.options = options
-        self.context = context
+        self.services = services
 
     async def run(self) -> AsyncGenerator[TopicOutput, None]:
         self.logger.info("Starting queue %s", self.options.queue_name)
-        connection = await self.context.services.rabbitmq.connection
+        connection = await self.services.rabbitmq.connection
         async with connection.channel() as channel:
             queue = await channel.declare_queue(self.options.queue_name)
 

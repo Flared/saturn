@@ -11,13 +11,13 @@ class JobStoreService:
         self.services = services
 
     def for_queue(self, queue: QueueItem) -> JobStore:
-        klass = self.services.config.worker.job_store_cls
+        klass = self.services.config.c.worker.job_store_cls
         if klass == "MemoryJobStore":
             return MemoryJobStore()
         if klass == "ApiJobStore":
             return ApiJobStore(
                 http_client=self.services.http_client.session,
-                base_url=self.services.config.worker_manager.url,
+                base_url=self.services.config.c.worker.worker_manager_url,
                 job_name=queue.name,
             )
         raise ValueError(f"Unkown job store class: {klass}")

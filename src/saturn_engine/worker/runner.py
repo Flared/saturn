@@ -2,12 +2,18 @@ import asyncio
 import logging
 import signal
 
+from saturn_engine.config import Config
+from saturn_engine.config import default_config
+
 from .broker import Broker
 
 
 async def async_main() -> None:
     loop = asyncio.get_running_loop()
-    broker = Broker()
+    config = Config()
+    config.load_object(default_config)
+    config.load_envvar("SATURN_SETTINGS")
+    broker = Broker(config)
     for signame in ["SIGINT", "SIGTERM"]:
         loop.add_signal_handler(getattr(signal, signame), broker.stop)
     await broker.run()

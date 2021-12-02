@@ -4,8 +4,8 @@ import ray
 
 from saturn_engine.core import PipelineResult
 from saturn_engine.worker.pipeline_message import PipelineMessage
-from saturn_engine.worker.services.config import BaseConfig
 
+from ..services.manager import ServicesManager
 from . import Executor
 from .bootstrap import bootstrap_pipeline
 
@@ -16,12 +16,12 @@ def ray_execute(message: PipelineMessage) -> PipelineResult:
 
 
 class RayExecutor(Executor):
-    def __init__(self, config: BaseConfig) -> None:
+    def __init__(self, services: ServicesManager) -> None:
         options: dict[str, Any] = {
-            "local_mode": config.ray.local,
+            "local_mode": services.config.c.ray.local,
         }
-        if config.ray.address:
-            options["address"] = config.ray.address
+        if services.config.c.ray.address:
+            options["address"] = services.config.c.ray.address
         ray.init(**options)
 
     async def process_message(self, message: PipelineMessage) -> PipelineResult:

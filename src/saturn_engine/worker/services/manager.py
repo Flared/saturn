@@ -1,15 +1,13 @@
-from typing import cast
+from saturn_engine.config import Config
 
 
 class ServicesManager:
-    def __init__(self) -> None:
-        from .config import BaseConfig
-        from .config import ConfigService
+    def __init__(self, config: Config) -> None:
         from .http_client import HttpClient
         from .job_store import JobStoreService
         from .rabbitmq import RabbitMQService
 
-        self.config = cast(BaseConfig, ConfigService())
+        self.config = config
         self.rabbitmq = RabbitMQService(self)
         self.http_client = HttpClient()
         self.job_store = JobStoreService(self)
