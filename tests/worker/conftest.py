@@ -24,6 +24,8 @@ from saturn_engine.worker.executors import ExecutorManager
 from saturn_engine.worker.parkers import Parkers
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources_manager import ResourcesManager
+from saturn_engine.worker.services.config import BaseConfig
+from saturn_engine.worker.services.config import TestConfig
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.topics import Topic
 from saturn_engine.worker.topics.memory import reset as reset_memory_queues
@@ -69,7 +71,7 @@ def resources_manager() -> ResourcesManager:
 
 @pytest.fixture
 def executor_maker() -> ExecutorInit:
-    def maker() -> Executor:
+    def maker(config: BaseConfig) -> Executor:
         return create_autospec(Executor, instance=True)
 
     return maker
@@ -77,14 +79,16 @@ def executor_maker() -> ExecutorInit:
 
 @pytest.fixture
 async def executor_manager_maker(
-    resources_manager: ResourcesManager, executor_maker: ExecutorInit
+    resources_manager: ResourcesManager,
+    executor_maker: ExecutorInit,
+    config: BaseConfig,
 ) -> AsyncIterator[Callable[..., ExecutorManager]]:
     async with contextlib.AsyncExitStack() as stack:
 
         def maker(
             executor: Optional[Executor] = None, concurrency: int = 5
         ) -> ExecutorManager:
-            executor = executor or executor_maker()
+            executor = executor or executor_maker(config)
             manager = ExecutorManager(
                 resources_manager=resources_manager,
                 executor=executor,
@@ -159,3 +163,8 @@ class FakeResource(Resource):
 @pytest.fixture
 def fake_resource_class() -> str:
     return __name__ + "." + FakeResource.__name__
+
+
+@pytest.fixture
+def config() -> BaseConfig:
+    return TestConfig()

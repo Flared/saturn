@@ -39,7 +39,7 @@ async def test_broker_dummy(
     worker_manager_client: Mock,
 ) -> None:
     executor = FakeExecutor()
-    broker = broker_maker(executor=lambda: executor)
+    broker = broker_maker(executor=lambda _: executor)
     pipeline_info = PipelineInfo.from_pipeline(pipeline)
     worker_manager_client.lock.return_value = LockResponse(
         items=[
