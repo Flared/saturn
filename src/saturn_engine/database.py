@@ -1,29 +1,23 @@
-from asyncio import current_task
-from contextlib import asynccontextmanager
+from contextlib import contextmanager
 from typing import Any
-from typing import AsyncIterator
 from typing import Callable
+from typing import Iterator
 from typing import Optional
 from typing import Union
 
 import sqlalchemy.orm
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine import create_engine
-from sqlalchemy.ext.asyncio import AsyncEngine
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.ext.asyncio import (
-    async_scoped_session as _sqlalchemy_async_scoped_session,
-)
-from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import scoped_session as _sqlalchemy_scoped_session
 from sqlalchemy.orm import sessionmaker
 
 from saturn_engine.models import Base
 from saturn_engine.utils import lazy
 from saturn_engine.worker_manager.config import config
 
-AnyAsyncSession = Union[AsyncSession, _sqlalchemy_async_scoped_session]
-AnySession = Union[Session, AnyAsyncSession]
+AnySyncSession = Union[Session, _sqlalchemy_scoped_session]
+AnySession = AnySyncSession
 
 import sqlite3
 
@@ -55,36 +49,17 @@ def init() -> None:
     sqlalchemy.orm.configure_mappers()
 
 
-async def create_all() -> None:
-    async with async_engine().begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+def create_all() -> None:
+    Base.metadata.create_all(engine())
 
 
-async def drop_all() -> None:
-    async with async_engine().begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-
-
-@lazy(threadlocal=True)
-def async_engine() -> AsyncEngine:
-    init()
-    return create_async_engine(config().async_database_url, future=True)
+def drop_all() -> None:
+    Base.metadata.drop_all(engine())
 
 
 def engine() -> Engine:
     init()
     return create_engine(config().database_url, future=True)
-
-
-@lazy(threadlocal=True)
-def async_session_factory() -> Callable[[], AsyncSession]:
-    return sessionmaker(
-        autocommit=False,
-        autoflush=False,
-        bind=async_engine(),
-        future=True,
-        class_=AsyncSession,
-    )
 
 
 @lazy()
@@ -97,28 +72,27 @@ def session_factory() -> Callable[[], Session]:
     )
 
 
-@asynccontextmanager
-async def async_session_scope(
-    session_factory: Optional[Callable[[], AnyAsyncSession]] = None,
-) -> AsyncIterator[AnyAsyncSession]:
+@contextmanager
+def session_scope(
+    session_factory: Optional[Callable[[], AnySyncSession]] = None,
+) -> Iterator[AnySyncSession]:
     """Provide a transactional scope around a series of operations."""
-    session_factory = session_factory or async_scoped_session
+    session_factory = session_factory or scoped_session
     s = session_factory()
     try:
         yield s
-        await s.commit()
+        s.commit()
     except Exception:
-        await s.rollback()
+        s.rollback()
         raise
     finally:
-        await s.close()
+        s.close()
 
 
 @lazy(threadlocal=True)
-def async_scoped_session() -> _sqlalchemy_async_scoped_session:
-    return _sqlalchemy_async_scoped_session(
-        async_session_factory(),
-        scopefunc=current_task,
+def scoped_session() -> _sqlalchemy_scoped_session:
+    return _sqlalchemy_scoped_session(
+        session_factory=session_factory(),
     )
 
 

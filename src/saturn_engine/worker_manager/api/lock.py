@@ -6,7 +6,7 @@ from flask import Blueprint
 
 from saturn_engine.core.api import LockInput
 from saturn_engine.core.api import LockResponse
-from saturn_engine.database import async_session_scope
+from saturn_engine.database import session_scope
 from saturn_engine.models.queue import Queue
 from saturn_engine.stores import queues_store
 from saturn_engine.utils.flask import Json
@@ -18,7 +18,7 @@ bp = Blueprint("lock", __name__, url_prefix="/api/lock")
 
 
 @bp.route("", methods=("POST",))
-async def post_lock() -> Json[LockResponse]:
+def post_lock() -> Json[LockResponse]:
     logger = logging.getLogger(f"{__name__}.post_lock")
     lock_input = marshall_request(LockInput)
 
@@ -35,11 +35,11 @@ async def post_lock() -> Json[LockResponse]:
 
     assigned_items: list[Queue] = []
 
-    async with async_session_scope() as session:
+    with session_scope() as session:
 
         # Obtains items that were already assigned.
         assigned_items.extend(
-            await queues_store.get_assigned_queues(
+            queues_store.get_assigned_queues(
                 session=session,
                 worker_id=lock_input.worker_id,
                 assigned_after=assignation_expiration_cutoff,
@@ -56,7 +56,7 @@ async def post_lock() -> Json[LockResponse]:
         # Obtain new queues
         if len(assigned_items) < max_assigned_items:
             assigned_items.extend(
-                await queues_store.get_unassigned_queues(
+                queues_store.get_unassigned_queues(
                     session=session,
                     assigned_before=assignation_expiration_cutoff,
                     limit=max_assigned_items - len(assigned_items),

@@ -9,6 +9,6 @@ bp = Blueprint("inventories", __name__, url_prefix="/api/inventories")
 
 
 @bp.route("", methods=("GET",))
-async def get_inventories() -> Json[InventoriesResponse]:
+def get_inventories() -> Json[InventoriesResponse]:
     inventories = list(config().static_definitions.inventories.values())
     return jsonify(InventoriesResponse(items=inventories))

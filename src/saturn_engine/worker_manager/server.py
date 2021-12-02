@@ -1,10 +1,9 @@
-import asyncio
 from typing import Optional
 
 from flask import Flask
 
-from saturn_engine.database import async_scoped_session
 from saturn_engine.database import create_all
+from saturn_engine.database import scoped_session
 from saturn_engine.utils.flask import register_http_exception_error_handler
 from saturn_engine.worker_manager.config import config
 from saturn_engine.worker_manager.services.sync import sync_jobs
@@ -26,22 +25,22 @@ def get_app() -> Flask:
     app.register_blueprint(bp_inventories)
 
     @app.teardown_appcontext  # type: ignore
-    async def shutdown_session(response_or_exc: Optional[BaseException]) -> None:
-        await async_scoped_session().remove()
+    def shutdown_session(response_or_exc: Optional[BaseException]) -> None:
+        scoped_session().remove()
 
     register_http_exception_error_handler(app)
 
     return app
 
 
-async def init_all() -> None:
-    await sync_jobs()
+def init_all() -> None:
+    sync_jobs()
 
 
 def main() -> None:
     app = get_app()
-    asyncio.run(create_all())
-    asyncio.run(init_all())
+    create_all()
+    init_all()
     app.run(
         host=config().flask_host,
         port=config().flask_port,

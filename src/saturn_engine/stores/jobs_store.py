@@ -5,8 +5,8 @@ from sqlalchemy import select
 from sqlalchemy import update
 from sqlalchemy.orm import joinedload
 
-from saturn_engine.database import AnyAsyncSession
 from saturn_engine.database import AnySession
+from saturn_engine.database import AnySyncSession
 from saturn_engine.models import Job
 
 
@@ -30,41 +30,33 @@ def create_job(
     return job
 
 
-async def get_jobs(*, session: AnyAsyncSession) -> list[Job]:
+def get_jobs(*, session: AnySyncSession) -> list[Job]:
+    return session.execute(select(Job).options(joinedload(Job.queue))).scalars().all()
+
+
+def get_job(name: str, session: AnySyncSession) -> Optional[Job]:
+    return session.get(Job, name)
+
+
+def get_last_job(*, session: AnySyncSession, job_definition_name: str) -> Optional[Job]:
     return (
-        (await session.execute(select(Job).options(joinedload(Job.queue))))
-        .scalars()
-        .all()
-    )
-
-
-async def get_job(name: str, session: AnyAsyncSession) -> Optional[Job]:
-    return await session.get(Job, name)
-
-
-async def get_last_job(
-    *, session: AnyAsyncSession, job_definition_name: str
-) -> Optional[Job]:
-    return (
-        (
-            await session.execute(
-                select(Job)
-                .where(Job.job_definition_name == job_definition_name)
-                .order_by(Job.started_at.desc())
-                .options(joinedload(Job.queue))
-            )
+        session.execute(
+            select(Job)
+            .where(Job.job_definition_name == job_definition_name)
+            .order_by(Job.started_at.desc())
+            .options(joinedload(Job.queue))
         )
         .scalars()
         .first()
     )
 
 
-async def update_job(
+def update_job(
     name: str,
     *,
     cursor: Optional[str],
     completed_at: Optional[datetime],
-    session: AnyAsyncSession,
+    session: AnySyncSession,
 ) -> None:
     noop_stmt = stmt = update(Job).where(Job.name == name)
     if cursor:
@@ -75,4 +67,4 @@ async def update_job(
     if stmt is noop_stmt:
         return
 
-    await session.execute(stmt)
+    session.execute(stmt)

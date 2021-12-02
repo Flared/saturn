@@ -9,6 +9,6 @@ bp = Blueprint("job_definitions", __name__, url_prefix="/api/job_definitions")
 
 
 @bp.route("", methods=("GET",))
-async def get_job_definitions() -> Json[JobDefinitionsResponse]:
+def get_job_definitions() -> Json[JobDefinitionsResponse]:
     job_definitions = list(config().static_definitions.job_definitions.values())
     return jsonify(JobDefinitionsResponse(items=job_definitions))
