@@ -26,21 +26,24 @@ def sync_jobs() -> None:
                         job_definition_name=job_definition.name,
                     )
 
-                    if (
-                        not last_job
-                        or croniter(
+                    if last_job:
+                        # If a job already exists, check it has completed and
+                        # the interval has elapsed to start a new one.
+                        if not last_job.completed_at:
+                            continue
+
+                        scheduled_at = croniter(
                             job_definition.minimal_interval,
                             last_job.started_at,
                         ).get_next(ret_type=datetime)
-                        < utcnow()
-                    ):
-                        job_name: str = f"{job_definition.name}-{int(time.time())}"
-                        queue = queues_store.create_queue(
-                            session=session, name=job_name
-                        )
-                        jobs_store.create_job(
-                            name=job_name,
-                            session=session,
-                            queue_name=queue.name,
-                            job_definition_name=job_definition.name,
-                        )
+                        if scheduled_at > utcnow():
+                            continue
+
+                    job_name: str = f"{job_definition.name}-{int(time.time())}"
+                    queue = queues_store.create_queue(session=session, name=job_name)
+                    jobs_store.create_job(
+                        name=job_name,
+                        session=session,
+                        queue_name=queue.name,
+                        job_definition_name=job_definition.name,
+                    )
