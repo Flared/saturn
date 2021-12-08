@@ -240,6 +240,7 @@ spec:
         session=session,
         queue_name=queue.name,
         job_definition_name="running",
+        started_at=utcnow() - timedelta(days=8),
     )
     jobs_store.create_job(
         name="due",
@@ -266,7 +267,7 @@ spec:
         "items": [
             {
                 "completed_at": None,
-                "started_at": "2018-01-02T00:00:00+00:00",
+                "started_at": "2017-12-25T00:00:00+00:00",
                 "cursor": None,
                 "name": "running",
             },
@@ -298,7 +299,7 @@ spec:
                 "completed_at": None,
                 "cursor": None,
                 "name": "running",
-                "started_at": "2018-01-02T00:00:00+00:00",
+                "started_at": "2017-12-25T00:00:00+00:00",
             },
             {
                 # The old due job, untouched
