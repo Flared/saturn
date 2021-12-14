@@ -12,7 +12,7 @@ class RabbitMQService:
 
     @alib.cached_property
     async def connection(self) -> aio_pika.Connection:
-        return await aio_pika.connect_robust(self.services.config.rabbitmq.url)
+        return await aio_pika.connect_robust(self.services.config.c.rabbitmq.url)
 
     async def close(self) -> None:
         connection = get_own_attr(self, "connection", None)

@@ -1,5 +1,4 @@
 import asyncio
-import os
 from collections.abc import Iterator
 from typing import Callable
 from typing import Union
@@ -12,14 +11,13 @@ from pytest_mock import MockerFixture
 from sqlalchemy.orm import Session
 
 from saturn_engine import database
+from saturn_engine.config import Config
+from saturn_engine.config import default_config
 from saturn_engine.core import api
 
+from .config import config as test_config
 from .utils import HttpClientMock
 from .utils import TimeForwardLoop
-
-
-def pytest_configure() -> None:
-    os.environ["SATURN_ENV"] = "test"
 
 
 @pytest.fixture
@@ -117,3 +115,11 @@ def job_definition_maker(
         )
 
     return maker
+
+
+@pytest.fixture(scope="session")
+def config() -> Config:
+    config = Config()
+    config.load_object(default_config)
+    config.load_object(test_config)
+    return config

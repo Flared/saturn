@@ -1,9 +1,11 @@
 import functools
 import inspect
 import sys
+from collections.abc import Iterable
 from typing import Any
 from typing import Callable
 from typing import Type
+from typing import Union
 
 
 def eval_annotations(func: Callable, signature: inspect.Signature) -> inspect.Signature:
@@ -41,6 +43,19 @@ def eval_annotation(func: Callable, annotation: str) -> Type:
     # If someone is able to build arbitrary function object, then it's able to
     # do much more than eval.
     return eval(annotation, obj_globals, None)  # noqa: S307
+
+
+def eval_class_annotations(
+    klass: Type, annotations: Iterable[Union[Type, str]]
+) -> list[Type]:
+    class_globals = sys.modules[klass.__module__].__dict__
+    eval_annotations = []
+    for annotation in annotations:
+        if isinstance(annotation, str):
+            eval_annotations.append(eval(annotation, class_globals, None))  # noqa: S307
+        else:
+            eval_annotations.append(annotation)
+    return eval_annotations
 
 
 # Taken from CPython pickle.py

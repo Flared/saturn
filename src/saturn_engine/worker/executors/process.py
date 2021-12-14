@@ -4,7 +4,7 @@ from functools import partial
 
 from saturn_engine.core import PipelineResult
 from saturn_engine.worker.pipeline_message import PipelineMessage
-from saturn_engine.worker.services.config import BaseConfig
+from saturn_engine.worker.services.manager import ServicesManager
 
 from . import Executor
 from .bootstrap import bootstrap_pipeline
@@ -19,7 +19,7 @@ def process_initializer() -> None:
 
 
 class ProcessExecutor(Executor):
-    def __init__(self, config: BaseConfig) -> None:
+    def __init__(self, services: ServicesManager) -> None:
         self.pool_executor = concurrent.futures.ProcessPoolExecutor(
             initializer=process_initializer
         )
