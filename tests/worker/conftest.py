@@ -24,6 +24,7 @@ from saturn_engine.worker.executors import ExecutorManager
 from saturn_engine.worker.parkers import Parkers
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources_manager import ResourcesManager
+from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.topics import Topic
 from saturn_engine.worker.topics.memory import reset as reset_memory_queues
@@ -41,14 +42,14 @@ def worker_manager_client() -> Mock:
 def work_manager(
     work_manager_maker: WorkManagerInit, services_manager: ServicesManager
 ) -> WorkManager:
-    return work_manager_maker(services=services_manager)
+    return work_manager_maker(services=services_manager.services)
 
 
 @pytest.fixture
 def work_manager_maker(
     worker_manager_client: WorkerManagerClient, services_manager: ServicesManager
 ) -> WorkManagerInit:
-    def maker(services: ServicesManager = services_manager) -> WorkManager:
+    def maker(services: Services = services_manager.services) -> WorkManager:
         return WorkManager(services=services, client=worker_manager_client)
 
     return maker
@@ -57,6 +58,7 @@ def work_manager_maker(
 @pytest.fixture
 async def services_manager(config: Config) -> AsyncIterator[ServicesManager]:
     _services_manager = ServicesManager(config)
+    await _services_manager.open()
     yield _services_manager
     await _services_manager.close()
 
@@ -68,7 +70,7 @@ def resources_manager() -> ResourcesManager:
 
 @pytest.fixture
 def executor_maker() -> ExecutorInit:
-    def maker(services: ServicesManager) -> Executor:
+    def maker(services: Services) -> Executor:
         return create_autospec(Executor, instance=True)
 
     return maker
@@ -85,7 +87,7 @@ async def executor_manager_maker(
         def maker(
             executor: Optional[Executor] = None, concurrency: int = 5
         ) -> ExecutorManager:
-            executor = executor or executor_maker(services_manager)
+            executor = executor or executor_maker(services_manager.services)
             manager = ExecutorManager(
                 resources_manager=resources_manager,
                 executor=executor,

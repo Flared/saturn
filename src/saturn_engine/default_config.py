@@ -16,6 +16,8 @@ class config(SaturnConfig):
         worker_manager_url = os.environ.get(
             "SATURN_WORKER_MANAGER_URL", "http://localhost:5000"
         )
+        services = ["saturn_engine.worker.services.rabbitmq.RabbitMQService"]
+        strict_services = True
 
     class rabbitmq(RabbitMQConfig):
         url = os.environ.get("SATURN_AMQP_URL", "amqp://127.0.0.1/")

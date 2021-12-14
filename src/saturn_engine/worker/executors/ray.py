@@ -5,7 +5,7 @@ import ray
 from saturn_engine.core import PipelineResult
 from saturn_engine.worker.pipeline_message import PipelineMessage
 
-from ..services.manager import ServicesManager
+from ..services import Services
 from . import Executor
 from .bootstrap import bootstrap_pipeline
 
@@ -16,7 +16,7 @@ def ray_execute(message: PipelineMessage) -> PipelineResult:
 
 
 class RayExecutor(Executor):
-    def __init__(self, services: ServicesManager) -> None:
+    def __init__(self, services: Services) -> None:
         options: dict[str, Any] = {
             "local_mode": services.config.c.ray.local,
         }

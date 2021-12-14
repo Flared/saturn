@@ -1,8 +1,12 @@
 import aiohttp
 
+from . import MinimalService
 
-class HttpClient:
-    def __init__(self) -> None:
+
+class HttpClient(MinimalService):
+    name = "http_client"
+
+    async def open(self) -> None:
         self.session = aiohttp.ClientSession()
 
     async def close(self) -> None:

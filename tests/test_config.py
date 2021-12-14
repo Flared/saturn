@@ -2,6 +2,8 @@ import re
 
 import pytest
 
+from saturn_engine.config import Config as SaturnConfig
+from saturn_engine.config import default_config
 from saturn_engine.utils.config import Config
 
 
@@ -34,16 +36,15 @@ class ObjectConfig:
 
 
 def test_config() -> None:
-    config = Config(Interface)
-    config.load_object(ObjectConfig)
+    config: Config[Interface] = Config()
+    config = config.load_object(ObjectConfig).register_interface("", Interface)
 
     class ExtraConfig:
         a = "111"
 
-    config.load_object(ExtraConfig)
-    config.load_object({"b": 3})
+    config = config.load_objects([ExtraConfig, {"b": 3}])
 
-    config.register_interface("d", ExtraInterface)
+    config = config.register_interface("d", ExtraInterface)
 
     # typed access through `.c`
     assert config.c.a == "111"
@@ -59,12 +60,12 @@ def test_config() -> None:
 
 
 def test_config_error() -> None:
-    config = Config(Interface)
+    config: Config[Interface] = Config()
 
-    with pytest.raises(ValueError, match="Missing config key"):
+    with pytest.raises(AttributeError):
         config.c.a
 
-    config.load_object(ObjectConfig)
+    config = config.load_object(ObjectConfig).register_interface("", Interface)
 
     with pytest.raises(
         ValueError, match="Invalid config key 'a' type: expected 'str', got 'int'"
@@ -78,3 +79,10 @@ def test_config_error() -> None:
         ),
     ):
         config.load_object({"c": {"y": {"1": ["a"]}}})
+
+
+def test_default_config() -> None:
+    # Test default_config can be loaded by itself.
+    config = SaturnConfig().load_object(default_config)
+    assert config
+    assert True

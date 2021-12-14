@@ -12,17 +12,18 @@ from .executors import ExecutorManager
 from .executors import get_executor_class
 from .resources_manager import ResourcesManager
 from .scheduler import Scheduler
+from .services import Services
 from .services.manager import ServicesManager
 from .task_manager import TaskManager
 from .work_manager import WorkManager
 
 
 class WorkManagerInit(Protocol):
-    def __call__(self, services: ServicesManager) -> WorkManager:
+    def __call__(self, services: Services) -> WorkManager:
         ...
 
 
-ExecutorInit = Callable[[ServicesManager], Executor]
+ExecutorInit = Callable[[Services], Executor]
 
 
 class Broker:
@@ -39,10 +40,10 @@ class Broker:
         self.is_running = False
         self.running_task = None
 
-        self.services = ServicesManager(config=config)
+        self.services_manager = ServicesManager(config=config)
 
         # Init subsystem
-        self.work_manager = work_manager(services=self.services)
+        self.work_manager = work_manager(services=self.services_manager.services)
         self.resources_manager = ResourcesManager()
         self.task_manager = TaskManager()
         self.scheduler: Scheduler[ExecutableMessage] = Scheduler()
@@ -50,7 +51,7 @@ class Broker:
             executor = get_executor_class(config.c.worker.executor_cls)
         self.executor = ExecutorManager(
             resources_manager=self.resources_manager,
-            executor=executor(self.services),
+            executor=executor(self.services_manager.services),
         )
 
     async def run(self) -> None:
@@ -60,6 +61,7 @@ class Broker:
         self.is_running = True
         self.logger.info("Starting worker")
         self.executor.start()
+        await self.services_manager.open()
         self.running_task = asyncio.gather(
             self.run_queue_manager(),
             self.run_worker_manager(),
@@ -111,7 +113,7 @@ class Broker:
     async def close(self) -> None:
         await self.scheduler.close()
         await self.task_manager.close()
-        await self.services.close()
+        await self.services_manager.close()
         await self.executor.close()
 
     def stop(self) -> None:

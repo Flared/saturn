@@ -9,7 +9,8 @@ from .utils.config import Config as _Config
 
 class Config(_Config[SaturnConfig]):
     def __init__(self) -> None:
-        super().__init__(SaturnConfig)
+        super().__init__()
+        self._interfaces[""] = SaturnConfig
 
 
 __all__ = (

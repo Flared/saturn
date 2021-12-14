@@ -2,12 +2,12 @@ import asyncio
 from abc import abstractmethod
 from typing import Type
 
-from saturn_engine.config import Config
 from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResult
 from saturn_engine.utils.inspect import import_name
 from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.pipeline_message import PipelineMessage
+from saturn_engine.worker.services import Services
 
 from ..executable_message import ExecutableMessage
 from ..resources_manager import ResourcesManager
@@ -15,7 +15,7 @@ from ..resources_manager import ResourceUnavailable
 
 
 class Executor:
-    def __init__(self, config: Config) -> None:
+    def __init__(self, services: Services) -> None:
         pass
 
     @abstractmethod

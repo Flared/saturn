@@ -11,14 +11,14 @@ from . import topics
 from .inventories import Inventory
 from .job import Job
 from .queue import ExecutableQueue
-from .services.manager import ServicesManager
+from .services import Services
 from .topics import Topic
 from .topics.memory import MemoryTopic
 from .work import SchedulableQueue
 from .work import WorkItems
 
 
-def build(queue_item: QueueItem, *, services: ServicesManager) -> WorkItems:
+def build(queue_item: QueueItem, *, services: Services) -> WorkItems:
     task: Optional[asyncio.Task] = None
     if isinstance(queue_item.input, TopicItem):
         queue_input = build_topic(queue_item.input, services=services)
@@ -44,7 +44,7 @@ def build(queue_item: QueueItem, *, services: ServicesManager) -> WorkItems:
     )
 
 
-def build_topic(topic_item: TopicItem, *, services: ServicesManager) -> Topic:
+def build_topic(topic_item: TopicItem, *, services: Services) -> Topic:
     klass = topics.BUILTINS.get(topic_item.type)
     if klass is None:
         klass = extra_inspect.import_name(topic_item.type)
@@ -57,7 +57,7 @@ def build_topic(topic_item: TopicItem, *, services: ServicesManager) -> Topic:
 
 
 def build_inventory(
-    inventory_item: InventoryItem, *, queue_item: QueueItem, services: ServicesManager
+    inventory_item: InventoryItem, *, queue_item: QueueItem, services: Services
 ) -> tuple[asyncio.Task, Topic]:
     klass = inventories.BUILTINS.get(inventory_item.type)
     if klass is None:

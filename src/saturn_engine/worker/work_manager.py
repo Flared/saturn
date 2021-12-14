@@ -18,7 +18,7 @@ from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.resources_manager import ResourceData
 
 from . import work_factory
-from .services.manager import ServicesManager
+from .services import Services
 from .work import SchedulableQueue
 from .work import WorkItems
 
@@ -90,7 +90,7 @@ class WorkManager:
     last_sync_at: Optional[datetime]
 
     def __init__(
-        self, *, services: ServicesManager, client: Optional[WorkerManagerClient] = None
+        self, *, services: Services, client: Optional[WorkerManagerClient] = None
     ) -> None:
         self.logger = getLogger(__name__, self)
         self.client = client or WorkerManagerClient(
