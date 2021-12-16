@@ -3,12 +3,11 @@ import asyncstdlib as alib
 
 from saturn_engine.utils import get_own_attr
 
-from .manager import ServicesManager
+from . import MinimalService
 
 
-class RabbitMQService:
-    def __init__(self, services: ServicesManager) -> None:
-        self.services = services
+class RabbitMQService(MinimalService):
+    name = "rabbitmq"
 
     @alib.cached_property
     async def connection(self) -> aio_pika.Connection:

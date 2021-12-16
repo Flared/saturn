@@ -1,4 +1,3 @@
-import collections
 import inspect
 import os
 import typing
@@ -12,52 +11,51 @@ from typing import Type
 from typing import TypeVar
 from typing import cast
 
+from . import CINamespace
 from .inspect import eval_class_annotations
 from .inspect import import_name
 
 T = TypeVar("T")
 U = TypeVar("U")
+TConfig = TypeVar("TConfig", bound="Config")
 
 _MISSING = object()
 
 
-class Namespace(collections.UserDict):
-    def __getattr__(self, name: str) -> Any:
-        return self.data[name.lower()]
-
-    def __getitem__(self, name: str) -> Any:
-        return self.data[name.lower()]
-
-    def __setitem__(self, name: str, value: Any) -> None:
-        self.data[name.lower()] = value
-
-
 class Config(Generic[T]):
-    def __init__(self, interface: Type[T]) -> None:
+    def __init__(self) -> None:
         self._layers: list[object] = []
-        self._config: Namespace = Namespace()
+        self._config: CINamespace = CINamespace()
+        self.c: T = cast(T, self._config)
         self._interfaces: dict[str, Any] = {}
-        self._main_interface = interface
 
-    def load_object(self, obj: Any) -> None:
+    def load_object(self: TConfig, obj: Any) -> TConfig:
         """Load an object into the configuration.
 
         This can be a module, class, instance or dict.
         """
-        if obj is None:
-            return
+        return self.load_objects([obj])
 
-        if isinstance(obj, str):
-            obj = import_name(obj)
+    def load_objects(self: TConfig, objs: Iterable) -> TConfig:
+        new_config = self.copy()
 
-        self._layers.append(obj)
-        load_config(layers=[obj], interfaces=self._interfaces, config=self._config)
+        for obj in objs:
+            if obj is None:
+                continue
 
-    def load_envvar(self, envvar: str) -> None:
+            if isinstance(obj, str):
+                obj = import_name(obj)
+
+            new_config._layers.append(obj)
+
+        new_config.refresh()
+        return new_config
+
+    def load_envvar(self: TConfig, envvar: str) -> TConfig:
         """Load an object from a path stored in an environment variable."""
-        self.load_object(os.environ.get(envvar))
+        return self.load_object(os.environ.get(envvar))
 
-    def register_interface(self, namespace: str, interface: Type) -> None:
+    def register_interface(self: TConfig, namespace: str, interface: Type) -> TConfig:
         """Add an interface to the config under namespace.
 
         Interfaces are used to validate config keys and values.
@@ -65,33 +63,44 @@ class Config(Generic[T]):
         namespace = namespace.lower()
         existing = self._interfaces.get(namespace)
         if existing:
-            raise ValueError(
-                f"Interface already registered for {namespace}: {existing}"
-            )
-        self._interfaces[namespace] = interface
+            if existing is not interface:
+                raise ValueError(
+                    f"Interface already registered for {namespace}: {existing}"
+                )
+            return self
+
+        new_config = self.copy()
+        new_config._interfaces[namespace] = interface
+        new_config.refresh()
+        return new_config
+
+    def refresh(self) -> None:
         load_config(
-            layers=self._layers, interfaces={namespace: interface}, config=self._config
+            layers=self._layers, interfaces=self._interfaces, config=self._config
         )
 
     @property
-    def c(self) -> T:
-        if "" not in self._interfaces:
-            self.register_interface("", self._main_interface)
-        return cast(T, self._config)
-
-    @property
-    def r(self) -> Namespace:
+    def r(self) -> CINamespace:
         return self._config
 
     def cast_namespace(self, namespace: str, interface: Type[U]) -> U:
         namespace = namespace.lower()
         if namespace not in self._interfaces:
-            self.register_interface(namespace, interface)
+            raise ValueError(
+                f"'{namespace}' is not registered. Did you forget to call "
+                "'register_interface'?"
+            )
         return cast(U, self._config[namespace])
+
+    def copy(self: TConfig) -> TConfig:
+        new_config = type(self)()
+        new_config._layers.extend(self._layers)
+        new_config._interfaces.update(self._interfaces)
+        return new_config
 
 
 def load_config_interface(
-    *, interface: Type, layers: list, config: Namespace, path: str = ""
+    *, interface: Type, layers: list, config: CINamespace, path: str = ""
 ) -> None:
     annotations = typing.get_type_hints(interface)
     for name in dir(interface) | annotations.keys():
@@ -122,7 +131,7 @@ def load_config_interface(
             load_config_interface(
                 interface=typ,
                 layers=sublayers_,
-                config=config.setdefault(name, Namespace()),
+                config=config.setdefault(name, CINamespace()),
                 path=key_path,
             )
 
@@ -139,13 +148,18 @@ def get_config_value(layers: list, name: str, default_value: str) -> Any:
 
 
 def load_config(
-    *, layers: list, interfaces: dict[str, Type], config: Namespace
+    *, layers: list, interfaces: dict[str, Type], config: CINamespace
 ) -> None:
     for namespace, interface in interfaces.items():
+        namespace_layers = layers
+        namespace_config = config
         if namespace:
-            config = config.setdefault(namespace, Namespace())
-            layers = sublayers(layers, namespace)
-        load_config_interface(interface=interface, layers=layers, config=config)
+            namespace_config = config.setdefault(namespace, CINamespace())
+            namespace_layers = sublayers(layers, namespace)
+
+        load_config_interface(
+            interface=interface, layers=namespace_layers, config=namespace_config
+        )
 
 
 def sublayers(layers: list, name: str) -> list:

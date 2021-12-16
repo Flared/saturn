@@ -1,3 +1,4 @@
+import collections
 import enum
 import threading
 from collections.abc import Iterable
@@ -165,3 +166,25 @@ def default_utc(date: datetime) -> datetime:
     if date.tzinfo is None:
         return date.replace(tzinfo=timezone.utc)
     return date
+
+
+class Namespace(collections.UserDict):
+    def __getattr__(self, name: str) -> Any:
+        try:
+            return self.data[name]
+        except KeyError:
+            raise AttributeError(name) from None
+
+
+class CINamespace(collections.UserDict):
+    def __getattr__(self, name: str) -> Any:
+        try:
+            return self.data[name.lower()]
+        except KeyError:
+            raise AttributeError(name) from None
+
+    def __getitem__(self, name: str) -> Any:
+        return self.data[name.lower()]
+
+    def __setitem__(self, name: str, value: Any) -> None:
+        self.data[name.lower()] = value

@@ -119,7 +119,4 @@ def job_definition_maker(
 
 @pytest.fixture(scope="session")
 def config() -> Config:
-    config = Config()
-    config.load_object(default_config)
-    config.load_object(test_config)
-    return config
+    return Config().load_objects([default_config, test_config])

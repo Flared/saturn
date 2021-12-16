@@ -21,7 +21,7 @@ class PipelineInfo:
 
     @classmethod
     def from_pipeline(cls, pipeline: Callable) -> "PipelineInfo":
-        name = extra_inspect.get_import_names(pipeline)
+        name = extra_inspect.get_import_name(pipeline)
         try:
             signature = extra_inspect.signature(pipeline)
         except Exception as e:

@@ -59,7 +59,7 @@ def eval_class_annotations(
 
 
 # Taken from CPython pickle.py
-def get_import_names(obj: Callable) -> str:
+def get_import_name(obj: Callable) -> str:
     name = getattr(obj, "__qualname__", None)
     if name is None:
         name = obj.__name__
