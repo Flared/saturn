@@ -13,13 +13,11 @@ class StaticInventory(Inventory):
         items: list[dict[str, Any]]
 
     def __init__(self, options: Options, **kwargs: object) -> None:
-        self.batch_size = 5
         self.items = options.items
 
-    async def next_batch(self, after: Optional[str] = None) -> Iterable[Item]:
+    async def next_batch(self, after: Optional[str] = None) -> list[Item]:
         begin = int(after) + 1 if after else 0
-        end = begin + self.batch_size
         return [
             Item(id=str(i), args=args)
-            for i, args in enumerate(self.items[begin:end], start=begin)
+            for i, args in enumerate(self.items[begin:], start=begin)
         ]
