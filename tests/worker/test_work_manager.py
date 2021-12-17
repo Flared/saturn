@@ -1,3 +1,5 @@
+import asyncio
+import contextlib
 from unittest.mock import Mock
 
 import pytest
@@ -126,3 +128,5 @@ async def test_sync(
     assert set(work_sync.resources.drop) == {r2_resource}
     for t in work_sync.tasks.drop:
         t.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await t

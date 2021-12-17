@@ -23,7 +23,7 @@ def build(queue_item: QueueItem, *, services: Services) -> WorkItems:
     if isinstance(queue_item.input, TopicItem):
         queue_input = build_topic(queue_item.input, services=services)
     if isinstance(queue_item.input, InventoryItem):
-        task, queue_input = build_inventory(
+        task, queue_input = build_inventory_job(
             queue_item.input, queue_item=queue_item, services=services
         )
 
@@ -56,9 +56,20 @@ def build_topic(topic_item: TopicItem, *, services: Services) -> Topic:
     return klass.from_options(options, services=services)
 
 
-def build_inventory(
+def build_inventory_job(
     inventory_item: InventoryItem, *, queue_item: QueueItem, services: Services
 ) -> tuple[asyncio.Task, Topic]:
+    inventory_input = build_inventory(inventory_item, services=services)
+    inventory_output = MemoryTopic(
+        MemoryTopic.Options(name=queue_item.name, buffer_size=1)
+    )
+    store = services.job_store.for_queue(queue_item)
+    job = Job(inventory=inventory_input, publisher=inventory_output, store=store)
+    input_topic = MemoryTopic(MemoryTopic.Options(name=queue_item.name, buffer_size=1))
+    return (asyncio.create_task(job.run()), input_topic)
+
+
+def build_inventory(inventory_item: InventoryItem, *, services: Services) -> Inventory:
     klass = inventories.BUILTINS.get(inventory_item.type)
     if klass is None:
         klass = extra_inspect.import_name(inventory_item.type)
@@ -67,12 +78,4 @@ def build_inventory(
     if not issubclass(klass, Inventory):
         raise ValueError(f"{klass} must be an Inventory")
     options = {"name": inventory_item.name} | inventory_item.options
-
-    inventory_input = klass.from_options(options, services=services)
-    inventory_output = MemoryTopic(
-        MemoryTopic.Options(name=queue_item.name, buffer_size=1)
-    )
-    store = services.job_store.for_queue(queue_item)
-    job = Job(inventory=inventory_input, publisher=inventory_output, store=store)
-    input_topic = MemoryTopic(MemoryTopic.Options(name=queue_item.name, buffer_size=1))
-    return (asyncio.create_task(job.run()), input_topic)
+    return klass.from_options(options, services=services)

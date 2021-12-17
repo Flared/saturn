@@ -14,6 +14,6 @@ async def test_static_inventory() -> None:
     ]
 
     inventory = StaticInventory.from_options({"items": [{}] * 9})
-    assert len(list(await inventory.next_batch())) == 5
+    assert len(list(await inventory.next_batch())) == 9
     assert len(list(await inventory.next_batch(after="4"))) == 4
     assert not list(await inventory.next_batch(after="8"))
