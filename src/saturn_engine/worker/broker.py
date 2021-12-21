@@ -28,6 +28,8 @@ ExecutorInit = Callable[[Services], Executor]
 
 class Broker:
     running_task: Optional[asyncio.Future]
+    executor: ExecutorManager
+    work_manager: WorkManager
 
     def __init__(
         self,
@@ -38,30 +40,46 @@ class Broker:
     ) -> None:
         self.logger = getLogger(__name__, self)
         self.is_running = False
+        self.is_init = False
         self.running_task = None
 
         self.services_manager = ServicesManager(config=config)
+        self.work_manager_init = work_manager
 
         # Init subsystem
-        self.work_manager = work_manager(services=self.services_manager.services)
         self.resources_manager = ResourcesManager()
         self.task_manager = TaskManager()
         self.scheduler: Scheduler[ExecutableMessage] = Scheduler()
+
+        self.executor_init: ExecutorInit
         if executor is None:
-            executor = get_executor_class(config.c.worker.executor_cls)
+            self.executor_init = get_executor_class(config.c.worker.executor_cls)
+        else:
+            self.executor_init = executor
+
+    async def init(self) -> None:
+        if self.is_init:
+            return
+
+        await self.services_manager.open()
+        self.work_manager = self.work_manager_init(
+            services=self.services_manager.services
+        )
         self.executor = ExecutorManager(
             resources_manager=self.resources_manager,
-            executor=executor(self.services_manager.services),
+            executor=self.executor_init(self.services_manager.services),
         )
+        self.is_init = True
 
     async def run(self) -> None:
         """
         Start all the task required to run the worker.
         """
         self.is_running = True
+        self.logger.info("Initializing worker")
+        await self.init()
         self.logger.info("Starting worker")
         self.executor.start()
-        await self.services_manager.open()
         self.running_task = asyncio.gather(
             self.run_queue_manager(),
             self.run_worker_manager(),
