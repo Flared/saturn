@@ -1,12 +1,13 @@
 import abc
 from typing import Optional
 
+import asyncstdlib as alib
+
 from saturn_engine.core import TopicMessage
 from saturn_engine.utils.log import getLogger
 from saturn_engine.utils.options import OptionsSchema
 
 from ..inventories import Inventory
-from ..inventories import Item
 from ..topics import Topic
 
 
@@ -32,26 +33,23 @@ class Job:
         self.inventory = inventory
         self.publisher = publisher
         self.store = store
-        self.after: Optional[str] = None
-
-    async def push_batch(self, items: list[Item]) -> None:
-        try:
-            for item in items:
-                self.after = item.id
-                message = TopicMessage(id=str(item.id), args=item.args)
-                await self.publisher.publish(message, wait=True)
-        finally:
-            if self.after is not None:
-                await self.store.save_cursor(after=self.after)
+        self.batch_size = 10
 
     async def run(self) -> None:
-        if self.after is None:
-            self.after = await self.store.load_cursor()
+        after = await self.store.load_cursor()
+        done = None
 
-        while True:
-            items = list(await self.inventory.next_batch(after=self.after))
-            if not items:
-                break
-            await self.push_batch(items)
+        async with alib.scoped_iter(self.inventory.iterate(after=after)) as iterator:
+            while done is not True:
+                try:
+                    done = True
+                    async for item in alib.islice(iterator, self.batch_size):
+                        after = item.id
+                        done = False
+                        message = TopicMessage(id=str(item.id), args=item.args)
+                        await self.publisher.publish(message, wait=True)
+                finally:
+                    if not done and after is not None:
+                        await self.store.save_cursor(after=after)
 
         await self.store.set_completed()

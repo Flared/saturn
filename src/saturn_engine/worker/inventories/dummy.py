@@ -1,5 +1,4 @@
 import dataclasses
-from collections.abc import Iterable
 from typing import Optional
 
 from . import Inventory
@@ -14,7 +13,7 @@ class DummyInventory(Inventory):
     def __init__(self, options: Options, **kwrags: object) -> None:
         self.count = options.count or 1000
 
-    async def next_batch(self, after: Optional[str] = None) -> Iterable[Item]:
+    async def next_batch(self, after: Optional[str] = None) -> list[Item]:
         n = int(after) + 1 if after is not None else 0
         n_end = min(n + 100, self.count)
         if n_end == n:
