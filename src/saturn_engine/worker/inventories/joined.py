@@ -50,7 +50,7 @@ class JoinedInventory(IteratorInventory):
         self, *, inventories: list[tuple[str, Inventory]], after: dict[str, str]
     ) -> AsyncIterator[JoinedItems]:
         name, inventory = inventories[0]
-        last_id = after.get(name)
+        last_id = after.pop(name, None)
         joined_inventories = inventories[1:]
 
         async for item in inventory.iterate(after=last_id):
