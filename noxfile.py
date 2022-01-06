@@ -10,7 +10,7 @@ from typing import Sequence
 import nox
 from nox.sessions import Session
 
-nox.options.sessions = "lint", "mypy", "tests"
+nox.options.sessions = "lint", "mypy", "tests", "tests_pipeline"
 nox.options.reuse_existing_virtualenvs = True
 
 python_all_versions = ["3.9"]
@@ -55,6 +55,13 @@ def tests(session: Session) -> None:
     install_project(session)
     install_with_constraints(session, "pytest", "pytest-asyncio", "pytest-icdiff")
     session.run("pytest", "-vv", *args)
+
+
+@nox.session(python=python_all_versions)
+def tests_pipeline(session: Session) -> None:
+    args = session.posargs
+    install_project(session)
+    session.run("bash", "example/tests_pipeline", *args, external=True)
 
 
 @nox.session(python=python_all_versions)
