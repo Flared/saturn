@@ -67,6 +67,7 @@ flake8-breakpoint = "^1.1.0"
 addopts = "--doctest-modules"
 filterwarnings = [
   "error",
+  "ignore:distutils Version classes are deprecated.:DeprecationWarning",
   "ignore::marshmallow.warnings.RemovedInMarshmallow4Warning",
 ]
 

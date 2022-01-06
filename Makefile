@@ -9,19 +9,31 @@
 
 .PHONY: nox
 nox: .venv-tools
-	.venv-tools/bin/nox
+	bash -c "\
+		source .venv-tools/bin/activate \
+		&& .venv-tools/bin/nox \
+	"
 
 .PHONY: nox-tests
 nox-tests: .venv-tools
-	.venv-tools/bin/nox -s tests
+	bash -c "\
+		source .venv-tools/bin/activate \
+		&& .venv-tools/bin/nox -s tests \
+	"
 
 .PHONY: nox-mypy
 nox-mypy: .venv-tools
-	.venv-tools/bin/nox -s mypy
+	bash -c "\
+		source .venv-tools/bin/activate \
+		&& .venv-tools/bin/nox -s mypy \
+	"
 
 .PHONY: nox-format
 nox-format: .venv-tools
-	.venv-tools/bin/nox -s format
+	bash -c "\
+		source .venv-tools/bin/activate \
+		&& .venv-tools/bin/nox -s format \
+	"
 
 .PHONY: clean
 clean:
