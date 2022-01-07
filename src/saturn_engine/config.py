@@ -3,6 +3,7 @@ from .config_definitions import RabbitMQConfig
 from .config_definitions import RayConfig
 from .config_definitions import SaturnConfig
 from .config_definitions import WorkerConfig
+from .config_definitions import WorkerManagerConfig
 from .default_config import config as default_config
 from .utils.config import Config as _Config
 
@@ -17,6 +18,7 @@ __all__ = (
     "Config",
     "SaturnConfig",
     "WorkerConfig",
+    "WorkerManagerConfig",
     "RabbitMQConfig",
     "RayConfig",
     "Env",

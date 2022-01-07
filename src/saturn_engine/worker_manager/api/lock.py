@@ -12,7 +12,7 @@ from saturn_engine.stores import queues_store
 from saturn_engine.utils.flask import Json
 from saturn_engine.utils.flask import jsonify
 from saturn_engine.utils.flask import marshall_request
-from saturn_engine.worker_manager.config import config
+from saturn_engine.worker_manager.app import current_app
 
 bp = Blueprint("lock", __name__, url_prefix="/api/lock")
 
@@ -64,10 +64,10 @@ def post_lock() -> Json[LockResponse]:
             )
 
         for item in assigned_items:
-            item.join_definitions(config().static_definitions)
+            item.join_definitions(current_app.saturn.static_definitions)
 
         # Collect resource for assigned work
-        static_definitions = config().static_definitions
+        static_definitions = current_app.saturn.static_definitions
         resources = {}
         # Copy list since the iteration could drop items from assigned_items.
         for item in assigned_items.copy():

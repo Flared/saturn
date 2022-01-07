@@ -11,6 +11,7 @@ from saturn_engine.utils.flask import Json
 from saturn_engine.utils.flask import check_found
 from saturn_engine.utils.flask import jsonify
 from saturn_engine.utils.flask import marshall_request
+from saturn_engine.worker_manager.app import current_app
 from saturn_engine.worker_manager.services.sync import sync_jobs
 
 bp = Blueprint("jobs", __name__, url_prefix="/api/jobs")
@@ -51,5 +52,7 @@ def update_job(job_name: str) -> Json[UpdateResponse]:
 @bp.route("/sync", methods=("POST",))
 def post_sync() -> Json[JobsSyncResponse]:
     """Create jobs that are due to be scheduled."""
-    sync_jobs()
+    sync_jobs(
+        static_definitions=current_app.saturn.static_definitions,
+    )
     return jsonify(JobsSyncResponse())
