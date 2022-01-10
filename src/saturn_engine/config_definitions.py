@@ -20,6 +20,15 @@ class WorkerConfig:
 
 
 @dataclasses.dataclass
+class WorkerManagerConfig:
+    flask_host: str
+    flask_port: int
+    database_url: str
+    async_database_url: str
+    static_definitions_directory: str
+
+
+@dataclasses.dataclass
 class RabbitMQConfig:
     url: str
 
@@ -34,5 +43,6 @@ class RayConfig:
 class SaturnConfig:
     env: Env
     worker: WorkerConfig
+    worker_manager: WorkerManagerConfig
     rabbitmq: RabbitMQConfig
     ray: RayConfig

@@ -14,7 +14,7 @@ from sqlalchemy.orm import sessionmaker
 
 from saturn_engine.models import Base
 from saturn_engine.utils import lazy
-from saturn_engine.worker_manager.config import config
+from saturn_engine.worker_manager.app import current_app
 
 AnySyncSession = Union[Session, _sqlalchemy_scoped_session]
 AnySession = AnySyncSession
@@ -59,7 +59,10 @@ def drop_all() -> None:
 
 def engine() -> Engine:
     init()
-    return create_engine(config().database_url, future=True)
+    return create_engine(
+        current_app.saturn.config.database_url,
+        future=True,
+    )
 
 
 @lazy()

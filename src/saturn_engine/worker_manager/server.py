@@ -1,16 +1,33 @@
 from typing import Optional
 
-from flask import Flask
-
+from saturn_engine.config import Config as SaturnConfig
+from saturn_engine.config import default_config
 from saturn_engine.database import create_all
 from saturn_engine.database import scoped_session
 from saturn_engine.utils.flask import register_http_exception_error_handler
-from saturn_engine.worker_manager.config import config
+from saturn_engine.worker_manager.app import SaturnApp
+from saturn_engine.worker_manager.app import current_app
+from saturn_engine.worker_manager.context import WorkerManagerContext
 from saturn_engine.worker_manager.services.sync import sync_jobs
 
 
-def get_app() -> Flask:
-    app = Flask(__name__)
+def get_app(
+    config: dict = None,
+) -> SaturnApp:
+    worker_manager_context = WorkerManagerContext(
+        config=SaturnConfig()
+        .load_object(default_config)
+        .load_envvar("SATURN_SETTINGS")
+        .c.worker_manager
+    )
+
+    app = SaturnApp(
+        worker_manager_context,
+        __name__,
+    )
+
+    if config:
+        app.config.from_mapping(config)
 
     from .api.inventories import bp as bp_inventories
     from .api.job_definitions import bp as bp_job_definitions
@@ -34,16 +51,19 @@ def get_app() -> Flask:
 
 
 def init_all() -> None:
-    sync_jobs()
+    sync_jobs(
+        static_definitions=current_app.saturn.static_definitions,
+    )
 
 
 def main() -> None:
     app = get_app()
-    create_all()
-    init_all()
+    with app.app_context():
+        create_all()
+        init_all()
     app.run(
-        host=config().flask_host,
-        port=config().flask_port,
+        host=app.saturn.config.flask_host,
+        port=app.saturn.config.flask_port,
     )
 
 

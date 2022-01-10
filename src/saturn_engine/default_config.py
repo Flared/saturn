@@ -5,6 +5,7 @@ from .config import RabbitMQConfig
 from .config import RayConfig
 from .config import SaturnConfig
 from .config import WorkerConfig
+from .config import WorkerManagerConfig
 
 
 class config(SaturnConfig):
@@ -25,3 +26,16 @@ class config(SaturnConfig):
     class ray(RayConfig):
         local = os.environ.get("SATURN_RAY__LOCAL", "0") == "1"
         address = os.environ.get("SATURN_RAY__ADDRESS", "auto")
+
+    class worker_manager(WorkerManagerConfig):
+        flask_host = os.environ.get("SATURN_FLASK_HOST", "127.0.0.1")
+        flask_port = int(os.environ.get("SATURN_FLASK_PORT", 5000))
+        database_url: str = os.environ.get("SATURN_DATABASE_URL", "sqlite:///test.db")
+        async_database_url: str = (
+            os.environ.get("SATURN_DATABASE_URL", "sqlite:///test.db")
+            .replace("sqlite:/", "sqlite+aiosqlite:/")
+            .replace("postgresql:/", "postgresql+asyncpg:/")
+        )
+        static_definitions_directory: str = os.environ.get(
+            "SATURN_STATIC_DEFINITIONS_DIR", "/opt/saturn/definitions"
+        )
