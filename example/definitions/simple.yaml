@@ -46,3 +46,14 @@ spec:
 
     pipeline:
       name: example.pipelines.echo
+      resources: {"api_key": "example.resources.TestApiKey"}
+---
+apiVersion: saturn.github.io/v1alpha1
+kind: SaturnResource
+metadata:
+  name: example-api-key
+spec:
+  type: example.resources.TestApiKey
+  data:
+    key: example-api-key-1
+  default_delay: 5

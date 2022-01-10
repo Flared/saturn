@@ -1,0 +1,51 @@
+apiVersion: saturn.github.io/v1alpha1
+kind: SaturnPipelineTest
+metadata:
+  name: test-echo-pipeline
+spec:
+  selector:
+    job_definition: example-job-definition
+  inventory:
+    - message: override-1
+    - message: override-2
+    - message: override-3
+  resources:
+    example.resources.TestApiKey:
+      name: test-key-1
+      key: test
+  pipeline_results:
+    - outputs:
+        - channel: default
+          args:
+            message: override-1
+      resources: []
+    - outputs:
+        - channel: default
+          args:
+            message: override-2
+      resources: []
+    - outputs:
+        - channel: default
+          args:
+            message: override-3
+      resources: []
+---
+apiVersion: saturn.github.io/v1alpha1
+kind: SaturnPipelineTest
+metadata:
+  name: test-echo-pipeline-2
+spec:
+  selector:
+    job_definition: example-job-definition
+  inventory:
+    - message: second-test-hello
+  resources:
+    example.resources.TestApiKey:
+      name: test-key-1
+      key: test
+  pipeline_results:
+    - outputs:
+        - channel: default
+          args:
+            message: second-test-hello
+      resources: []
