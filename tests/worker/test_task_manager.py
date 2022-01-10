@@ -15,9 +15,7 @@ async def task_manager() -> AsyncIterator[TaskManager]:
 
 
 @pytest.mark.asyncio
-async def test_task_manager(  # noqa: C901  # Ignore complexity errors.
-    task_manager: TaskManager,
-) -> None:
+async def test_task_manager(task_manager: TaskManager) -> None:
     task_ran = asyncio.Event()
 
     async def task_forever() -> None:
