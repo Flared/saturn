@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="saturn_engine",
-    version="0.3dev",
+    version="0.2.0dev15",
     packages=["saturn_engine"],
     package_dir={"":"src"},
     install_requires=[],
