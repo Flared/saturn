@@ -1,4 +1,4 @@
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnPipelineTest
 metadata:
   name: test-echo-pipeline
@@ -30,7 +30,7 @@ spec:
             message: override-3
       resources: []
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnPipelineTest
 metadata:
   name: test-echo-pipeline-2

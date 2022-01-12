@@ -25,7 +25,7 @@ def test_load_definitions_from_directory_simple() -> None:
 
 def test_load_job_definition() -> None:
     job_definition_str: str = """
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnResource
 metadata:
   name: test-resource
@@ -35,14 +35,14 @@ spec:
     key: "qwe"
   default_delay: 10
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnTopic
 metadata:
   name: test-topic
 spec:
   type: RabbitMQ
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnInventory
 metadata:
   name: test-inventory
@@ -50,7 +50,7 @@ spec:
   type: testtype
   options: {}
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: test-job-definition
@@ -95,7 +95,7 @@ def test_load_job_definition_unordered() -> None:
     # Its fine to define jobsdefinitions before the topic that they refer to.
     job_definition_str: str = """
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: test-job-definition
@@ -115,7 +115,7 @@ spec:
       name: something.saturn.pipelines.aa.bb
       resources: {"api_key": "GithubApiKey"}
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnTopic
 metadata:
   name: test-topic
@@ -123,7 +123,7 @@ spec:
   type: RabbitMQ
   options: {}
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnInventory
 metadata:
   name: test-inventory

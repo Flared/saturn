@@ -1,5 +1,5 @@
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnInventory
 metadata:
   name: github-identifiers

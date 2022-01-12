@@ -16,7 +16,7 @@ def test_api_job_definitions_loaded_from_str(
 ) -> None:
     new_definitions = load_definitions_from_str(
         """
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnTopic
 metadata:
   name: test-topic
@@ -24,7 +24,7 @@ spec:
   type: RabbitMQ
   options: {}
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnInventory
 metadata:
   name: test-inventory
@@ -32,7 +32,7 @@ spec:
   type: testtype
   options: {}
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: test-job-definition
