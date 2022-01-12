@@ -33,10 +33,10 @@ def _load_uncompiled_objects_from_str(definitions: str) -> list[UncompiledObject
         api_version: Optional[str] = yaml_object.get("apiVersion")
         if not api_version:
             raise Exception("Missing apiVersion")
-        elif api_version != "saturn.github.io/v1alpha1":
+        elif api_version != "saturn.flared.io/v1alpha1":
             raise Exception(
-                f"apiVersion was {api_version},"
-                "we only support saturn.github.io/v1alpha1"
+                f"apiVersion was {api_version}, "
+                "we only support saturn.flared.io/v1alpha1"
             )
 
         object_kind: Optional[str] = yaml_object.get("kind")

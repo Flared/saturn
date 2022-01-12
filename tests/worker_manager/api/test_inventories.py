@@ -16,7 +16,7 @@ def test_api_inventories_loaded_from_file(
 ) -> None:
     new_definitions = load_definitions_from_str(
         """
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnInventory
 metadata:
   name: testinv

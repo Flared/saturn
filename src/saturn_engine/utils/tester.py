@@ -89,6 +89,11 @@ def main(
             pipeline_test: PipelineTest = fromdict(loaded_yaml_object, PipelineTest)
             if pipeline_test.kind != "SaturnPipelineTest":
                 raise Exception(f"Unknown object kind {pipeline_test.kind}")
+            if pipeline_test.apiVersion != "saturn.flared.io/v1alpha1":
+                raise Exception(
+                    f"apiVersion was {pipeline_test.apiVersion}, "
+                    "we only support saturn.flared.io/v1alpha1"
+                )
 
             print(f"Running {pipeline_test.metadata.name}...")
             run_saturn_pipeline_test(

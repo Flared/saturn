@@ -147,7 +147,7 @@ def test_jobs_sync(
     frozen_time: FreezeTime,
 ) -> None:
     new_definitions_str: str = """
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnTopic
 metadata:
   name: test-topic
@@ -155,7 +155,7 @@ spec:
   type: RabbitMQ
   options: {}
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnInventory
 metadata:
   name: test-inventory
@@ -163,7 +163,7 @@ spec:
   type: testtype
   options: {}
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: unscheduled
@@ -180,7 +180,7 @@ spec:
       name: something.saturn.pipelines.aa.bb
       resources: {"api_key": "GithubApiKey"}
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: running
@@ -197,7 +197,7 @@ spec:
       name: something.saturn.pipelines.aa.bb
       resources: {"api_key": "GithubApiKey"}
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: due
@@ -214,7 +214,7 @@ spec:
       name: something.saturn.pipelines.aa.bb
       resources: {"api_key": "GithubApiKey"}
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: not-due

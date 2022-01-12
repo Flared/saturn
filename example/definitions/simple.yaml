@@ -1,5 +1,5 @@
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnTopic
 metadata:
   name: stdout
@@ -9,7 +9,7 @@ spec:
     path: "-"
     mode: "w"
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnInventory
 metadata:
   name: static-inventory
@@ -28,7 +28,7 @@ spec:
     - {message: hello-8}
     - {message: hello-9}
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: example-job-definition
@@ -48,7 +48,7 @@ spec:
       name: example.pipelines.echo
       resources: {"api_key": "example.resources.TestApiKey"}
 ---
-apiVersion: saturn.github.io/v1alpha1
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnResource
 metadata:
   name: example-api-key
