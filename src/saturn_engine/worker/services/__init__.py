@@ -28,8 +28,8 @@ U = TypeVar("U")
 
 class Service(Generic[TServices, TOptions]):
     name: ClassVar[str]
-    Services: ClassVar[Optional[Type[TServices]]] = None
-    Options: ClassVar[Optional[Type[TOptions]]] = None
+    Services: Optional[Type[TServices]] = None
+    Options: Optional[Type[TOptions]] = None
 
     def __init__(self, services: TServices):
         self.services: TServices = services
