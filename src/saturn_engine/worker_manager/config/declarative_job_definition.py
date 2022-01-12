@@ -33,8 +33,8 @@ class JobOutput:
 class JobDefinitionTemplate:
     name: str
     input: JobInput
-    output: dict[str, list[JobOutput]]
     pipeline: PipelineInfo
+    output: dict[str, list[JobOutput]] = dataclasses.field(default_factory=dict)
 
     def to_core_object(
         self,

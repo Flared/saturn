@@ -138,3 +138,36 @@ spec:
     assert len(static_definitions.inventories) == 1
     assert len(static_definitions.job_definitions) == 1
     assert len(static_definitions.topics) == 1
+
+
+def test_load_job_definition_without_output() -> None:
+    job_definition_str: str = """
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJobDefinition
+metadata:
+  name: test-job-definition
+spec:
+  minimalInterval: "@weekly"
+  template:
+    name: test
+
+    input:
+      inventory: test-inventory
+
+    pipeline:
+      name: something.saturn.pipelines.aa.bb
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnInventory
+metadata:
+  name: test-inventory
+spec:
+  type: testtype
+---
+
+"""
+    static_definitions = load_definitions_from_str(job_definition_str)
+
+    assert len(static_definitions.job_definitions) == 1
+    assert len(static_definitions.inventories) == 1
