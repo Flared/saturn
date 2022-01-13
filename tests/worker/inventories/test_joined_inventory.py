@@ -47,3 +47,30 @@ async def test_joined_inventory() -> None:
         ({"a": "1", "b": "2"}, {"a": {"n": 3}, "b": {"c": "C"}}),
     ]
     assert not await alib.list(inventory.iterate(after='{"a": "1", "b": "2"}'))
+
+
+@pytest.mark.asyncio
+async def test_joined_inventory_flatten() -> None:
+    inventory = JoinedInventory.from_options(
+        {
+            "flatten": True,
+            "inventories": [
+                {
+                    "name": "a",
+                    "type": "StaticInventory",
+                    "options": {"items": [{"n": 1}]},
+                },
+                {
+                    "name": "b",
+                    "type": "StaticInventory",
+                    "options": {"items": [{"c": "A"}]},
+                },
+            ],
+            "batch_size": 10,
+        },
+        services=None,
+    )
+    batch = await alib.list(inventory.iterate())
+    assert [(json.loads(i.id), i.args) for i in batch] == [
+        ({"b": "0"}, {"n": 1, "c": "A"})
+    ]
