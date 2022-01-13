@@ -1,21 +1,20 @@
 import dataclasses
-import os
 import shutil
 import sys
+from collections import defaultdict
 from typing import Any
+from typing import DefaultDict
 
 import click
-import yaml
 
 from saturn_engine.core import TopicMessage
+from saturn_engine.utils.declarative_config import UncompiledObject
+from saturn_engine.utils.declarative_config import load_uncompiled_objects_from_path
 from saturn_engine.utils.options import asdict
 from saturn_engine.utils.options import fromdict
 from saturn_engine.worker.executors.bootstrap import bootstrap_pipeline
 from saturn_engine.worker.pipeline_message import PipelineMessage
-from saturn_engine.worker_manager.config.declarative import (
-    load_definitions_from_directory,
-)
-from saturn_engine.worker_manager.config.declarative import load_definitions_from_str
+from saturn_engine.worker_manager.config.declarative import compile_static_definitions
 from saturn_engine.worker_manager.config.declarative_base import BaseObject
 from saturn_engine.worker_manager.config.static_definitions import StaticDefinitions
 
@@ -60,6 +59,31 @@ class PipelineTest(BaseObject):
     spec: PipelineTestSpec
 
 
+@dataclasses.dataclass
+class SaturnTests:
+    pipeline_tests: dict[str, PipelineTest] = dataclasses.field(default_factory=dict)
+
+
+def compile_tests(uncompiled_objects: list) -> SaturnTests:
+
+    objects_by_kind: DefaultDict[str, list[UncompiledObject]] = defaultdict(list)
+    for uncompiled_object in uncompiled_objects:
+        objects_by_kind[uncompiled_object.kind].append(uncompiled_object)
+
+    tests: SaturnTests = SaturnTests()
+
+    for uncompiled_pipeline_test in objects_by_kind.pop("SaturnPipelineTest", list()):
+        pipeline_test: PipelineTest = fromdict(
+            uncompiled_pipeline_test.data, PipelineTest
+        )
+        tests.pipeline_tests[pipeline_test.metadata.name] = pipeline_test
+
+    for object_kind in objects_by_kind.keys():
+        raise Exception(f"Unsupported kind {object_kind}")
+
+    return tests
+
+
 @click.command()
 @click.option(
     "--topology",
@@ -68,7 +92,7 @@ class PipelineTest(BaseObject):
 )
 @click.option(
     "--tests",
-    type=click.Path(exists=True, dir_okay=False),
+    type=click.Path(exists=True, dir_okay=True),
     required=True,
 )
 def main(
@@ -76,30 +100,24 @@ def main(
     topology: str,
     tests: str,
 ) -> None:
-    # Load the topology
-    if os.path.isdir(topology):
-        static_definitions = load_definitions_from_directory(topology)
-    else:
-        with open(topology, "r", encoding="utf-8") as f:
-            static_definitions = load_definitions_from_str(f.read())
+    compiled_static_definitions = compile_static_definitions(
+        load_uncompiled_objects_from_path(topology),
+    )
+    compiled_tests = compile_tests(
+        load_uncompiled_objects_from_path(tests),
+    )
+    run_tests(
+        static_definitions=compiled_static_definitions,
+        tests=compiled_tests,
+    )
 
-    # Load and execute the tests
-    with open(tests, "r", encoding="utf-8") as f:
-        for loaded_yaml_object in yaml.load_all(f.read(), yaml.SafeLoader):
-            pipeline_test: PipelineTest = fromdict(loaded_yaml_object, PipelineTest)
-            if pipeline_test.kind != "SaturnPipelineTest":
-                raise Exception(f"Unknown object kind {pipeline_test.kind}")
-            if pipeline_test.apiVersion != "saturn.flared.io/v1alpha1":
-                raise Exception(
-                    f"apiVersion was {pipeline_test.apiVersion}, "
-                    "we only support saturn.flared.io/v1alpha1"
-                )
 
-            print(f"Running {pipeline_test.metadata.name}...")
-            run_saturn_pipeline_test(
-                static_definitions=static_definitions,
-                pipeline_test=pipeline_test,
-            )
+def run_tests(*, static_definitions: StaticDefinitions, tests: SaturnTests) -> None:
+    for pipeline_test in tests.pipeline_tests.values():
+        run_saturn_pipeline_test(
+            static_definitions=static_definitions,
+            pipeline_test=pipeline_test,
+        )
 
 
 def run_saturn_pipeline_test(
