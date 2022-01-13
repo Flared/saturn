@@ -106,10 +106,13 @@ def main(
     compiled_tests = compile_tests(
         load_uncompiled_objects_from_path(tests),
     )
-    run_tests(
-        static_definitions=compiled_static_definitions,
-        tests=compiled_tests,
-    )
+    try:
+        run_tests(
+            static_definitions=compiled_static_definitions,
+            tests=compiled_tests,
+        )
+    except AssertionError:
+        sys.exit(1)
 
 
 def run_tests(*, static_definitions: StaticDefinitions, tests: SaturnTests) -> None:
@@ -170,7 +173,7 @@ def run_saturn_pipeline_test(
             expected=expected_pipeline_results,
             got=pipeline_results,
         )
-        sys.exit(1)
+        raise AssertionError("Pipeline results do not match the expected output")
     else:
         print("Success.")
 
