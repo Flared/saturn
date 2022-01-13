@@ -24,6 +24,7 @@ class JoinedInventory(IteratorInventory):
         inventories: list[InventoryItem]
         batch_size: int = 10
         flatten: bool = False
+        alias: Optional[str] = None
 
     def __init__(self, options: Options, services: Services, **kwargs: object) -> None:
         super().__init__(
@@ -33,6 +34,7 @@ class JoinedInventory(IteratorInventory):
             **kwargs,
         )
         self.flatten: bool = options.flatten
+        self.alias: Optional[str] = options.alias
 
         # This import must be done late since work_factory depends on this module.
         from saturn_engine.worker.work_factory import build_inventory
@@ -54,6 +56,10 @@ class JoinedInventory(IteratorInventory):
                 args = {}
                 for sub_inventory_args in item.args.values():
                     args.update(sub_inventory_args)
+            if self.alias:
+                args = {
+                    self.alias: args,
+                }
             yield Item(id=json.dumps(item.ids), args=args)
 
     async def inventories_iterator(
