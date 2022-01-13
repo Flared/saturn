@@ -74,3 +74,77 @@ async def test_joined_inventory_flatten() -> None:
     assert [(json.loads(i.id), i.args) for i in batch] == [
         ({"b": "0"}, {"n": 1, "c": "A"})
     ]
+
+
+@pytest.mark.asyncio
+async def test_joined_inventory_alias() -> None:
+    # Just alias
+    inventory = JoinedInventory.from_options(
+        {
+            "alias": "veggie_fruit",
+            "inventories": [
+                {
+                    "name": "fruits",
+                    "type": "StaticInventory",
+                    "options": {"items": [{"fruit_name": "apple"}]},
+                },
+                {
+                    "name": "veggies",
+                    "type": "StaticInventory",
+                    "options": {"items": [{"veggie_name": "carrot"}]},
+                },
+            ],
+            "batch_size": 10,
+        },
+        services=None,
+    )
+    batch = await alib.list(inventory.iterate())
+    assert [(json.loads(i.id), i.args) for i in batch] == [
+        (
+            {"veggies": "0"},
+            {
+                "veggie_fruit": {
+                    "veggies": {
+                        "veggie_name": "carrot",
+                    },
+                    "fruits": {
+                        "fruit_name": "apple",
+                    },
+                }
+            },
+        ),
+    ]
+
+    # Alias and flatten
+    inventory = JoinedInventory.from_options(
+        {
+            "alias": "veggie_fruit",
+            "flatten": True,
+            "inventories": [
+                {
+                    "name": "fruits",
+                    "type": "StaticInventory",
+                    "options": {"items": [{"fruit_name": "apple"}]},
+                },
+                {
+                    "name": "veggies",
+                    "type": "StaticInventory",
+                    "options": {"items": [{"veggie_name": "carrot"}]},
+                },
+            ],
+            "batch_size": 10,
+        },
+        services=None,
+    )
+    batch = await alib.list(inventory.iterate())
+    assert [(json.loads(i.id), i.args) for i in batch] == [
+        (
+            {"veggies": "0"},
+            {
+                "veggie_fruit": {
+                    "veggie_name": "carrot",
+                    "fruit_name": "apple",
+                }
+            },
+        ),
+    ]
