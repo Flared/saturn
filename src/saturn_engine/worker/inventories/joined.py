@@ -15,7 +15,7 @@ from . import IteratorInventory
 
 class JoinedItems(NamedTuple):
     ids: dict[str, str]
-    args: dict[str, Any]
+    args: dict[str, dict[str, Any]]
 
 
 class JoinedInventory(IteratorInventory):
@@ -49,7 +49,7 @@ class JoinedInventory(IteratorInventory):
         async for item in self.inventories_iterator(
             inventories=self.inventories, after=ids
         ):
-            args = item.args
+            args: dict[str, Any] = item.args
             if self.flatten:
                 args = {}
                 for sub_inventory_args in item.args.values():
