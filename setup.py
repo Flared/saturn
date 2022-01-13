@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="saturn_engine",
-    version="0.2.0dev19", # Also in `pyproject.toml`
+    version="0.2.0dev20", # Also in `pyproject.toml`
     packages=["saturn_engine"],
     package_dir={"":"src"},
     install_requires=[],
