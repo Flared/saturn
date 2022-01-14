@@ -1,6 +1,7 @@
+from typing import Type
+
 import asyncio
 from abc import abstractmethod
-from typing import Type
 
 from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResult

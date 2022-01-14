@@ -1,6 +1,7 @@
+from typing import Callable
+
 from datetime import datetime
 from datetime import timedelta
-from typing import Callable
 
 import werkzeug.test
 from flask.testing import FlaskClient

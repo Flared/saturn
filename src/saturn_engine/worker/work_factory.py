@@ -1,5 +1,6 @@
-import asyncio
 from typing import Optional
+
+import asyncio
 
 from saturn_engine.core.api import InventoryItem
 from saturn_engine.core.api import QueueItem

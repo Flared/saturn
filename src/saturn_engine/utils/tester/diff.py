@@ -1,5 +1,6 @@
-import shutil
 from typing import Any
+
+import shutil
 
 
 def get_diff(*, expected: Any, got: Any) -> str:

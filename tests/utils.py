@@ -1,12 +1,13 @@
+from typing import Any
+from typing import Callable
+from typing import Optional
+from typing import cast
+
 import asyncio
 import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from selectors import DefaultSelector
-from typing import Any
-from typing import Callable
-from typing import Optional
-from typing import cast
 from unittest import mock
 from unittest.mock import Mock
 

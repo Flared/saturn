@@ -1,5 +1,6 @@
-import dataclasses
 from typing import Union
+
+import dataclasses
 
 from saturn_engine.utils.options import ObjectUnion
 from saturn_engine.utils.options import asdict

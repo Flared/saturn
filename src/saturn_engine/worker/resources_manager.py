@@ -1,10 +1,11 @@
+from typing import Optional
+
 import asyncio
 import contextlib
 import dataclasses
 import time
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import Optional
 
 
 @dataclasses.dataclass(eq=False)

@@ -1,10 +1,11 @@
+from typing import Any
+from typing import AsyncContextManager
+
 import asyncio
 import dataclasses
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Any
-from typing import AsyncContextManager
 
 from saturn_engine.core import TopicMessage
 

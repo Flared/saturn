@@ -1,9 +1,10 @@
-import dataclasses
-import json
-from collections.abc import AsyncIterator
 from typing import Any
 from typing import NamedTuple
 from typing import Optional
+
+import dataclasses
+import json
+from collections.abc import AsyncIterator
 
 from saturn_engine.core.api import InventoryItem
 from saturn_engine.worker.services import Services

@@ -1,7 +1,8 @@
+from typing import DefaultDict
+
 import dataclasses
 import sys
 from collections import defaultdict
-from typing import DefaultDict
 
 import click
 

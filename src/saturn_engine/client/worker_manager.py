@@ -1,5 +1,6 @@
-import socket
 from typing import Optional
+
+import socket
 
 import aiohttp
 

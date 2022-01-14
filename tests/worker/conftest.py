@@ -1,9 +1,10 @@
+from typing import Callable
+from typing import Optional
+
 import contextlib
 import dataclasses
 from collections.abc import AsyncIterator
 from collections.abc import Iterator
-from typing import Callable
-from typing import Optional
 from unittest.mock import Mock
 from unittest.mock import create_autospec
 

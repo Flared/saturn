@@ -1,10 +1,11 @@
-import abc
-import asyncio
-from collections.abc import AsyncGenerator
 from typing import AsyncContextManager
 from typing import Optional
 from typing import Type
 from typing import Union
+
+import abc
+import asyncio
+from collections.abc import AsyncGenerator
 
 from saturn_engine.core import TopicMessage
 from saturn_engine.utils.options import OptionsSchema

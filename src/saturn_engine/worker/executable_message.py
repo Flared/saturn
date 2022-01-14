@@ -1,6 +1,7 @@
-import contextlib
 from typing import AsyncContextManager
 from typing import Optional
+
+import contextlib
 
 from saturn_engine.core import ResourceUsed
 from saturn_engine.worker.parkers import Parkers

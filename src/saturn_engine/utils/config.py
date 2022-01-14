@@ -1,15 +1,16 @@
-import inspect
-import os
 import typing
-from collections.abc import Iterable
-from collections.abc import Mapping
-from enum import Enum
-from types import GenericAlias
 from typing import Any
 from typing import Generic
 from typing import Type
 from typing import TypeVar
 from typing import cast
+
+import inspect
+import os
+from collections.abc import Iterable
+from collections.abc import Mapping
+from enum import Enum
+from types import GenericAlias
 
 from . import CINamespace
 from .inspect import eval_class_annotations

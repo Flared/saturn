@@ -1,5 +1,6 @@
-import asyncio
 from typing import Callable
+
+import asyncio
 from unittest.mock import Mock
 
 import pytest

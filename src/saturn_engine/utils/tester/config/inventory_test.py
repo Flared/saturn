@@ -1,5 +1,6 @@
-import dataclasses
 from typing import Optional
+
+import dataclasses
 
 from saturn_engine.utils.declarative_config import BaseObject
 from saturn_engine.worker.inventories import Item

@@ -1,9 +1,10 @@
-from contextlib import contextmanager
 from typing import Any
 from typing import Callable
 from typing import Iterator
 from typing import Optional
 from typing import Union
+
+from contextlib import contextmanager
 
 import sqlalchemy.orm
 from sqlalchemy.engine import Engine

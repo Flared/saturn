@@ -1,6 +1,7 @@
+from typing import Callable
+
 import asyncio
 from functools import partial
-from typing import Callable
 
 import pytest
 
