@@ -3,6 +3,6 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 export PYTHONPATH="${PYTHONPATH}:$DIR/src"
 
-python -m saturn_engine.utils.tester \
+python -m saturn_engine.utils.tester.runner \
     --topology=example/definitions/simple.yaml \
     --tests=example/tests/pipeline_tests.yaml

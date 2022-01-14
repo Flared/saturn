@@ -1,8 +1,8 @@
 import dataclasses
 
 from saturn_engine.core import api
+from saturn_engine.utils.declarative_config import BaseObject
 
-from .declarative_base import BaseObject
 from .declarative_pipeline import PipelineInfo
 from .static_definitions import StaticDefinitions
 

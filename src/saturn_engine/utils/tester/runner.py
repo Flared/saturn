@@ -15,48 +15,12 @@ from saturn_engine.utils.options import fromdict
 from saturn_engine.worker.executors.bootstrap import bootstrap_pipeline
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker_manager.config.declarative import compile_static_definitions
-from saturn_engine.worker_manager.config.declarative_base import BaseObject
 from saturn_engine.worker_manager.config.static_definitions import StaticDefinitions
 
-
-@dataclasses.dataclass
-class ExpectedPipelineOutput:
-    channel: str
-    args: dict[str, Any]
-
-
-@dataclasses.dataclass
-class ExpectedPipelineResource:
-    type: str
-
-
-@dataclasses.dataclass
-class PipelineResult:
-    outputs: list[ExpectedPipelineOutput]
-    resources: list[ExpectedPipelineResource]
-
-
-@dataclasses.dataclass
-class PipelineSelector:
-    """
-    Only support job_definition for now, but we may support other ways to
-    target pipelines in the future.
-    """
-
-    job_definition: str
-
-
-@dataclasses.dataclass
-class PipelineTestSpec:
-    selector: PipelineSelector
-    inventory: list[dict[str, Any]]
-    resources: dict[str, dict[str, str]]
-    pipeline_results: list[PipelineResult]
-
-
-@dataclasses.dataclass
-class PipelineTest(BaseObject):
-    spec: PipelineTestSpec
+from .config.pipeline_test import ExpectedPipelineOutput
+from .config.pipeline_test import ExpectedPipelineResource
+from .config.pipeline_test import PipelineResult
+from .config.pipeline_test import PipelineTest
 
 
 @dataclasses.dataclass
