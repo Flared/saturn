@@ -1,7 +1,6 @@
 from typing import Optional
 
-from saturn_engine.config import Config as SaturnConfig
-from saturn_engine.config import default_config
+from saturn_engine.config import default_config_with_env
 from saturn_engine.database import create_all
 from saturn_engine.database import scoped_session
 from saturn_engine.utils.flask import register_http_exception_error_handler
@@ -15,10 +14,7 @@ def get_app(
     config: dict = None,
 ) -> SaturnApp:
     worker_manager_context = WorkerManagerContext(
-        config=SaturnConfig()
-        .load_object(default_config)
-        .load_envvar("SATURN_SETTINGS")
-        .c.worker_manager
+        config=default_config_with_env().c.worker_manager,
     )
 
     app = SaturnApp(
