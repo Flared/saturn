@@ -14,6 +14,10 @@ class Config(_Config[SaturnConfig]):
         self._interfaces[""] = SaturnConfig
 
 
+def default_config_with_env() -> Config:
+    return Config().load_object(default_config).load_envvar("SATURN_SETTINGS")
+
+
 __all__ = (
     "Config",
     "SaturnConfig",
