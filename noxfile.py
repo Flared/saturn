@@ -3,9 +3,10 @@ Nox is used to run all testing and linting tools in differents environments.
 To run locally, simply `pip install --user --upgrade nox` and then run `nox`
 """
 
-import tempfile
 from typing import Any
 from typing import Sequence
+
+import tempfile
 
 import nox
 from nox.sessions import Session

@@ -1,11 +1,12 @@
-import functools
-import inspect
-import sys
-from collections.abc import Iterable
 from typing import Any
 from typing import Callable
 from typing import Type
 from typing import Union
+
+import functools
+import inspect
+import sys
+from collections.abc import Iterable
 
 
 def eval_annotations(func: Callable, signature: inspect.Signature) -> inspect.Signature:

@@ -1,14 +1,15 @@
+from typing import Any
+from typing import Optional
+from typing import Type
+from typing import TypeVar
+from typing import cast
+
 import dataclasses
 import functools
 from abc import abstractmethod
 from collections.abc import Hashable
 from collections.abc import Mapping
 from functools import cache
-from typing import Any
-from typing import Optional
-from typing import Type
-from typing import TypeVar
-from typing import cast
 
 import desert
 import marshmallow

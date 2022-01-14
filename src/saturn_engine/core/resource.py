@@ -1,6 +1,7 @@
-import dataclasses
 from typing import ClassVar
 from typing import Optional
+
+import dataclasses
 
 
 @dataclasses.dataclass(eq=False)

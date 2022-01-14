@@ -1,6 +1,7 @@
+from typing import Optional
+
 import dataclasses
 import os
-from typing import Optional
 
 import yaml
 

@@ -1,6 +1,7 @@
+from typing import Optional
+
 import asyncio
 import threading
-from typing import Optional
 
 import asyncstdlib as alib
 import pytest

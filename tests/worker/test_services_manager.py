@@ -1,5 +1,6 @@
-import dataclasses
 from typing import Optional
+
+import dataclasses
 
 import pytest
 

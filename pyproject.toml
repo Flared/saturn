@@ -75,6 +75,18 @@ filterwarnings = [
 [tool.isort]
 profile = "black"
 force_single_line = true
+known_typing_library = '''
+    typing,
+    typing_extensions,
+'''
+sections = '''
+    FUTURE,
+    TYPING_LIBRARY,
+    STDLIB,
+    THIRDPARTY,
+    FIRSTPARTY,
+    LOCALFOLDER
+'''
 
 [build-system]
 requires = ["poetry_core>=1.0.0", "setuptools"]

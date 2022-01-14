@@ -1,5 +1,6 @@
-import dataclasses
 from typing import Any
+
+import dataclasses
 
 from saturn_engine.core import api
 

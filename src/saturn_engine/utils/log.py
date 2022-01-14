@@ -1,7 +1,8 @@
-import logging
 from typing import Type
 from typing import TypeVar
 from typing import Union
+
+import logging
 
 T = TypeVar("T")
 

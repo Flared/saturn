@@ -1,5 +1,6 @@
-from collections import defaultdict
 from typing import DefaultDict
+
+from collections import defaultdict
 
 from saturn_engine.utils.declarative_config import UncompiledObject
 from saturn_engine.utils.declarative_config import (

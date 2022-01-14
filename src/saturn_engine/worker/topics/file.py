@@ -1,9 +1,10 @@
+from typing import TextIO
+from typing import cast
+
 import dataclasses
 import json
 import sys
 from collections.abc import AsyncGenerator
-from typing import TextIO
-from typing import cast
 
 from saturn_engine.core import TopicMessage
 

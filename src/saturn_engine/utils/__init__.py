@@ -1,3 +1,9 @@
+from typing import Any
+from typing import Callable
+from typing import Generic
+from typing import TypeVar
+from typing import Union
+
 import collections
 import enum
 import threading
@@ -6,11 +12,6 @@ from collections.abc import Iterator
 from datetime import datetime
 from datetime import timezone
 from functools import wraps
-from typing import Any
-from typing import Callable
-from typing import Generic
-from typing import TypeVar
-from typing import Union
 
 T = TypeVar("T")
 

@@ -1,10 +1,11 @@
+from typing import Generic
+from typing import TypeVar
+
 import asyncio
 import contextlib
 import dataclasses
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
-from typing import Generic
-from typing import TypeVar
 
 from saturn_engine.utils.asyncutils import TasksGroup
 from saturn_engine.utils.log import getLogger

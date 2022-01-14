@@ -1,14 +1,15 @@
+from typing import Any
+from typing import Callable
+from typing import Generic
+from typing import Optional
+from typing import TypeVar
+
 import asyncio
 import contextlib
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
 from collections.abc import Awaitable
 from collections.abc import Iterable
-from typing import Any
-from typing import Callable
-from typing import Generic
-from typing import Optional
-from typing import TypeVar
 
 from saturn_engine.utils.log import getLogger
 

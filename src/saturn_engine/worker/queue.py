@@ -1,5 +1,6 @@
-from collections.abc import AsyncGenerator
 from typing import AsyncContextManager
+
+from collections.abc import AsyncGenerator
 
 from saturn_engine.core import QueuePipeline
 

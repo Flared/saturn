@@ -1,7 +1,8 @@
-import asyncio
 from typing import Callable
 from typing import Optional
 from typing import Protocol
+
+import asyncio
 
 from saturn_engine.config import Config
 from saturn_engine.utils.log import getLogger

@@ -1,5 +1,6 @@
-from functools import wraps
 from typing import Callable
+
+from functools import wraps
 
 import pytest
 

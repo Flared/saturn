@@ -1,7 +1,8 @@
-import asyncio
-from collections.abc import Iterator
 from typing import Callable
 from typing import Union
+
+import asyncio
+from collections.abc import Iterator
 
 import freezegun
 import pytest
