@@ -21,11 +21,11 @@ nox-tests: .venv-tools
 		&& .venv-tools/bin/nox -s tests \
 	"
 
-.PHONY: nox-tests-pipeline
-nox-tests-pipeline: .venv-tools
+.PHONY: nox-example-tests
+nox-example-tests: .venv-tools
 	bash -c "\
 		source .venv-tools/bin/activate \
-		&& .venv-tools/bin/nox -s tests_pipeline \
+		&& .venv-tools/bin/nox -s example_tests \
 	"
 
 .PHONY: nox-mypy
