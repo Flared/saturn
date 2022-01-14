@@ -70,7 +70,8 @@ def main(
             static_definitions=topology,
             tests=tests,
         )
-    except AssertionError:
+    except AssertionError as e:
+        print(e)
         sys.exit(1)
 
 
@@ -93,11 +94,13 @@ def run_tests_from_files(
 
 def run_tests(*, static_definitions: StaticDefinitions, tests: SaturnTests) -> None:
     for pipeline_test in tests.pipeline_tests.values():
+        print(f"Running {pipeline_test.metadata.name}...")
         run_saturn_pipeline_test(
             static_definitions=static_definitions,
             pipeline_test=pipeline_test,
         )
     for inventory_test in tests.inventory_tests.values():
+        print(f"Running {inventory_test.metadata.name}...")
         run_saturn_inventory_test(
             static_definitions=static_definitions,
             inventory_test=inventory_test,
