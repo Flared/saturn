@@ -64,19 +64,30 @@ def main(
     topology: str,
     tests: str,
 ) -> None:
+    try:
+        run_tests_from_files(
+            static_definitions=topology,
+            tests=tests,
+        )
+    except AssertionError:
+        sys.exit(1)
+
+
+def run_tests_from_files(
+    *,
+    static_definitions: str,
+    tests: str,
+) -> None:
     compiled_static_definitions = compile_static_definitions(
-        load_uncompiled_objects_from_path(topology),
+        load_uncompiled_objects_from_path(static_definitions),
     )
     compiled_tests = compile_tests(
         load_uncompiled_objects_from_path(tests),
     )
-    try:
-        run_tests(
-            static_definitions=compiled_static_definitions,
-            tests=compiled_tests,
-        )
-    except AssertionError:
-        sys.exit(1)
+    run_tests(
+        static_definitions=compiled_static_definitions,
+        tests=compiled_tests,
+    )
 
 
 def run_tests(*, static_definitions: StaticDefinitions, tests: SaturnTests) -> None:
