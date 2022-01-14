@@ -2,9 +2,9 @@ import shutil
 from typing import Any
 
 
-def print_diff(*, expected: Any, got: Any) -> None:
+def get_diff(*, expected: Any, got: Any) -> str:
     """
-    Inspired from pyest-icdiff.
+    Inspired from pytest-icdiff.
     Licensed under the public domain.
     """
     try:
@@ -13,9 +13,7 @@ def print_diff(*, expected: Any, got: Any) -> None:
     except ImportError:
         import pprint
 
-        print("expected:", pprint.pformat(expected))
-        print("got:", pprint.pformat(got))
-        return
+        return f"expected: {pprint.pformat(expected)}\ngot: {pprint.pformat(got)}"
 
     COLS: int = shutil.get_terminal_size().columns
     MARGIN_L: int = 10
@@ -41,9 +39,11 @@ def print_diff(*, expected: Any, got: Any) -> None:
     differ = icdiff.ConsoleDiff(cols=diff_cols, tabsize=2)
     color_off = icdiff.color_codes["none"]
 
-    icdiff_lines = list(differ.make_table(pretty_left, pretty_right, context=True))
+    header: str = "Expected" + (" " * int(half_cols)) + "Got"
 
-    print("Expected" + (" " * int(half_cols)) + "Got")
+    icdiff_lines: list[str] = [header]
+    icdiff_lines.extend(
+        list(differ.make_table(pretty_left, pretty_right, context=True))
+    )
 
-    for line in [color_off + line for line in icdiff_lines]:
-        print(line)
+    return "\n".join([color_off + line for line in icdiff_lines])

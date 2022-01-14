@@ -8,7 +8,7 @@ from .config.pipeline_test import ExpectedPipelineOutput
 from .config.pipeline_test import ExpectedPipelineResource
 from .config.pipeline_test import PipelineResult
 from .config.pipeline_test import PipelineTest
-from .diff import print_diff
+from .diff import get_diff
 
 
 def run_saturn_pipeline_test(
@@ -57,10 +57,10 @@ def run_saturn_pipeline_test(
         asdict(r) for r in pipeline_test.spec.pipeline_results
     ]
     if pipeline_results != expected_pipeline_results:
-        print_diff(
+        diff: str = get_diff(
             expected=expected_pipeline_results,
             got=pipeline_results,
         )
-        raise AssertionError("Pipeline results do not match the expected output")
-    else:
-        print("Success.")
+        raise AssertionError(
+            f"Pipeline results do not match the expected output:\n{diff}"
+        )

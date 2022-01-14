@@ -7,7 +7,7 @@ from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker_manager.config.static_definitions import StaticDefinitions
 
 from .config.inventory_test import InventoryTest
-from .diff import print_diff
+from .diff import get_diff
 
 
 def run_saturn_inventory_test(
@@ -45,10 +45,10 @@ def run_saturn_inventory_test(
     expected_items: list[dict] = [asdict(item) for item in inventory_test.spec.items]
 
     if items != expected_items:
-        print_diff(
+        diff: str = get_diff(
             expected=expected_items,
             got=items,
         )
-        raise AssertionError("Inventory items do not match the expected items")
-    else:
-        print("Success.")
+        raise AssertionError(
+            f"Inventory items do not match the expected items:\n{diff}"
+        )
