@@ -5,4 +5,4 @@ export PYTHONPATH="${PYTHONPATH}:$DIR/src"
 
 python -m saturn_engine.utils.tester.runner \
     --topology=example/definitions/simple.yaml \
-    --tests=example/tests/pipeline_tests.yaml
+    --tests=example/tests

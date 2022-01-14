@@ -1,0 +1,28 @@
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnInventoryTest
+metadata:
+  name: test-static-inventory-1
+spec:
+  selector:
+    inventory: static-inventory
+  limit: 3
+  items:
+    - id: "0"
+      args: {message: hello-0}
+    - id: "1"
+      args: {message: hello-1}
+    - id: "2"
+      args: {message: hello-2}
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnInventoryTest
+metadata:
+  name: test-static-inventory-resume
+spec:
+  selector:
+    inventory: static-inventory
+  limit: 1
+  after: "2"
+  items:
+    - id: "3"
+      args: {message: hello-3}
