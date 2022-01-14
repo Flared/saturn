@@ -6,6 +6,18 @@ import yaml
 
 
 @dataclasses.dataclass
+class ObjectMetadata:
+    name: str
+
+
+@dataclasses.dataclass
+class BaseObject:
+    metadata: ObjectMetadata
+    apiVersion: str
+    kind: str
+
+
+@dataclasses.dataclass
 class UncompiledObject:
     api_version: str
     kind: str

@@ -2,8 +2,7 @@ import dataclasses
 from typing import Any
 
 from saturn_engine.core import api
-
-from .declarative_base import BaseObject
+from saturn_engine.utils.declarative_config import BaseObject
 
 
 @dataclasses.dataclass
