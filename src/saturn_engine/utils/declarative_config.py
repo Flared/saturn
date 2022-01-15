@@ -1,9 +1,9 @@
-from typing import Optional
-
 import dataclasses
 import os
 
 import yaml
+
+from saturn_engine.utils.options import schema_for
 
 
 @dataclasses.dataclass
@@ -33,24 +33,21 @@ def load_uncompiled_objects_from_str(definitions: str) -> list[UncompiledObject]
         if not yaml_object:
             continue
 
-        api_version: Optional[str] = yaml_object.get("apiVersion")
-        if not api_version:
-            raise Exception("Missing apiVersion")
-        elif api_version != "saturn.flared.io/v1alpha1":
+        base_object: BaseObject = schema_for(BaseObject).load(
+            data=yaml_object,
+            unknown="EXCLUDE",
+        )
+
+        if base_object.apiVersion != "saturn.flared.io/v1alpha1":
             raise Exception(
-                f"apiVersion was {api_version}, "
+                f"apiVersion was {base_object.apiVersion}, "
                 "we only support saturn.flared.io/v1alpha1"
             )
 
-        object_kind: Optional[str] = yaml_object.get("kind")
-
-        if not object_kind:
-            raise Exception("All objects should have a kind")
-
         uncompiled_objects.append(
             UncompiledObject(
-                api_version=api_version,
-                kind=object_kind,
+                api_version=base_object.apiVersion,
+                kind=base_object.kind,
                 data=yaml_object,
             )
         )
