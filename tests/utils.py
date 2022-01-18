@@ -5,14 +5,18 @@ from typing import cast
 
 import asyncio
 import json
+from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from selectors import DefaultSelector
 from unittest import mock
+from unittest.mock import AsyncMock
 from unittest.mock import Mock
 
 import aiohttp
 import yarl
+
+from saturn_engine.worker.services import Services
 
 
 # From https://github.com/spulec/freezegun/issues/290
@@ -192,3 +196,31 @@ class HttpClientMock:
             aiohttp.ClientSession,
             FakeHttpClient(responses=self.responses, loop=self.loop),
         )
+
+
+def async_context_mock_handler(
+    mock: AsyncMock,
+) -> Callable[[Any], AsyncGenerator[None, Any]]:
+    async def scope(event: Any) -> AsyncGenerator[None, Any]:
+        await mock.before(event)
+        try:
+            result = yield
+            await mock.success(event, result)
+        except Exception as e:
+            await mock.errors(event, e)
+
+    return scope
+
+
+def register_hooks_handler(services: Services) -> AsyncMock:
+    _hooks_handler = AsyncMock()
+    services.s.hooks.message_polled.register(_hooks_handler.message_polled)
+    services.s.hooks.message_scheduled.register(_hooks_handler.message_scheduled)
+    services.s.hooks.message_submitted.register(_hooks_handler.message_submitted)
+    services.s.hooks.message_executed.register(
+        async_context_mock_handler(_hooks_handler.message_executed)
+    )
+    services.s.hooks.message_published.register(
+        async_context_mock_handler(_hooks_handler.message_published)
+    )
+    return _hooks_handler

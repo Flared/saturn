@@ -69,6 +69,7 @@ class Broker:
         self.executor = ExecutorManager(
             resources_manager=self.resources_manager,
             executor=self.executor_init(self.services_manager.services),
+            services=self.services_manager.services,
         )
         self.is_init = True
 
@@ -104,6 +105,9 @@ class Broker:
         # Go through all queue in the Ready state.
         async for message in self.scheduler.run():
             self.logger.debug("Processing message: %s", message)
+            await self.services_manager.services.s.hooks.message_scheduled.emit(
+                message.message
+            )
             await self.executor.submit(message)
 
     async def run_worker_manager(self) -> None:
