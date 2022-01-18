@@ -1,0 +1,7 @@
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnInventory
+metadata:
+  name: a
+spec:
+  type: test
+  options: {}
