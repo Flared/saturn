@@ -15,6 +15,7 @@ from saturn_engine.core.api import ResourceItem
 from saturn_engine.worker.broker import Broker
 from saturn_engine.worker.executors import Executor
 from saturn_engine.worker.pipeline_message import PipelineMessage
+from tests.utils import register_hooks_handler
 from tests.worker.conftest import FakeResource
 
 
@@ -41,6 +42,7 @@ async def test_broker_dummy(
 ) -> None:
     executor = FakeExecutor()
     broker = broker_maker(executor=lambda _: executor)
+    hooks_handler = register_hooks_handler(broker.services_manager.services)
     pipeline_info = PipelineInfo.from_pipeline(pipeline)
     worker_manager_client.lock.return_value = LockResponse(
         items=[
@@ -68,4 +70,15 @@ async def test_broker_dummy(
     done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
     assert wait_task in done
     assert broker_task in pending
+
+    assert hooks_handler.message_polled.await_count == 1001
+    assert hooks_handler.message_scheduled.await_count == 1001
+    assert hooks_handler.message_submitted.await_count == 1001
+    assert hooks_handler.message_executed.before.await_count == 1000
+    assert hooks_handler.message_executed.success.await_count == 1000
+    assert hooks_handler.message_executed.errors.await_count == 0
+    assert hooks_handler.message_published.before.await_count == 0
+    assert hooks_handler.message_published.success.await_count == 0
+    assert hooks_handler.message_published.errors.await_count == 0
+
     broker_task.cancel()

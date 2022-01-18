@@ -9,6 +9,7 @@ from saturn_engine.utils.inspect import import_name
 from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.services import Services
+from saturn_engine.worker.services.hooks import MessagePublished
 
 from ..executable_message import ExecutableMessage
 from ..resources_manager import ResourcesManager
@@ -40,6 +41,7 @@ class ExecutorManager:
         self,
         resources_manager: ResourcesManager,
         executor: Executor,
+        services: Services,
         concurrency: int = 8,
     ) -> None:
         self.logger = getLogger(__name__, self)
@@ -50,6 +52,7 @@ class ExecutorManager:
         self.message_executor = executor
         self.resources_manager = resources_manager
         self.executor = executor
+        self.services = services
 
     def start(self) -> None:
         for _ in range(self.concurrency):
@@ -66,7 +69,13 @@ class ExecutorManager:
                     self.logger.debug(
                         "Processing message in executor: %s", processable.message
                     )
-                    output = await self.executor.process_message(processable.message)
+
+                    @self.services.hooks.message_executed.emit
+                    async def scope(message: PipelineMessage) -> PipelineResult:
+                        return await self.executor.process_message(message)
+
+                    output = await scope(processable.message)
+
                     processable.update_resources_used(output.resources)
                     asyncio.create_task(
                         self.consume_output(
@@ -86,7 +95,7 @@ class ExecutorManager:
                 processable,
                 self.queue.qsize(),
             )
-            await self.queue.put(processable)
+            await self.queue_submit(processable)
         else:
             # Park the queue from which the processable comes from.
             # The queue should be unparked once the resources are acquired.
@@ -126,6 +135,10 @@ class ExecutorManager:
             processable,
             self.queue.qsize(),
         )
+        await self.queue_submit(processable)
+
+    async def queue_submit(self, processable: ExecutableMessage) -> None:
+        await self.services.s.hooks.message_submitted.emit(processable.message)
         await self.queue.put(processable)
 
     async def consume_output(
@@ -135,12 +148,28 @@ class ExecutorManager:
             for item in output:
                 topics = processable.output.get(item.channel, [])
                 for topic in topics:
-                    if topic is None:
-                        continue
-                    if await topic.publish(item.message, wait=False):
-                        continue
-                    processable.park()
-                    await topic.publish(item.message, wait=True)
+                    try:
+
+                        @self.services.s.hooks.message_published.emit
+                        async def scope(_: MessagePublished) -> None:
+                            if topic is None:
+                                return
+                            if await topic.publish(item.message, wait=False):
+                                return
+                            processable.park()
+                            await topic.publish(item.message, wait=True)
+
+                        await scope(
+                            MessagePublished(
+                                message=processable.message, topic=topic, output=item
+                            )
+                        )
+                    except Exception:
+                        self.logger.exception(
+                            "Failed to publish output: channel=%s id=%s",
+                            item.channel,
+                            item.message.id,
+                        )
         finally:
             await processable.unpark()
 

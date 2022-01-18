@@ -101,7 +101,7 @@ class Scheduler(Generic[T]):
             elif isinstance(exception, asyncio.CancelledError):
                 pass
             elif exception:
-                self.logger.error("Failed to iter item item", exc_info=exception)
+                self.logger.error("Failed to iter item", exc_info=exception)
         except BaseException:
             # This is an unexpected error, likely a closed generator or
             # cancellation. The task is put back in the item for later

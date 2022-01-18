@@ -10,6 +10,7 @@ class config(SaturnConfig):
     class worker(WorkerConfig):
         job_store_cls = "MemoryJobStore"
         strict_services = False
+        services: list[str] = []
 
     class ray(RayConfig):
         local = True

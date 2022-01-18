@@ -37,7 +37,10 @@ def build(queue_item: QueueItem, *, services: Services) -> WorkItems:
         queues=[
             SchedulableQueue(
                 ExecutableQueue(
-                    topic=queue_input, pipeline=queue_item.pipeline, output=output
+                    topic=queue_input,
+                    pipeline=queue_item.pipeline,
+                    output=output,
+                    services=services,
                 )
             )
         ],

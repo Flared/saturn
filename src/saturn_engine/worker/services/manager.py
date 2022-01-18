@@ -4,6 +4,7 @@ from saturn_engine.utils import inspect as extra_inspect
 
 from . import BaseServices
 from . import Config
+from . import Hooks
 from . import Service
 from . import Services
 from . import ServicesNamespace
@@ -12,7 +13,11 @@ from . import TService
 
 class ServicesManager:
     def __init__(self, config: Config) -> None:
-        self.services: Services = ServicesNamespace(config=config, strict=True)
+        self.services: Services = ServicesNamespace(
+            config=config,
+            hooks=Hooks(),
+            strict=True,
+        )
         self.loaded_services: list[Service] = []
         self.strict = config.c.worker.strict_services
         self.is_opened = False

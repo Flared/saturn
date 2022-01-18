@@ -86,13 +86,16 @@ async def executor_manager_maker(
     async with contextlib.AsyncExitStack() as stack:
 
         def maker(
-            executor: Optional[Executor] = None, concurrency: int = 5
+            executor: Optional[Executor] = None,
+            concurrency: int = 5,
+            services: Services = services_manager.services,
         ) -> ExecutorManager:
             executor = executor or executor_maker(services_manager.services)
             manager = ExecutorManager(
                 resources_manager=resources_manager,
                 executor=executor,
                 concurrency=concurrency,
+                services=services,
             )
             manager.start()
             stack.push_async_callback(manager.close)

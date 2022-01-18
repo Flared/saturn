@@ -4,10 +4,10 @@ from unittest import mock
 
 import pytest
 
-from saturn_engine.worker.services.hooks import AsyncContextHook
-from saturn_engine.worker.services.hooks import AsyncEventHook
-from saturn_engine.worker.services.hooks import ContextHook
-from saturn_engine.worker.services.hooks import EventHook
+from saturn_engine.utils.hooks import AsyncContextHook
+from saturn_engine.utils.hooks import AsyncEventHook
+from saturn_engine.utils.hooks import ContextHook
+from saturn_engine.utils.hooks import EventHook
 
 
 def test_event_hook() -> None:

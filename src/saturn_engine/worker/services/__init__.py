@@ -12,11 +12,14 @@ from saturn_engine.utils import Namespace
 from saturn_engine.utils import inspect as extra_inspect
 from saturn_engine.utils.config import Config as BaseConfig
 
+from .hooks import Hooks
+
 __all__ = ("Config", "Service", "BaseServices")
 
 
 class BaseServices:
     config: Config
+    hooks: Hooks
 
 
 TServices = TypeVar("TServices", bound=BaseServices)
