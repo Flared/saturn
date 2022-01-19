@@ -66,9 +66,6 @@ class ExecutorManager:
 
             try:
                 async with processable.context:
-                    self.logger.debug(
-                        "Processing message in executor: %s", processable.message
-                    )
 
                     @self.services.hooks.message_executed.emit
                     async def scope(message: PipelineMessage) -> PipelineResult:
@@ -90,11 +87,6 @@ class ExecutorManager:
         # then check if the executor queue is ready. That way, the scheduler
         # will pause until the executor is free again.
         if await self.acquire_resources(processable, wait=False):
-            self.logger.debug(
-                "Sending processable to queue: %s, blocking=%s",
-                processable,
-                self.queue.qsize(),
-            )
             await self.queue_submit(processable)
         else:
             # Park the queue from which the processable comes from.
@@ -130,11 +122,6 @@ class ExecutorManager:
         finally:
             await processable.unpark()
 
-        self.logger.debug(
-            "Sending processable to queue: %s, blocking=%s",
-            processable,
-            self.queue.qsize(),
-        )
         await self.queue_submit(processable)
 
     async def queue_submit(self, processable: ExecutableMessage) -> None:
@@ -164,12 +151,9 @@ class ExecutorManager:
                                 message=processable.message, topic=topic, output=item
                             )
                         )
-                    except Exception:
-                        self.logger.exception(
-                            "Failed to publish output: channel=%s id=%s",
-                            item.channel,
-                            item.message.id,
-                        )
+                    # Exception should be handled in hooks.
+                    except Exception:  # noqa: S110
+                        pass
         finally:
             await processable.unpark()
 
