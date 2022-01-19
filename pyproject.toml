@@ -39,13 +39,17 @@ types-croniter = "^1.0.3"
 marshmallow-enum = "^1.5.1"
 ray = {version = "^1.8.0", optional = true}
 click = "^8.0.3"
+aiodogstatsd = {version = "^0.16.0", optional = true}
 
 [tool.poetry.extras]
 worker-manager = [
   "Flask",
 ]
 ray = [
-  "ray"
+  "ray",
+]
+statsd = [
+  "aiodogstatsd",
 ]
 
 [tool.poetry.dev-dependencies]
@@ -67,12 +71,9 @@ freezegun = "^1.1.0"
 types-freezegun = "^1.1.2"
 
 [tool.pytest.ini_options]
-# * Enable doctest
-# * Ignore files that import build or optional dependencies.
 addopts = '''
   --doctest-modules
-  --ignore "noxfile.py"
-  --ignore "src/saturn_engine/worker/executors/ray.py"
+  --doctest-ignore-import-errors
 '''
 filterwarnings = [
   "error",
