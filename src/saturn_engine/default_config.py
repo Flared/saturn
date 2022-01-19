@@ -18,6 +18,8 @@ class config(SaturnConfig):
             "SATURN_WORKER_MANAGER_URL", "http://localhost:5000"
         )
         services = [
+            "saturn_engine.worker.services.loggers.ConsoleLogging",
+            "saturn_engine.worker.services.loggers.MessagesLogger",
             "saturn_engine.worker.services.metrics.MemoryMetrics",
             "saturn_engine.worker.services.rabbitmq.RabbitMQService",
         ]
