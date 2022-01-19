@@ -9,9 +9,7 @@ import pytest
 from freezegun.api import FrozenDateTimeFactory
 from freezegun.api import StepTickTimeFactory
 from pytest_mock import MockerFixture
-from sqlalchemy.orm import Session
 
-from saturn_engine import database
 from saturn_engine.config import Config
 from saturn_engine.config import default_config
 from saturn_engine.core import api
@@ -24,11 +22,6 @@ from .utils import TimeForwardLoop
 @pytest.fixture
 def http_client_mock(event_loop: TimeForwardLoop) -> HttpClientMock:
     return HttpClientMock(loop=event_loop)
-
-
-@pytest.fixture
-def session() -> Iterator[Session]:
-    yield database.session_factory()()
 
 
 @pytest.fixture

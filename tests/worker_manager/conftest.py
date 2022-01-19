@@ -3,12 +3,18 @@ from typing import Iterator
 
 import pytest
 from flask.testing import FlaskClient
+from sqlalchemy.orm import Session
 
 from saturn_engine import database
 from saturn_engine.core import api
 from saturn_engine.models import Base
 from saturn_engine.worker_manager import server as worker_manager_server
 from saturn_engine.worker_manager.config.declarative import StaticDefinitions
+
+
+@pytest.fixture
+def session() -> Iterator[Session]:
+    yield database.session_factory()()
 
 
 @pytest.fixture

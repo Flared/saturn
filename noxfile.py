@@ -3,13 +3,9 @@ Nox is used to run all testing and linting tools in differents environments.
 To run locally, simply `pip install --user --upgrade nox` and then run `nox`
 """
 
-from typing import Any
-from typing import Sequence
-
-import tempfile
-
 import nox
-from nox.sessions import Session
+from nox_poetry import Session
+from nox_poetry import session as nox_session
 
 nox.options.sessions = "lint", "mypy", "tests", "example_tests"
 nox.options.reuse_existing_virtualenvs = True
@@ -17,69 +13,53 @@ nox.options.reuse_existing_virtualenvs = True
 python_all_versions = ["3.9"]
 python_tool_version = "3.9"
 pyfiles_locations = "example", "src", "tests", "noxfile.py", "mypy_stubs"
+# These are package that are imported in the tests or this noxfile. Not all
+# package required to run lint and tests.
+tests_packages = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-icdiff",
+    "pytest-mock",
+    "freezegun",
+]
+mypy_packages = [
+    "pytest",
+    "pytest-mock",
+    "types-freezegun",
+]
 
 
-def install_project(
-    session: Session,
-    groups: Sequence[str] = (),
-    worker_manager: bool = True,
-) -> None:
-    # Must wait for the release of Poetry 1.2.0 for
-    # https://github.com/python-poetry/poetry/pull/4260/
-    # poetry_options = []
-    # if groups:
-    #   poetry_options = "--with", ",".join(groups)
-    # session.run("poetry", "install", *poetry_options, external=True)
-    poetry_command: list[str] = ["poetry", "install"]
-    if worker_manager:
-        poetry_command.extend(["--extras", "worker-manager", "--extras", "ray"])
-    session.run(*poetry_command, external=True)
+def all_extras(session: Session) -> str:
+    return ".[" + ",".join(session.poetry.poetry.config.extras) + "]"
 
 
-def install_with_constraints(session: Session, *args: str, **kwargs: Any) -> None:
-    with tempfile.NamedTemporaryFile() as requirements:
-        session.run(
-            "poetry",
-            "export",
-            "--dev",
-            "--format=requirements.txt",
-            "--without-hashes",
-            f"--output={requirements.name}",
-            external=True,
-        )
-        session.install(f"--constraint={requirements.name}", *args, **kwargs)
-
-
-@nox.session(python=python_all_versions)
+@nox_session(python=python_all_versions)
 def tests(session: Session) -> None:
     args = session.posargs
-    install_project(session)
-    install_with_constraints(session, "pytest", "pytest-asyncio", "pytest-icdiff")
-    session.run("pytest", "-vv", *args)
+    session.install(".[worker-manager]", *tests_packages)
+    session.run("pytest", "-vv", *args, env={"PY_IGNORE_IMPORTMISMATCH": "1"})
 
 
-@nox.session(python=python_all_versions)
+@nox_session(python=python_all_versions)
 def example_tests(session: Session) -> None:
     args = session.posargs
-    install_project(session)
+    session.install(".")
     session.run("bash", "example/run_tests", *args, external=True)
 
 
-@nox.session(python=python_all_versions)
+@nox_session(python=python_all_versions)
 def tests_worker(session: Session) -> None:
     """Worker tests must pass without installing the worker-manager extra."""
     args = session.posargs
-    install_project(session, worker_manager=False)
-    install_with_constraints(session, "pytest", "pytest-asyncio", "pytest-icdiff")
+    session.install(".", *tests_packages)
     session.run("pytest", "tests/worker", *args)
 
 
-@nox.session(python=python_tool_version)
+@nox_session(python=python_tool_version)
 def lint(session: Session) -> None:
     args = session.posargs or pyfiles_locations
-    install_project(session)
-    install_with_constraints(
-        session,
+    session.install(
+        ".",
         "flake8",
         "flake8-bandit",
         "flake8-black",
@@ -90,33 +70,32 @@ def lint(session: Session) -> None:
     session.run("flake8", *args)
 
 
-@nox.session(python=python_tool_version)
+@nox_session(python=python_tool_version)
 def mypy(session: Session) -> None:
     args = session.posargs or pyfiles_locations
-    install_project(session)
-    install_with_constraints(session, "mypy")
+    session.install(
+        all_extras(session),
+        "mypy",
+        # Packages required to check tests typing.
+        *mypy_packages,
+    )
     session.run("mypy", *args)
 
 
-@nox.session(python=python_tool_version)
+@nox_session(python=python_tool_version)
 def format(session: Session) -> None:
     args = session.posargs or pyfiles_locations
-    install_with_constraints(session, "black", "isort")
+    session.install(
+        ".",
+        "black",
+        "isort",
+    )
     session.run("black", *args)
     session.run("isort", *args)
 
 
-@nox.session(python=python_tool_version)
+@nox_session(python=python_tool_version)
 def safety(session: Session) -> None:
-    with tempfile.NamedTemporaryFile() as requirements:
-        session.run(
-            "poetry",
-            "export",
-            "--dev",
-            "--format=requirements.txt",
-            "--without-hashes",
-            f"--output={requirements.name}",
-            external=True,
-        )
-        install_with_constraints(session, "safety")
-        session.run("safety", "check", f"--file={requirements.name}", "--full-report")
+    session.install("safety")
+    requirements = session.poetry.export_requirements()
+    session.run("safety", "check", f"--file={requirements}", "--full-report")
