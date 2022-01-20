@@ -1,10 +1,12 @@
+from typing import Any
+
 import dataclasses
 import uuid
 
 
 @dataclasses.dataclass
 class TopicMessage:
-    args: dict[str, object]
+    args: dict[str, Any]
     id: str = dataclasses.field(default_factory=lambda: str(uuid.uuid4()))
 
     def extend(self, args: dict[str, object]) -> "TopicMessage":

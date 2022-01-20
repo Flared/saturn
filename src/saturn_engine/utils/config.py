@@ -10,7 +10,6 @@ import os
 from collections.abc import Iterable
 from collections.abc import Mapping
 from enum import Enum
-from types import GenericAlias
 
 from . import CINamespace
 from .inspect import eval_class_annotations
@@ -223,7 +222,7 @@ def check_type(obj: Any, typ: Any, scope: Any) -> bool:
     return True
 
 
-def is_leaf_type(typ: Any):
+def is_leaf_type(typ: Any) -> bool:
     origin_typ = typing.get_origin(typ)
     if origin_typ:
         typ = origin_typ

@@ -71,15 +71,17 @@ class ExecutorManager:
                     async def scope(message: PipelineMessage) -> PipelineResult:
                         return await self.executor.process_message(message)
 
-                    with contextlib.suppress(Exception):
+                    try:
                         output = await scope(processable.message)
-
-                    processable.update_resources_used(output.resources)
-                    asyncio.create_task(
-                        self.consume_output(
-                            processable=processable, output=output.outputs
+                    except Exception:  # noqa: S110
+                        pass
+                    else:
+                        processable.update_resources_used(output.resources)
+                        asyncio.create_task(
+                            self.consume_output(
+                                processable=processable, output=output.outputs
+                            )
                         )
-                    )
             except Exception:
                 self.logger.exception("Failed to process queue item")
 
