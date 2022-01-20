@@ -19,7 +19,7 @@ class config(SaturnConfig):
         )
         services = [
             "saturn_engine.worker.services.loggers.ConsoleLogging",
-            "saturn_engine.worker.services.loggers.MessagesLogger",
+            "saturn_engine.worker.services.loggers.Logger",
             "saturn_engine.worker.services.metrics.MemoryMetrics",
             "saturn_engine.worker.services.rabbitmq.RabbitMQService",
         ]

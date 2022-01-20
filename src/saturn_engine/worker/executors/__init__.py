@@ -1,6 +1,7 @@
 from typing import Type
 
 import asyncio
+import contextlib
 from abc import abstractmethod
 
 from saturn_engine.core import PipelineOutput
@@ -63,7 +64,6 @@ class ExecutorManager:
         while True:
             processable = await self.queue.get()
             processable.context.callback(self.queue.task_done)
-
             try:
                 async with processable.context:
 
@@ -71,7 +71,8 @@ class ExecutorManager:
                     async def scope(message: PipelineMessage) -> PipelineResult:
                         return await self.executor.process_message(message)
 
-                    output = await scope(processable.message)
+                    with contextlib.suppress(Exception):
+                        output = await scope(processable.message)
 
                     processable.update_resources_used(output.resources)
                     asyncio.create_task(
@@ -80,7 +81,7 @@ class ExecutorManager:
                         )
                     )
             except Exception:
-                self.logger.exception("Failed to process: %s", processable)
+                self.logger.exception("Failed to process queue item")
 
     async def submit(self, processable: ExecutableMessage) -> None:
         # Try first to check if we have the resources available so we can
@@ -135,25 +136,22 @@ class ExecutorManager:
             for item in output:
                 topics = processable.output.get(item.channel, [])
                 for topic in topics:
-                    try:
 
-                        @self.services.s.hooks.message_published.emit
-                        async def scope(_: MessagePublished) -> None:
-                            if topic is None:
-                                return
-                            if await topic.publish(item.message, wait=False):
-                                return
-                            processable.park()
-                            await topic.publish(item.message, wait=True)
+                    @self.services.s.hooks.message_published.emit
+                    async def scope(_: MessagePublished) -> None:
+                        if topic is None:
+                            return
+                        if await topic.publish(item.message, wait=False):
+                            return
+                        processable.park()
+                        await topic.publish(item.message, wait=True)
 
+                    with contextlib.suppress(Exception):
                         await scope(
                             MessagePublished(
                                 message=processable.message, topic=topic, output=item
                             )
                         )
-                    # Exception should be handled in hooks.
-                    except Exception:  # noqa: S110
-                        pass
         finally:
             await processable.unpark()
 

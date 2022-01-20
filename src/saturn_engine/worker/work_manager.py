@@ -17,6 +17,7 @@ from saturn_engine.core.api import ResourceItem
 from saturn_engine.utils import flatten
 from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.resources_manager import ResourceData
+from saturn_engine.worker.services.http_client import HttpClient
 
 from . import work_factory
 from .services import Services
@@ -94,9 +95,10 @@ class WorkManager:
         self, *, services: Services, client: Optional[WorkerManagerClient] = None
     ) -> None:
         self.logger = getLogger(__name__, self)
+        http_client = services.cast_service(HttpClient)
         self.client = client or WorkerManagerClient(
-            http_client=services.http_client.session,
-            base_url=services.config.c.worker.worker_manager_url,
+            http_client=http_client.session,
+            base_url=services.s.config.c.worker.worker_manager_url,
         )
         self.worker_items_work = {}
         self.worker_resources = {}
@@ -145,13 +147,19 @@ class WorkManager:
     async def build_work_for_worker_items(
         self, items: Iterator[QueueItem]
     ) -> WorkerItemsWork:
-        return {item.name: self.build_work_for_worker_item(item) for item in items}
+        return {
+            item.name: await self.build_work_for_worker_item(item) for item in items
+        }
 
-    def build_work_for_worker_item(self, item: QueueItem) -> WorkItems:
+    async def build_work_for_worker_item(self, item: QueueItem) -> WorkItems:
         try:
-            return work_factory.build(item, services=self.services)
+
+            @self.services.s.hooks.work_items_built.emit
+            async def scope(item: QueueItem) -> WorkItems:
+                return work_factory.build(item, services=self.services)
+
+            return await scope(item)
         except Exception:
-            self.logger.exception("Failed to build item for %s", item)
             return WorkItems.empty()
 
     async def parse_resources(
