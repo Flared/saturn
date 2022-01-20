@@ -7,7 +7,7 @@ import nox
 from nox_poetry import Session
 from nox_poetry import session as nox_session
 
-nox.options.sessions = "lint", "mypy", "tests", "example_tests"
+nox.options.sessions = "lint", "mypy", "tests", "tests_worker", "example_tests"
 nox.options.reuse_existing_virtualenvs = True
 
 python_all_versions = ["3.9"]
