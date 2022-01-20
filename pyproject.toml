@@ -40,6 +40,7 @@ marshmallow-enum = "^1.5.1"
 ray = {version = "^1.8.0", optional = true}
 click = "^8.0.3"
 aiodogstatsd = {version = "^0.16.0", optional = true}
+structlog = "^21.5.0"
 
 [tool.poetry.extras]
 worker-manager = [
@@ -50,6 +51,9 @@ ray = [
 ]
 statsd = [
   "aiodogstatsd",
+]
+structlog = [
+  "structlog",
 ]
 
 [tool.poetry.dev-dependencies]
@@ -69,7 +73,6 @@ pytest-icdiff = "^0.5"
 pytest-mock = "^3.6.1"
 freezegun = "^1.1.0"
 types-freezegun = "^1.1.2"
-structlog = "^21.5.0"
 
 [tool.pytest.ini_options]
 addopts = '''

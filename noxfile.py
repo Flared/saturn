@@ -37,7 +37,7 @@ def all_extras(session: Session) -> str:
 @nox_session(python=python_all_versions)
 def tests(session: Session) -> None:
     args = session.posargs
-    session.install(".[worker-manager]", *tests_packages)
+    session.install(".[worker-manager,structlog]", *tests_packages)
     session.run("pytest", "-vv", *args, env={"PY_IGNORE_IMPORTMISMATCH": "1"})
 
 
