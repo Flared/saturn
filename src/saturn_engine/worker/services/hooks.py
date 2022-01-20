@@ -1,31 +1,42 @@
+from typing import TYPE_CHECKING
 from typing import NamedTuple
 
 from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResult
+from saturn_engine.core.api import QueueItem
 from saturn_engine.utils.hooks import AsyncContextHook
 from saturn_engine.utils.hooks import AsyncEventHook
-from saturn_engine.worker.pipeline_message import PipelineMessage
-from saturn_engine.worker.topic import Topic
+
+if TYPE_CHECKING:
+    from saturn_engine.worker.pipeline_message import PipelineMessage
+    from saturn_engine.worker.topic import Topic
+    from saturn_engine.worker.work import WorkItems
 
 
 class MessagePublished(NamedTuple):
-    message: PipelineMessage
-    topic: Topic
+    message: "PipelineMessage"
+    topic: "Topic"
     output: PipelineOutput
 
 
 class Hooks:
     name = "hooks"
 
-    message_polled: AsyncEventHook[PipelineMessage]
-    message_scheduled: AsyncEventHook[PipelineMessage]
-    message_submitted: AsyncEventHook[PipelineMessage]
-    message_executed: AsyncContextHook[PipelineMessage, PipelineResult]
+    hook_failed: AsyncEventHook[Exception]
+
+    message_polled: AsyncEventHook["PipelineMessage"]
+    message_scheduled: AsyncEventHook["PipelineMessage"]
+    message_submitted: AsyncEventHook["PipelineMessage"]
+    message_executed: AsyncContextHook["PipelineMessage", PipelineResult]
     message_published: AsyncContextHook[MessagePublished, None]
 
+    work_items_built: AsyncContextHook[QueueItem, "WorkItems"]
+
     def __init__(self) -> None:
-        self.message_polled = AsyncEventHook()
-        self.message_scheduled = AsyncEventHook()
-        self.message_submitted = AsyncEventHook()
-        self.message_executed = AsyncContextHook()
-        self.message_published = AsyncContextHook()
+        self.hook_failed = AsyncEventHook()
+        self.work_items_built = AsyncContextHook(error_handler=self.hook_failed.emit)
+        self.message_polled = AsyncEventHook(error_handler=self.hook_failed.emit)
+        self.message_scheduled = AsyncEventHook(error_handler=self.hook_failed.emit)
+        self.message_submitted = AsyncEventHook(error_handler=self.hook_failed.emit)
+        self.message_executed = AsyncContextHook(error_handler=self.hook_failed.emit)
+        self.message_published = AsyncContextHook(error_handler=self.hook_failed.emit)

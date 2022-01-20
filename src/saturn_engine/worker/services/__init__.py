@@ -7,6 +7,8 @@ from typing import Type
 from typing import TypeVar
 from typing import cast
 
+import abc
+
 from saturn_engine.config import Config
 from saturn_engine.utils import Namespace
 from saturn_engine.utils import inspect as extra_inspect
@@ -29,7 +31,7 @@ T = TypeVar("T")
 U = TypeVar("U")
 
 
-class Service(Generic[TServices, TOptions]):
+class Service(abc.ABC, Generic[TServices, TOptions]):
     name: ClassVar[str]
     Services: Optional[Type[TServices]] = None
     Options: Optional[Type[TOptions]] = None

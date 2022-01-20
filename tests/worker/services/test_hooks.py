@@ -36,7 +36,7 @@ def test_event_hook() -> None:
 
 @pytest.mark.asyncio
 async def test_async_event_hook() -> None:
-    error_handler = mock.Mock()
+    error_handler = mock.AsyncMock()
     hook: AsyncEventHook[str] = AsyncEventHook(error_handler=error_handler)
 
     handler1 = mock.AsyncMock()
@@ -55,7 +55,7 @@ async def test_async_event_hook() -> None:
     error = ValueError()
     handler1.side_effect = error
     await hook.emit("d")
-    error_handler.assert_called_once_with(error)
+    error_handler.assert_awaited_once_with(error)
     handler2.assert_awaited_once_with("d")
 
 
@@ -128,7 +128,7 @@ def test_context_hook() -> None:
 
 @pytest.mark.asyncio
 async def test_async_context_hook() -> None:
-    error_handler = mock.Mock()
+    error_handler = mock.AsyncMock()
     m = mock.Mock()
     hook: AsyncContextHook[str, str] = AsyncContextHook(error_handler=error_handler)
 
@@ -191,7 +191,7 @@ async def test_async_context_hook() -> None:
         ]
     )
 
-    error_handler.assert_not_called()
+    error_handler.assert_not_awaited()
 
 
 def test_context_hook_errors() -> None:
@@ -326,7 +326,7 @@ def test_context_hook_error_errors() -> None:
 
 @pytest.mark.asyncio
 async def test_async_context_hook_errors() -> None:
-    error_handler = mock.Mock()
+    error_handler = mock.AsyncMock()
     m = mock.Mock()
     hook: AsyncContextHook[None, None] = AsyncContextHook(error_handler=error_handler)
 
@@ -389,12 +389,12 @@ async def test_async_context_hook_errors() -> None:
         ]
     )
 
-    assert error_handler.call_count == 6
+    assert error_handler.await_count == 6
 
 
 @pytest.mark.asyncio
 async def test_async_context_hook_error_errors() -> None:
-    error_handler = mock.Mock()
+    error_handler = mock.AsyncMock()
     m = mock.Mock()
     hook: AsyncContextHook[None, None] = AsyncContextHook(error_handler=error_handler)
 
@@ -453,4 +453,4 @@ async def test_async_context_hook_error_errors() -> None:
         ]
     )
 
-    assert error_handler.call_count == 3
+    assert error_handler.await_count == 3

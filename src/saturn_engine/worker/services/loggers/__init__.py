@@ -1,4 +1,4 @@
 from .console_logging import ConsoleLogging
-from .messages_logger import MessagesLogger
+from .logger import Logger
 
-__all__ = ("ConsoleLogging", "MessagesLogger")
+__all__ = ("ConsoleLogging", "Logger")

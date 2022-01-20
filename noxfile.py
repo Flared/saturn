@@ -27,6 +27,7 @@ mypy_packages = [
     "pytest-mock",
     "types-freezegun",
     "structlog",
+    "sentry-sdk",
 ]
 
 

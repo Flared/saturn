@@ -15,12 +15,13 @@ F = TypeVar("F", bound=Callable)
 
 A = TypeVar("A")
 R = TypeVar("R")
+E = TypeVar("E")
 GGenerators = list[Generator[None, A, None]]
 AGenerators = list[AsyncGenerator[None, A]]
 
 
-class Handlers(Generic[F]):
-    def __init__(self, *, error_handler: Optional[Callable[[Exception], None]] = None):
+class Handlers(Generic[F, E]):
+    def __init__(self, *, error_handler: Optional[Callable[[Exception], E]] = None):
         self.error_handler = error_handler
         self.handlers: list[F] = []
 
@@ -32,7 +33,7 @@ class Handlers(Generic[F]):
         self.handlers.remove(handler)
 
 
-class EventHook(Generic[A], Handlers[Callable[[A], Any]]):
+class EventHook(Generic[A], Handlers[Callable[[A], Any], None]):
     def emit(self, arg: A) -> None:
         for handler in self.handlers:
             try:
@@ -42,19 +43,19 @@ class EventHook(Generic[A], Handlers[Callable[[A], Any]]):
                     self.error_handler(e)
 
 
-class AsyncEventHook(Generic[A], Handlers[Callable[[A], Awaitable]]):
+class AsyncEventHook(Generic[A], Handlers[Callable[[A], Awaitable], Awaitable]):
     async def emit(self, arg: A) -> None:
         for handler in self.handlers:
             try:
                 await handler(arg)
             except Exception as e:
                 if self.error_handler:
-                    self.error_handler(e)
+                    await self.error_handler(e)
 
 
 class ContextHook(
     Generic[A, R],
-    Handlers[Union[Callable[[A], Any], Callable[[A], Generator[None, R, None]]]],
+    Handlers[Union[Callable[[A], Any], Callable[[A], Generator[None, R, None]]], None],
 ):
     def emit(self, scope: Callable[[A], R]) -> "ContextHookEmiter[A, R]":
         return ContextHookEmiter(self, scope)
@@ -131,7 +132,10 @@ class ContextHookEmiter(Generic[A, R]):
 
 class AsyncContextHook(
     Generic[A, R],
-    Handlers[Union[Callable[[A], Awaitable], Callable[[A], AsyncGenerator[None, R]]]],
+    Handlers[
+        Union[Callable[[A], Awaitable], Callable[[A], AsyncGenerator[None, R]]],
+        Awaitable,
+    ],
 ):
     def emit(
         self, scope: Callable[[A], Awaitable[R]]
@@ -168,7 +172,7 @@ class AsyncContextHookEmiter(Generic[A, R]):
                 else:
                     await result
             except Exception as e:
-                self.handle_error(e)
+                await self.handle_error(e)
         return generators
 
     async def on_error(self, generators: AGenerators, error: Exception) -> None:
@@ -181,14 +185,14 @@ class AsyncContextHookEmiter(Generic[A, R]):
                 try:
                     raise ValueError("Handler must yield once")
                 except Exception as e:
-                    self.handle_error(e)
+                    await self.handle_error(e)
             except StopAsyncIteration:
                 # The generator could be done.
                 pass
             except Exception as gen_e:
                 # Ensure the error raised is not the one that was passed.
                 if gen_e is not error:
-                    self.handle_error(gen_e)
+                    await self.handle_error(gen_e)
 
     async def on_result(self, generators: AGenerators, result: R) -> None:
         # Call handlers in reverse order with the result
@@ -200,13 +204,13 @@ class AsyncContextHookEmiter(Generic[A, R]):
                 try:
                     raise ValueError("Handler must yield once")
                 except Exception as e:
-                    self.handle_error(e)
+                    await self.handle_error(e)
             except StopAsyncIteration:
                 # This is expected.
                 pass
             except Exception as e:
-                self.handle_error(e)
+                await self.handle_error(e)
 
-    def handle_error(self, error: Exception) -> None:
+    async def handle_error(self, error: Exception) -> None:
         if self.hook.error_handler:
-            self.hook.error_handler(error)
+            await self.hook.error_handler(error)

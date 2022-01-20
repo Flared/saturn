@@ -10,7 +10,6 @@ import os
 from collections.abc import Iterable
 from collections.abc import Mapping
 from enum import Enum
-from types import GenericAlias
 
 from . import CINamespace
 from .inspect import eval_class_annotations
@@ -112,18 +111,16 @@ def load_config_interface(
         value = get_attr(interface, name)
         typ = get_prop_type(interface, name, value)
 
-        if issubclass(typ, (str, int, float, list, dict, tuple, Enum)) or isinstance(
-            typ, GenericAlias
-        ):
+        if is_leaf_type(typ):
             config_value = get_config_value(layers, name, value)
             if config_value is _MISSING:
                 if name not in config:
                     raise ValueError(f"Missing config key {key_path}")
             elif not check_type(config_value, typ, interface):
                 raise ValueError(
-                    f"Invalid config key '{key_path}' type: "
-                    f"expected '{desc_type(typ)}', "
-                    f"got '{type(config_value).__name__}'"
+                    f'Invalid config key "{key_path}" type: '
+                    f'expected "{typ}", '
+                    f'got "{type(config_value).__name__}"'
                 )
             config[name] = config_value
 
@@ -167,12 +164,6 @@ def sublayers(layers: list, name: str) -> list:
     return [s for layer in layers if (s := get_attr(layer, name)) is not _MISSING]
 
 
-def desc_type(typ: Any) -> str:
-    if isinstance(typ, GenericAlias):
-        return str(typ)
-    return typ.__name__
-
-
 def get_attr(obj: Any, name: str) -> Any:
     if isinstance(obj, dict):
         ikey_map = {k.lower(): k for k in obj}
@@ -202,14 +193,20 @@ def get_prop_type(interface: Any, name: str, value: Any) -> Any:
 
 
 def check_type(obj: Any, typ: Any, scope: Any) -> bool:
+    if typ is None:
+        return obj is None
+
+    origin_typ = typing.get_origin(typ)
+    typ_args: list[Any] = []
+    if origin_typ:
+        typ_args = eval_class_annotations(scope, typing.get_args(typ))
+        typ = origin_typ
+
     if typ is typing.Any:
         return True
 
-    typ_args: list[Type] = []
-    if isinstance(typ, GenericAlias):
-        ga_typ = typ
-        typ = typing.get_origin(ga_typ)
-        typ_args = eval_class_annotations(scope, typing.get_args(ga_typ))
+    if typ is typing.Union:
+        return any(check_type(obj, t, scope) for t in typ_args)
 
     if not isinstance(obj, typ):
         return False
@@ -223,3 +220,16 @@ def check_type(obj: Any, typ: Any, scope: Any) -> bool:
         )
 
     return True
+
+
+def is_leaf_type(typ: Any) -> bool:
+    origin_typ = typing.get_origin(typ)
+    if origin_typ:
+        typ = origin_typ
+
+    # Check for some typing special types.
+    if typ in (typing.Union, typing.Any):
+        return True
+
+    # Standard types
+    return issubclass(typ, (str, int, float, list, dict, tuple, Enum))

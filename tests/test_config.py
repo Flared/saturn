@@ -1,3 +1,7 @@
+from typing import Any
+from typing import Optional
+from typing import Union
+
 import re
 
 import pytest
@@ -59,6 +63,39 @@ def test_config() -> None:
     assert d.y == 2
 
 
+def test_any_config() -> None:
+    class AnyConfig:
+        a: Any
+
+    config: Config[AnyConfig] = Config()
+    config = config.load_object({"a": None}).register_interface("", AnyConfig)
+    config.load_object({"a": 1})
+    config.load_object({"a": "1"})
+
+
+def test_optional_config() -> None:
+    class OptionalConfig:
+        a: Optional["list[int]"]
+
+    config: Config[OptionalConfig] = Config()
+    config = config.load_object({"a": None}).register_interface("", OptionalConfig)
+    config.load_object({"a": [1]})
+    with pytest.raises(ValueError):
+        config.load_object({"a": ["1"]})
+
+
+def test_union_config() -> None:
+    class UnionConfig:
+        a: Union["Optional[int]", str]
+
+    config: Config[UnionConfig] = Config()
+    config = config.load_object({"a": None}).register_interface("", UnionConfig)
+    config.load_object({"a": 1})
+    config.load_object({"a": "1"})
+    with pytest.raises(ValueError):
+        config.load_object({"a": ["1"]})
+
+
 def test_config_error() -> None:
     config: Config[Interface] = Config()
 
@@ -68,14 +105,15 @@ def test_config_error() -> None:
     config = config.load_object(ObjectConfig).register_interface("", Interface)
 
     with pytest.raises(
-        ValueError, match="Invalid config key 'a' type: expected 'str', got 'int'"
+        ValueError,
+        match='Invalid config key "a" type: expected "<class \'str\'>", got "int"',
     ):
         config.load_object({"a": 1})
 
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Invalid config key 'c.y' type: expected 'dict[str, list[int]]', got 'dict'"
+            'Invalid config key "c.y" type: expected "dict[str, list[int]]", got "dict"'
         ),
     ):
         config.load_object({"c": {"y": {"1": ["a"]}}})
