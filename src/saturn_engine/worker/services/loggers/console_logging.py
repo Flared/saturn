@@ -94,7 +94,7 @@ def setup_logging(formatter: Optional[dict[str, Any]] = None) -> None:
     logging.config.dictConfig(
         {
             "version": 1,
-            "disable_existing_loggers": True,
+            "disable_existing_loggers": False,
             "formatters": {
                 "standard": formatter
                 or {

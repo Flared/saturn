@@ -41,4 +41,6 @@ class FileTopic(Topic):
         return True
 
     async def close(self) -> None:
+        if self.fd in (sys.stdout, sys.stderr):
+            return
         self.fd.close()

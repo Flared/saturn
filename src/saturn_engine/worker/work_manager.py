@@ -6,7 +6,6 @@ from typing import TypeVar
 
 import asyncio
 import dataclasses
-from collections.abc import Iterable
 from datetime import datetime
 from datetime import timedelta
 
@@ -14,18 +13,14 @@ from saturn_engine.client.worker_manager import WorkerManagerClient
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import ResourceItem
-from saturn_engine.utils import flatten
 from saturn_engine.utils.log import getLogger
+from saturn_engine.worker import work_factory
 from saturn_engine.worker.resources_manager import ResourceData
+from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.http_client import HttpClient
-
-from . import work_factory
-from .services import Services
-from .work import SchedulableQueue
-from .work import WorkItems
+from saturn_engine.worker.work_item import WorkItem
 
 T = TypeVar("T")
-Task = asyncio.Task
 
 
 @dataclasses.dataclass
@@ -40,69 +35,33 @@ class ItemsSync(Generic[T]):
 
 @dataclasses.dataclass
 class WorkSync:
-    queues: ItemsSync[SchedulableQueue]
-    tasks: ItemsSync[Task]
+    queues: ItemsSync[WorkItem]
     resources: ItemsSync[ResourceData]
-
-    @classmethod
-    def from_sync(
-        cls: Type["WorkSync"],
-        items_added: Iterable[WorkItems],
-        items_dropped: Iterable[WorkItems],
-        resources_sync: ItemsSync[ResourceData],
-    ) -> "WorkSync":
-        queues_added: list[SchedulableQueue] = []
-        tasks_added: list[Task] = []
-        queues_drop: list[SchedulableQueue] = []
-        tasks_drop: list[Task] = []
-        if items_added:
-            queues_added, tasks_added = [
-                list(flatten(x))
-                for x in zip(*[(i.queues, i.tasks) for i in items_added])
-            ]
-
-        if items_dropped:
-            queues_drop, tasks_drop = [
-                list(flatten(x))
-                for x in zip(*[(i.queues, i.tasks) for i in items_dropped])
-            ]
-
-        return cls(
-            queues=ItemsSync(add=queues_added, drop=queues_drop),
-            tasks=ItemsSync(add=tasks_added, drop=tasks_drop),
-            resources=resources_sync,
-        )
 
     @classmethod
     def empty(cls: Type["WorkSync"]) -> "WorkSync":
         return cls(
             queues=ItemsSync.empty(),
-            tasks=ItemsSync.empty(),
             resources=ItemsSync.empty(),
         )
 
 
-WorkerItemsWork = dict[str, WorkItems]
+WorkerItems = dict[str, WorkItem]
 
 
 class WorkManager:
-    client: WorkerManagerClient
-    worker_items_work: WorkerItemsWork
-    worker_resources: dict[str, ResourceData]
-    last_sync_at: Optional[datetime]
-
     def __init__(
         self, *, services: Services, client: Optional[WorkerManagerClient] = None
     ) -> None:
         self.logger = getLogger(__name__, self)
         http_client = services.cast_service(HttpClient)
-        self.client = client or WorkerManagerClient(
+        self.client: WorkerManagerClient = client or WorkerManagerClient(
             http_client=http_client.session,
             base_url=services.s.config.c.worker.worker_manager_url,
         )
-        self.worker_items_work = {}
-        self.worker_resources = {}
-        self.last_sync_at = None
+        self.worker_items: WorkerItems = {}
+        self.worker_resources: dict[str, ResourceData] = {}
+        self.last_sync_at: Optional[datetime] = None
         self.sync_period = timedelta(seconds=60)
         self.services = services
 
@@ -116,53 +75,54 @@ class WorkManager:
         lock_response = await self.client.lock()
         self.last_sync_at = datetime.now()
 
-        work_items = await self.parse_work_items(lock_response)
-        resources_sync = await self.parse_resources(lock_response)
+        queues_sync = await self.load_queues(lock_response)
+        resources_sync = await self.load_resources(lock_response)
 
-        return WorkSync.from_sync(
-            items_added=work_items.add,
-            items_dropped=work_items.drop,
-            resources_sync=resources_sync,
+        return WorkSync(
+            queues=queues_sync,
+            resources=resources_sync,
         )
 
-    async def parse_work_items(
-        self, lock_response: LockResponse
-    ) -> ItemsSync[WorkItems]:
-        current_items = set(self.worker_items_work.keys())
+    async def load_queues(self, lock_response: LockResponse) -> ItemsSync[WorkItem]:
+        current_items = set(self.worker_items.keys())
         sync_items = {item.name: item for item in lock_response.items}
         sync_items_ids = set(sync_items.keys())
         add = sync_items_ids - current_items
         drop = current_items - sync_items_ids
 
-        added_items = await self.build_work_for_worker_items(sync_items[i] for i in add)
-        self.worker_items_work.update(added_items)
-        add_items = added_items.values()
-        drop_items = [self.worker_items_work.pop(k) for k in drop]
+        added_items = await self.build_queues_for_worker_items(
+            sync_items[i] for i in add
+        )
+        self.worker_items.update(added_items)
+        add_items = list(added_items.values())
+        drop_items = [self.worker_items.pop(k) for k in drop]
 
-        return ItemsSync(add=list(add_items), drop=drop_items)
+        return ItemsSync(add=add_items, drop=drop_items)
 
-    def work_items_by_name(self, name: str) -> WorkItems:
-        return self.worker_items_work.get(name, WorkItems.empty())
+    def work_queue_by_name(self, name: str) -> Optional[WorkItem]:
+        return self.worker_items.get(name)
 
-    async def build_work_for_worker_items(
+    async def build_queues_for_worker_items(
         self, items: Iterator[QueueItem]
-    ) -> WorkerItemsWork:
+    ) -> WorkerItems:
         return {
-            item.name: await self.build_work_for_worker_item(item) for item in items
+            item.name: queue
+            for item in items
+            if (queue := await self.build_queue_for_worker_item(item))
         }
 
-    async def build_work_for_worker_item(self, item: QueueItem) -> WorkItems:
+    async def build_queue_for_worker_item(self, item: QueueItem) -> Optional[WorkItem]:
         try:
 
-            @self.services.s.hooks.work_items_built.emit
-            async def scope(item: QueueItem) -> WorkItems:
+            @self.services.s.hooks.work_queue_built.emit
+            async def scope(item: QueueItem) -> WorkItem:
                 return work_factory.build(item, services=self.services)
 
             return await scope(item)
         except Exception:
-            return WorkItems.empty()
+            return None
 
-    async def parse_resources(
+    async def load_resources(
         self, lock_response: LockResponse
     ) -> ItemsSync[ResourceData]:
         current_items = set(self.worker_resources.keys())

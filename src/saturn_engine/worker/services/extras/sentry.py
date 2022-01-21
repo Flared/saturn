@@ -14,7 +14,7 @@ from saturn_engine.core.api import QueueItem
 from saturn_engine.utils.options import asdict
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.services.hooks import MessagePublished
-from saturn_engine.worker.work import WorkItems
+from saturn_engine.worker.work_item import WorkItem
 
 from .. import BaseServices
 from .. import Service
@@ -38,7 +38,7 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
         )
 
         self.services.hooks.hook_failed.register(self.on_hook_failed)
-        self.services.hooks.work_items_built.register(self.on_work_items_built)
+        self.services.hooks.work_queue_built.register(self.on_work_queue_built)
         self.services.hooks.message_executed.register(self.on_message_executed)
         self.services.hooks.message_published.register(self.on_message_published)
 
@@ -52,9 +52,9 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
     async def on_hook_failed(self, error: Exception) -> None:
         self._capture_exception(error)
 
-    async def on_work_items_built(
+    async def on_work_queue_built(
         self, item: QueueItem
-    ) -> AsyncGenerator[None, WorkItems]:
+    ) -> AsyncGenerator[None, WorkItem]:
         with Hub.current.push_scope() as scope:
 
             def _event_processor(event: Event, hint: Hint) -> Event:

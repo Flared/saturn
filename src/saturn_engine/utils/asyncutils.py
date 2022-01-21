@@ -103,3 +103,11 @@ class DelayedThrottle(Generic[AsyncFNone]):
         self.delayed_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await self.delayed_task
+
+    async def flush(self) -> None:
+        if self.delayed_task is None:
+            return
+        async with self.delayed_lock:
+            await self.cancel()
+            await self.func(*self.delayed_args, **self.delayed_kwargs)
+            self.delayed_task = None
