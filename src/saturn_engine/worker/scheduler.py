@@ -109,6 +109,7 @@ class Scheduler(Generic[T]):
                     extra={"data": {"queue_name": item.name}},
                     exc_info=exception,
                 )
+                raise ValueError("Fatal error in schedulable") from exception
         except BaseException:
             # This is an unexpected error, likely a closed generator or
             # cancellation. The task is put back in the item for later

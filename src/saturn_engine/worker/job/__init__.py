@@ -61,5 +61,5 @@ class Job(Topic):
 
             await self.store.set_completed()
         except Exception as e:
+            self.logger.exception("Exception raised from job")
             await self.store.set_failed(e)
-            raise
