@@ -16,6 +16,7 @@ T = TypeVar("T")
 @dataclasses.dataclass(eq=False)
 class Schedulable(Generic[T]):
     iterable: AsyncGenerator[T, None]
+    name: str
     # property for scheduling such as "weight" or priority would come here.
 
 
@@ -38,7 +39,8 @@ class Scheduler(Generic[T]):
 
     def add(self, item: Schedulable[T]) -> None:
         generator = item.iterable.__aiter__()
-        task = asyncio.create_task(generator.__anext__())
+        name = f"scheduler.anext({item.name})"
+        task = asyncio.create_task(generator.__anext__(), name=name)
         self.schedule_slots[item] = ScheduleSlot(task=task, generator=generator)
         self.tasks[task] = item
         self.tasks_group.add(task)
@@ -61,12 +63,13 @@ class Scheduler(Generic[T]):
         self.tasks.clear()
 
     async def stop_slot(self, schedule_slot: ScheduleSlot[T]) -> None:
-        try:
-            schedule_slot.task.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await schedule_slot.task
-        except Exception:
-            self.logger.exception("Failed to cancel item: %s", schedule_slot)
+        if not schedule_slot.task.done():
+            try:
+                schedule_slot.task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await schedule_slot.task
+            except Exception:
+                self.logger.exception("Failed to cancel item: %s", schedule_slot)
 
         try:
             await schedule_slot.generator.aclose()
@@ -76,7 +79,7 @@ class Scheduler(Generic[T]):
     async def run(self) -> AsyncIterator[T]:
         while True:
             done = await self.tasks_group.wait()
-            self.logger.debug("task ready: %s", done)
+            self.logger.debug("task ready", extra={"data": {"tasks": str(done)}})
 
             for task in sorted(done, key=self.task_order):
                 async for item in self.process_task(task):
@@ -101,7 +104,11 @@ class Scheduler(Generic[T]):
             elif isinstance(exception, asyncio.CancelledError):
                 pass
             elif exception:
-                self.logger.error("Failed to iter item", exc_info=exception)
+                self.logger.error(
+                    "Exception raised from schedulable item",
+                    extra={"data": {"queue_name": item.name}},
+                    exc_info=exception,
+                )
         except BaseException:
             # This is an unexpected error, likely a closed generator or
             # cancellation. The task is put back in the item for later
@@ -117,7 +124,9 @@ class Scheduler(Generic[T]):
         schedule_slot = self.schedule_slots.get(item)
         if schedule_slot is None:
             return
-        new_task = asyncio.create_task(schedule_slot.generator.__anext__())
+
+        name = f"scheduler.anext({item.name})"
+        new_task = asyncio.create_task(schedule_slot.generator.__anext__(), name=name)
         self.tasks[new_task] = item
         self.tasks_group.add(new_task)
 

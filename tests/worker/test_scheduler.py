@@ -1,3 +1,5 @@
+from typing import TypeVar
+
 import asyncio
 from collections import Counter
 from collections.abc import AsyncGenerator
@@ -9,7 +11,7 @@ import asyncstdlib as alib
 import pytest
 
 from saturn_engine.utils.asyncutils import aiter2agen
-from saturn_engine.worker.scheduler import Schedulable as SchedulableT
+from saturn_engine.worker.scheduler import Schedulable
 from saturn_engine.worker.scheduler import Scheduler
 
 
@@ -22,15 +24,23 @@ async def scheduler(
     await _scheduler.close()
 
 
-Schedulable = SchedulableT[object]
+T = TypeVar("T")
+
+
+def make_schedulable(iterable: AsyncGenerator[T, None]) -> Schedulable[T]:
+    return Schedulable(iterable=iterable, name="")
 
 
 @pytest.mark.asyncio
 async def test_scheduler(
     scheduler: Scheduler[object], event_loop: asyncio.AbstractEventLoop
 ) -> None:
-    schedulable1 = Schedulable(iterable=aiter2agen(alib.cycle([sentinel.schedulable1])))
-    schedulable2 = Schedulable(iterable=aiter2agen(alib.cycle([sentinel.schedulable2])))
+    schedulable1 = make_schedulable(
+        iterable=aiter2agen(alib.cycle([sentinel.schedulable1]))
+    )
+    schedulable2 = make_schedulable(
+        iterable=aiter2agen(alib.cycle([sentinel.schedulable2]))
+    )
 
     scheduler.add(schedulable1)
     scheduler.add(schedulable2)
@@ -51,7 +61,7 @@ async def test_scheduler(
         assert messages == {sentinel.schedulable1: 10}
 
         # Adding newn item adds it to the loop.
-        schedulable3 = Schedulable(
+        schedulable3 = make_schedulable(
             iterable=aiter2agen(alib.cycle([sentinel.schedulable3]))
         )
         scheduler.add(schedulable3)
@@ -64,7 +74,9 @@ async def test_scheduler(
 
 @pytest.mark.asyncio
 async def test_scheduler_iter_errors(scheduler: Scheduler) -> None:
-    schedulable1 = Schedulable(iterable=aiter2agen(alib.cycle([sentinel.schedulable1])))
+    schedulable1 = make_schedulable(
+        iterable=aiter2agen(alib.cycle([sentinel.schedulable1]))
+    )
     scheduler.add(schedulable1)
 
     messages: Counter[object] = Counter()
@@ -80,10 +92,10 @@ async def test_scheduler_iter_errors(scheduler: Scheduler) -> None:
             yield sentinel.schedulable3
             raise ValueError
 
-    schedulable2 = Schedulable(iterable=error_init())
+    schedulable2 = make_schedulable(iterable=error_init())
     scheduler.add(schedulable2)
 
-    schedulable3 = Schedulable(iterable=error_loop())
+    schedulable3 = make_schedulable(iterable=error_loop())
     scheduler.add(schedulable3)
 
     async with alib.scoped_iter(scheduler.run()) as generator:
@@ -98,7 +110,7 @@ async def test_scheduler_iter_errors(scheduler: Scheduler) -> None:
             while False:
                 yield
 
-        schedulable4 = Schedulable(iterable=closing())
+        schedulable4 = make_schedulable(iterable=closing())
         scheduler.add(schedulable4)
 
         async for item in alib.islice(generator, 10):
@@ -119,7 +131,7 @@ async def test_scheduler_close_error(scheduler: Scheduler) -> None:
             close_mock()
             raise ValueError from None
 
-    schedulable = Schedulable(iterable=error_close())
+    schedulable = make_schedulable(iterable=error_close())
     scheduler.add(schedulable)
     async for item in alib.islice(scheduler.run(), 10):
         pass

@@ -6,7 +6,7 @@ import contextlib
 from saturn_engine.core import ResourceUsed
 from saturn_engine.worker.parkers import Parkers
 from saturn_engine.worker.pipeline_message import PipelineMessage
-from saturn_engine.worker.topics import Topic
+from saturn_engine.worker.topic import Topic
 
 from .resources_manager import ResourceContext
 from .resources_manager import ResourcesContext

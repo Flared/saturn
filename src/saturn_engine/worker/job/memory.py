@@ -8,6 +8,7 @@ class MemoryJobStore(JobStore):
     def __init__(self, **kwargs: Any) -> None:
         self.after: Optional[str] = None
         self.completed = False
+        self.error: Optional[Exception] = None
 
     async def load_cursor(self) -> Optional[str]:
         return self.after
@@ -17,3 +18,6 @@ class MemoryJobStore(JobStore):
 
     async def set_completed(self) -> None:
         self.completed = True
+
+    async def set_failed(self, error: Exception) -> None:
+        self.error = error

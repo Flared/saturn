@@ -54,6 +54,17 @@ class ApiJobStore(JobStore):
         async with self.http_client.put(self.job_url, json=json) as response:
             response.raise_for_status()
 
+    async def set_failed(self, error: Exception) -> None:
+        await self.throttle_save_cursor.cancel()
+        json = asdict(
+            JobInput(cursor=self.after, completed_at=utcnow(), error=repr(error))
+        )
+        async with self.http_client.put(self.job_url, json=json) as response:
+            response.raise_for_status()
+
+    async def flush(self) -> None:
+        await self.throttle_save_cursor.flush()
+
     @property
     def job_url(self) -> str:
         return urlcat(self.base_url, "api/jobs", self.job_name)

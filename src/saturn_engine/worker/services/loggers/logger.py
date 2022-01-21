@@ -9,7 +9,7 @@ from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import QueueItem
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.services.hooks import MessagePublished
-from saturn_engine.worker.work import WorkItems
+from saturn_engine.worker.work_item import WorkItem
 
 from .. import BaseServices
 from .. import Service
@@ -27,7 +27,7 @@ class Logger(Service[BaseServices, "Logger.Options"]):
 
         self.services.hooks.hook_failed.register(self.on_hook_failed)
 
-        self.services.hooks.work_items_built.register(self.on_work_items_built)
+        self.services.hooks.work_queue_built.register(self.on_work_queue_built)
 
         self.services.hooks.message_polled.register(self.on_message_polled)
         self.services.hooks.message_scheduled.register(self.on_message_scheduled)
@@ -38,9 +38,9 @@ class Logger(Service[BaseServices, "Logger.Options"]):
     async def on_hook_failed(self, error: Exception) -> None:
         self.engine_logger.error("Exception raised in hook", exc_info=error)
 
-    async def on_work_items_built(
+    async def on_work_queue_built(
         self, item: QueueItem
-    ) -> AsyncGenerator[None, WorkItems]:
+    ) -> AsyncGenerator[None, WorkItem]:
         try:
             yield
         except Exception:

@@ -15,7 +15,6 @@ from .resources_manager import ResourcesManager
 from .scheduler import Scheduler
 from .services import Services
 from .services.manager import ServicesManager
-from .task_manager import TaskManager
 from .work_manager import WorkManager
 
 
@@ -49,7 +48,6 @@ class Broker:
 
         # Init subsystem
         self.resources_manager = ResourcesManager()
-        self.task_manager = TaskManager()
         self.scheduler: Scheduler[ExecutableMessage] = Scheduler()
 
         self.executor_init: ExecutorInit
@@ -83,9 +81,8 @@ class Broker:
         self.logger.info("Starting worker")
         self.executor.start()
         self.running_task = asyncio.gather(
-            self.run_queue_manager(),
-            self.run_worker_manager(),
-            self.task_manager.run(),
+            asyncio.create_task(self.run_queue(), name="broker.run"),
+            asyncio.create_task(self.run_sync(), name="broker.sync"),
         )
         try:
             await self.running_task
@@ -97,7 +94,7 @@ class Broker:
             self.logger.info("Broker shutting down")
             await self.close()
 
-    async def run_queue_manager(self) -> None:
+    async def run_queue(self) -> None:
         """
         Coroutine that keep polling the queues in round-robin and execute their
         pipeline through an executor.
@@ -110,34 +107,29 @@ class Broker:
             )
             await self.executor.submit(message)
 
-    async def run_worker_manager(self) -> None:
+    async def run_sync(self) -> None:
         """
         Coroutine that periodically sync the queues through the WorkManager.
         This allow to add and remove queues from the scheduler.
         """
         while self.is_running:
             work_sync = await self.work_manager.sync()
-            self.logger.info("Worker sync: %s", work_sync)
+            self.logger.info("Worker sync", extra={"data": {"work": str(work_sync)}})
 
             for queue in work_sync.queues.add:
                 self.scheduler.add(queue)
-            for task in work_sync.tasks.add:
-                self.task_manager.add(task)
             for resource in work_sync.resources.add:
                 await self.resources_manager.add(resource)
 
             for queue in work_sync.queues.drop:
                 self.scheduler.remove(queue)
-            for task in work_sync.tasks.drop:
-                self.task_manager.remove(task)
             for resource in work_sync.resources.drop:
                 self.resources_manager.remove(resource)
 
     async def close(self) -> None:
         await self.scheduler.close()
-        await self.task_manager.close()
-        await self.services_manager.close()
         await self.executor.close()
+        await self.services_manager.close()
 
     def stop(self) -> None:
         self.logger.info("Stopping broker")

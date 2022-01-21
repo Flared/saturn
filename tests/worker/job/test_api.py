@@ -47,13 +47,12 @@ async def test_api_jobstore(
 
     await asyncio.sleep(0.6)
     http_client_mock.put("/api/jobs/test").assert_called_once_with(
-        json={"cursor": "30", "completed_at": None}
+        json={"cursor": "30", "completed_at": None, "error": None}
     )
 
+    http_client_mock.reset_mock()
     await asyncio.sleep(1.1)
-    http_client_mock.put("/api/jobs/test").assert_called_once_with(
-        json={"cursor": "30", "completed_at": None}
-    )
+    http_client_mock.put("/api/jobs/test").assert_not_called()
 
     http_client_mock.reset_mock()
     await job_store.save_cursor(after="40")
@@ -62,9 +61,24 @@ async def test_api_jobstore(
         json={
             "cursor": "40",
             "completed_at": "2018-01-02T00:00:00+00:00",
+            "error": None,
         }
     )
-    http_client_mock.reset_mock()
 
+    http_client_mock.reset_mock()
+    await asyncio.sleep(1.1)
+    http_client_mock.put("/api/jobs/test").assert_not_called()
+
+    await job_store.save_cursor(after="50")
+    await job_store.set_failed(ValueError("test"))
+    http_client_mock.put("/api/jobs/test").assert_called_once_with(
+        json={
+            "cursor": "50",
+            "completed_at": "2018-01-02T00:00:00+00:00",
+            "error": "ValueError('test')",
+        }
+    )
+
+    http_client_mock.reset_mock()
     await asyncio.sleep(1.1)
     http_client_mock.put("/api/jobs/test").assert_not_called()

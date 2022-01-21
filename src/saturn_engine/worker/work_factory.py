@@ -1,7 +1,3 @@
-from typing import Optional
-
-import asyncio
-
 from saturn_engine.core.api import InventoryItem
 from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import TopicItem
@@ -14,17 +10,14 @@ from .job import Job
 from .queue import ExecutableQueue
 from .services import Services
 from .topics import Topic
-from .topics.memory import MemoryTopic
-from .work import SchedulableQueue
-from .work import WorkItems
+from .work_item import WorkItem
 
 
-def build(queue_item: QueueItem, *, services: Services) -> WorkItems:
-    task: Optional[asyncio.Task] = None
+def build(queue_item: QueueItem, *, services: Services) -> WorkItem:
     if isinstance(queue_item.input, TopicItem):
-        queue_input = build_topic(queue_item.input, services=services)
+        topic = build_topic(queue_item.input, services=services)
     if isinstance(queue_item.input, InventoryItem):
-        task, queue_input = build_inventory_job(
+        topic = build_inventory_job(
             queue_item.input, queue_item=queue_item, services=services
         )
 
@@ -33,19 +26,13 @@ def build(queue_item: QueueItem, *, services: Services) -> WorkItems:
         for k, ts in queue_item.output.items()
     }
 
-    return WorkItems(
-        queues=[
-            SchedulableQueue(
-                ExecutableQueue(
-                    topic=queue_input,
-                    pipeline=queue_item.pipeline,
-                    output=output,
-                    services=services,
-                )
-            )
-        ],
-        tasks=[task] if task else [],
+    executable_queue = ExecutableQueue(
+        topic=topic,
+        pipeline=queue_item.pipeline,
+        output=output,
+        services=services,
     )
+    return WorkItem(iterable=executable_queue.run(), name=queue_item.name)
 
 
 def build_topic(topic_item: TopicItem, *, services: Services) -> Topic:
@@ -62,15 +49,10 @@ def build_topic(topic_item: TopicItem, *, services: Services) -> Topic:
 
 def build_inventory_job(
     inventory_item: InventoryItem, *, queue_item: QueueItem, services: Services
-) -> tuple[asyncio.Task, Topic]:
-    inventory_input = build_inventory(inventory_item, services=services)
-    inventory_output = MemoryTopic(
-        MemoryTopic.Options(name=queue_item.name, buffer_size=1)
-    )
+) -> Job:
+    inventory = build_inventory(inventory_item, services=services)
     store = services.job_store.for_queue(queue_item)
-    job = Job(inventory=inventory_input, publisher=inventory_output, store=store)
-    input_topic = MemoryTopic(MemoryTopic.Options(name=queue_item.name, buffer_size=1))
-    return (asyncio.create_task(job.run()), input_topic)
+    return Job(inventory=inventory, store=store)
 
 
 def build_inventory(inventory_item: InventoryItem, *, services: Services) -> Inventory:

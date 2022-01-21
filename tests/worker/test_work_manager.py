@@ -1,5 +1,3 @@
-import asyncio
-import contextlib
 from unittest.mock import Mock
 
 import pytest
@@ -11,7 +9,6 @@ from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import QueuePipeline
 from saturn_engine.core.api import ResourceItem
 from saturn_engine.core.api import TopicItem
-from saturn_engine.utils import flatten
 from saturn_engine.worker.work_manager import WorkManager
 from saturn_engine.worker.work_manager import WorkSync
 
@@ -76,14 +73,12 @@ async def test_sync(
 
     work_sync = await work_manager.sync()
     assert len(work_sync.queues.add) == 3
-    assert len(work_sync.tasks.add) == 1
     assert len(work_sync.resources.add) == 2
     assert work_sync.queues.drop == []
-    assert work_sync.tasks.drop == []
     assert work_sync.resources.drop == []
 
-    q2_work = work_manager.work_items_by_name("q1")
-    q3_work = work_manager.work_items_by_name("q3")
+    q2_work = work_manager.work_queue_by_name("q1")
+    q3_work = work_manager.work_queue_by_name("q3")
     r2_resource = work_manager.worker_resources["r2"]
 
     # New sync add 1 and drop 2 items.
@@ -123,10 +118,5 @@ async def test_sync(
     assert len(work_sync.queues.add) == 1
     assert len(work_sync.resources.add) == 0
     # Ensure the item dropped are the same queue object that were added.
-    assert set(work_sync.queues.drop) == set(flatten([q2_work.queues, q3_work.queues]))
-    assert set(work_sync.tasks.drop) == set(flatten([q2_work.tasks, q3_work.tasks]))
+    assert set(work_sync.queues.drop) == {q2_work, q3_work}
     assert set(work_sync.resources.drop) == {r2_resource}
-    for t in work_sync.tasks.drop:
-        t.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await t

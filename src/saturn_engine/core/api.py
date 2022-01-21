@@ -97,6 +97,7 @@ class JobItem:
 class JobInput:
     cursor: Optional[str] = None
     completed_at: Optional[datetime] = None
+    error: Optional[str] = None
 
 
 @dataclasses.dataclass
