@@ -27,6 +27,11 @@ spec:
     - {message: hello-7}
     - {message: hello-8}
     - {message: hello-9}
+    - {message: hello-10}
+    - {message: hello-11}
+    - {message: hello-12}
+    - {message: hello-13}
+    - {message: hello-14}
 ---
 apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
@@ -56,4 +61,4 @@ spec:
   type: example.resources.TestApiKey
   data:
     key: example-api-key-1
-  default_delay: 5
+  default_delay: 1

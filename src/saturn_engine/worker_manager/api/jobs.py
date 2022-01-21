@@ -44,6 +44,7 @@ def update_job(job_name: str) -> Json[UpdateResponse]:
             job_name,
             cursor=update_input.cursor,
             completed_at=update_input.completed_at,
+            error=update_input.error,
             session=session,
         )
         return jsonify(UpdateResponse())

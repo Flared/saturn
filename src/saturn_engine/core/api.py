@@ -91,6 +91,7 @@ class JobItem:
     completed_at: Optional[datetime]
     started_at: datetime
     cursor: Optional[str]
+    error: Optional[str]
 
 
 @dataclasses.dataclass
