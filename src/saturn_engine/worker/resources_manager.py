@@ -153,5 +153,5 @@ class ResourcesManager:
     async def add(self, resource: ResourceData) -> None:
         await self.resources[resource.type].add(resource)
 
-    def remove(self, resource: ResourceData) -> None:
-        self.resources[resource.type].remove(resource)
+    async def remove(self, resource: ResourceData) -> None:
+        await self.resources[resource.type].remove(resource)

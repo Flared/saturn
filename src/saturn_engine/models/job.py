@@ -24,6 +24,7 @@ class Job(Base):
     completed_at: Mapped[Optional[datetime]] = Column(UTCDateTime, nullable=True)  # type: ignore[assignment]  # noqa: B950
     started_at: Mapped[datetime] = Column(UTCDateTime, nullable=False)  # type: ignore[assignment]  # noqa: B950
     queue_name = Column(Text, ForeignKey("queues.name"), nullable=False)
+    error = Column(Text, nullable=True)
     queue: "Queue" = relationship(
         "Queue",
         uselist=False,
@@ -52,6 +53,7 @@ class Job(Base):
             completed_at=self.completed_at,
             started_at=self.started_at,
             cursor=self.cursor,
+            error=self.error,
         )
 
 

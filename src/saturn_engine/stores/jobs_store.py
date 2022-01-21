@@ -57,6 +57,7 @@ def update_job(
     *,
     cursor: Optional[str],
     completed_at: Optional[datetime],
+    error: Optional[str],
     session: AnySyncSession,
 ) -> None:
     noop_stmt = stmt = update(Job).where(Job.name == name)
@@ -64,6 +65,8 @@ def update_job(
         stmt = stmt.values(cursor=cursor)
     if completed_at:
         stmt = stmt.values(completed_at=completed_at)
+    if error:
+        stmt = stmt.values(error=error)
 
     if stmt is noop_stmt:
         return

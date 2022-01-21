@@ -81,7 +81,7 @@ class Broker:
         self.logger.info("Starting worker")
         self.executor.start()
         self.running_task = asyncio.gather(
-            asyncio.create_task(self.run_queue(), name="broker.run"),
+            asyncio.create_task(self.run_queue(), name="broker.run_queue"),
             asyncio.create_task(self.run_sync(), name="broker.sync"),
         )
         try:
@@ -122,9 +122,9 @@ class Broker:
                 await self.resources_manager.add(resource)
 
             for queue in work_sync.queues.drop:
-                self.scheduler.remove(queue)
+                await self.scheduler.remove(queue)
             for resource in work_sync.resources.drop:
-                self.resources_manager.remove(resource)
+                await self.resources_manager.remove(resource)
 
     async def close(self) -> None:
         await self.scheduler.close()

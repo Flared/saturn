@@ -6,6 +6,7 @@ from sqlalchemy.orm import joinedload
 
 from saturn_engine.database import AnySession
 from saturn_engine.database import AnySyncSession
+from saturn_engine.models import Job
 from saturn_engine.models import Queue
 
 
@@ -28,11 +29,10 @@ def get_assigned_queues(
     assigned_jobs: list[Queue] = (
         session.execute(
             select(Queue)
-            .options(
-                joinedload(Queue.job),
-            )
+            .join(Queue.job)
             .where(Queue.assigned_to == worker_id)
             .where(Queue.assigned_at >= assigned_after)
+            .where(Job.completed_at == None)  # noqa: E711
             .order_by(Queue.name)
         )
         .scalars()

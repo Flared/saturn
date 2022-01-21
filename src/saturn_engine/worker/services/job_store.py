@@ -35,4 +35,4 @@ class JobStoreService(Service["JobStoreService.Services", None]):
 
     async def close(self) -> None:
         for store in self.api_stores:
-            store.flush()
+            await store.flush()

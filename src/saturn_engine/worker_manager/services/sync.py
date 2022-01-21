@@ -32,18 +32,25 @@ def sync_jobs(
                         if not last_job.completed_at:
                             continue
 
-                        scheduled_at = croniter(
-                            job_definition.minimal_interval,
-                            last_job.started_at,
-                        ).get_next(ret_type=datetime)
-                        if scheduled_at > utcnow():
-                            continue
+                        # If the last job completed with success, we check for
+                        # the job definition interval.
+                        if not last_job.error:
+                            scheduled_at = croniter(
+                                job_definition.minimal_interval,
+                                last_job.started_at,
+                            ).get_next(ret_type=datetime)
+                            if scheduled_at > utcnow():
+                                continue
 
                     job_name: str = f"{job_definition.name}-{int(time.time())}"
                     queue = queues_store.create_queue(session=session, name=job_name)
-                    jobs_store.create_job(
+                    job = jobs_store.create_job(
                         name=job_name,
                         session=session,
                         queue_name=queue.name,
                         job_definition_name=job_definition.name,
                     )
+
+                    # If the last job was an error, we resume from where we were.
+                    if last_job and last_job.error:
+                        job.cursor = last_job.cursor
