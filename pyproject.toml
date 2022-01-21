@@ -41,6 +41,7 @@ ray = {version = "^1.8.0", optional = true}
 click = "^8.0.3"
 aiodogstatsd = {version = "^0.16.0", optional = true}
 structlog = "^21.5.0"
+sentry-sdk = "^1.5.3"
 
 [tool.poetry.extras]
 worker-manager = [
@@ -54,6 +55,9 @@ statsd = [
 ]
 structlog = [
   "structlog",
+]
+sentry = [
+  "sentry-sdk",
 ]
 
 [tool.poetry.dev-dependencies]
@@ -73,7 +77,6 @@ pytest-icdiff = "^0.5"
 pytest-mock = "^3.6.1"
 freezegun = "^1.1.0"
 types-freezegun = "^1.1.2"
-sentry-sdk = "^1.5.2"
 
 [tool.pytest.ini_options]
 addopts = '''
