@@ -1,6 +1,8 @@
 from typing import DefaultDict
+from typing import Optional
 
 import dataclasses
+import pprint
 import sys
 from collections import defaultdict
 
@@ -14,6 +16,7 @@ from saturn_engine.worker_manager.config.static_definitions import StaticDefinit
 
 from .config.inventory_test import InventoryTest
 from .config.pipeline_test import PipelineTest
+from .inventory_test import run_saturn_inventory
 from .inventory_test import run_saturn_inventory_test
 from .pipeline_test import run_saturn_pipeline_test
 
@@ -50,32 +53,6 @@ def compile_tests(uncompiled_objects: list) -> SaturnTests:
     return tests
 
 
-@click.command()
-@click.option(
-    "--topology",
-    type=click.Path(exists=True, dir_okay=True),
-    required=True,
-)
-@click.option(
-    "--tests",
-    type=click.Path(exists=True, dir_okay=True),
-    required=True,
-)
-def main(
-    *,
-    topology: str,
-    tests: str,
-) -> None:
-    try:
-        run_tests_from_files(
-            static_definitions=topology,
-            tests=tests,
-        )
-    except AssertionError as e:
-        print(e)
-        sys.exit(1)
-
-
 def run_tests_from_files(
     *,
     static_definitions: str,
@@ -108,5 +85,58 @@ def run_tests(*, static_definitions: StaticDefinitions, tests: SaturnTests) -> N
         )
 
 
+@click.group()
+def cli() -> None:
+    pass
+
+
+@cli.command()
+@click.option(
+    "--topology",
+    type=click.Path(exists=True, dir_okay=True),
+    required=True,
+)
+@click.option(
+    "--tests",
+    type=click.Path(exists=True, dir_okay=True),
+    required=True,
+)
+def run(
+    *,
+    topology: str,
+    tests: str,
+) -> None:
+    try:
+        run_tests_from_files(
+            static_definitions=topology,
+            tests=tests,
+        )
+    except AssertionError as e:
+        print(e)
+        sys.exit(1)
+
+
+@cli.command()
+@click.option(
+    "--topology",
+    type=click.Path(exists=True, dir_okay=True),
+    required=True,
+)
+@click.option("--name", type=str, required=True)
+@click.option("--limit", type=int, required=True, default=1)
+@click.option("--after", type=str, required=False)
+def show_inventory(topology: str, name: str, limit: int, after: Optional[str]) -> None:
+    static_definitions = compile_static_definitions(
+        load_uncompiled_objects_from_path(topology),
+    )
+    for item in run_saturn_inventory(
+        static_definitions=static_definitions,
+        inventory_name=name,
+        limit=limit,
+        after=after,
+    ):
+        pprint.pprint(item)
+
+
 if __name__ == "__main__":
-    main()
+    cli()
