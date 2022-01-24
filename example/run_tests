@@ -3,6 +3,15 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 export PYTHONPATH="${PYTHONPATH}:$DIR/src"
 
-python -m saturn_engine.utils.tester.runner \
+
+echo "Showing one sample of static-inventory..."
+python -m saturn_engine.utils.tester.runner show-inventory \
+    --topology=example/definitions/simple.yaml \
+    --limit=1 \
+    --after=1 \
+    --name=static-inventory
+
+echo "Running YAML tests..."
+python -m saturn_engine.utils.tester.runner run \
     --topology=example/definitions/simple.yaml \
     --tests=example/tests
