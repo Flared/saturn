@@ -82,7 +82,8 @@ class Logger(Service[BaseServices, "Logger.Options"]):
             )
         except Exception:
             self.message_logger.exception(
-                "Failed to execute message", extra={"data": self.message_data(message)}
+                "Failed to execute message",
+                extra={"data": self.message_data(message)},
             )
 
     async def on_message_published(
