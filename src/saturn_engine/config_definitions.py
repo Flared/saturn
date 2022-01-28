@@ -26,6 +26,7 @@ class WorkerManagerConfig:
     database_url: str
     async_database_url: str
     static_definitions_directory: str
+    work_items_per_worker: int
 
 
 @dataclasses.dataclass

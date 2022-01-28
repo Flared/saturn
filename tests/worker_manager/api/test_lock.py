@@ -1,4 +1,5 @@
 from typing import Callable
+from typing import Optional
 
 from datetime import datetime
 from datetime import timedelta
@@ -12,6 +13,7 @@ from saturn_engine.models import Job
 from saturn_engine.models import Queue
 from saturn_engine.stores import jobs_store
 from saturn_engine.stores import queues_store
+from saturn_engine.utils import utcnow
 from saturn_engine.worker_manager.config.declarative import StaticDefinitions
 from tests.conftest import FreezeTime
 
@@ -43,18 +45,28 @@ def test_api_lock(
         session.flush()
         return queue
 
-    def create_job(name: str) -> Job:
+    def create_job(
+        name: str,
+        completed_at: Optional[datetime] = None,
+        error: Optional[str] = None,
+    ) -> Job:
         queue = create_queue(name)
         job = jobs_store.create_job(
             name=queue.name,
             session=session,
             queue_name=queue.name,
             job_definition_name=fake_job_definition.name,
+            completed_at=completed_at,
+            error=error,
         )
         return job
 
     for i in range(13):
         create_job(f"job-{i}")
+
+    # Create a completed job
+    i = i + 1
+    create_job(f"job-{i}", completed_at=utcnow())
 
     session.commit()
 
@@ -96,10 +108,10 @@ def test_api_lock(
     assert ids(resp) == expected_items_worker2
 
     # Create new work. It should be picked by worker2.
-    create_job("job-13")
+    create_job("job-14")
     session.commit()
 
-    expected_items_worker2.add("job-13")
+    expected_items_worker2.add("job-14")
     resp = client.post("/api/lock", json={"worker_id": "worker-2"})
     assert resp.status_code == 200
     assert ids(resp) == expected_items_worker2
@@ -121,6 +133,31 @@ def test_api_lock(
         "job-7",
         "job-8",
         "job-9",
+    }
+
+    # job-0 completes and is removed from worker 2's assignations
+    jobs_store.update_job(
+        session=session,
+        name="job-0",
+        cursor="10",
+        completed_at=utcnow(),
+        error=None,
+    )
+    session.commit()
+
+    resp = client.post("/api/lock", json={"worker_id": "worker-2"})
+    assert resp.status_code == 200
+    assert ids(resp) == {
+        "job-1",
+        "job-2",
+        "job-3",
+        "job-4",
+        "job-5",
+        "job-6",
+        "job-7",
+        "job-8",
+        "job-9",
+        "job-10",
     }
 
 

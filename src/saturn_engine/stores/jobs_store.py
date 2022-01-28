@@ -19,6 +19,7 @@ def create_job(
     job_definition_name: str,
     completed_at: Optional[datetime] = None,
     started_at: Optional[datetime] = None,
+    error: Optional[str] = None,
 ) -> Job:
     job = Job(
         name=name,
@@ -26,6 +27,7 @@ def create_job(
         job_definition_name=job_definition_name,
         completed_at=completed_at,
         started_at=started_at,
+        error=error,
     )
     session.add(job)
     return job

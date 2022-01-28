@@ -40,12 +40,14 @@ class Job(Base):
         job_definition_name: str,
         completed_at: Optional[datetime] = None,
         started_at: Optional[datetime] = None,
+        error: Optional[str] = None,
     ) -> None:
         self.name = name
         self.queue_name = queue_name
         self.job_definition_name = job_definition_name
         self.completed_at = completed_at
         self.started_at = started_at or utcnow()
+        self.error = error
 
     def as_core_item(self) -> JobItem:
         return JobItem(
