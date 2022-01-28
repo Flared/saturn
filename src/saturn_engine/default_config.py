@@ -44,3 +44,4 @@ class config(SaturnConfig):
         static_definitions_directory: str = os.environ.get(
             "SATURN_STATIC_DEFINITIONS_DIR", "/opt/saturn/definitions"
         )
+        work_items_per_worker = 10

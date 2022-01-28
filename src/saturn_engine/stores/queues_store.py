@@ -2,7 +2,6 @@ import datetime
 
 from sqlalchemy import or_
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload
 
 from saturn_engine.database import AnySession
 from saturn_engine.database import AnySyncSession
@@ -30,9 +29,11 @@ def get_assigned_queues(
         session.execute(
             select(Queue)
             .join(Queue.job)
-            .where(Queue.assigned_to == worker_id)
-            .where(Queue.assigned_at >= assigned_after)
-            .where(Job.completed_at == None)  # noqa: E711
+            .where(
+                Queue.assigned_to == worker_id,
+                Queue.assigned_at >= assigned_after,
+                Job.completed_at.is_(None),
+            )
             .order_by(Queue.name)
         )
         .scalars()
@@ -50,14 +51,13 @@ def get_unassigned_queues(
     unassigned_queues: list[Queue] = (
         session.execute(
             select(Queue)
-            .options(
-                joinedload(Queue.job),
-            )
+            .join(Queue.job)
             .where(
                 or_(
                     Queue.assigned_at.is_(None),
                     Queue.assigned_at < assigned_before,
-                )
+                ),
+                Job.completed_at.is_(None),
             )
             .limit(limit)
         )
