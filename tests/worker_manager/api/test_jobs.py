@@ -412,6 +412,18 @@ spec:
     assert resp.status_code == 200
     assert ids(resp) == {"test"}
 
+    # Fail the job without completing it.
+    resp = client.put(
+        f"/api/jobs/{job.name}",
+        json={
+            "cursor": "3",
+            "error": "ValueError('oops')",
+        },
+    )
+    assert resp.status_code == 400
+    assert resp.json
+    assert resp.json["error"]["code"] == "CANNOT_ERROR_UNCOMPLETED_JOB"
+
     # Fail the job
     resp = client.put(
         f"/api/jobs/{job.name}",

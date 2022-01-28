@@ -2,6 +2,7 @@ from typing import Optional
 
 from datetime import datetime
 
+from sqlalchemy import CheckConstraint
 from sqlalchemy import Column
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped
@@ -18,6 +19,12 @@ from .types import UTCDateTime
 
 class Job(Base):
     __tablename__ = "jobs"
+    __table_args__ = (
+        CheckConstraint(
+            "(error IS NULL) OR (error IS NOT NULL AND completed_at IS NOT NULL)",
+            name="jobs_error_must_also_be_completed",
+        ),
+    )
 
     name: Mapped[str] = Column(Text, primary_key=True)
     cursor = Column(Text, nullable=True)
