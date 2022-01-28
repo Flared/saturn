@@ -8,6 +8,7 @@ from saturn_engine.core.api import UpdateResponse
 from saturn_engine.database import session_scope
 from saturn_engine.stores import jobs_store
 from saturn_engine.utils.flask import Json
+from saturn_engine.utils.flask import abort
 from saturn_engine.utils.flask import check_found
 from saturn_engine.utils.flask import jsonify
 from saturn_engine.utils.flask import marshall_request
@@ -39,6 +40,11 @@ def get_job(job_name: str) -> Json[JobResponse]:
 @bp.route("/<string:job_name>", methods=("PUT",))
 def update_job(job_name: str) -> Json[UpdateResponse]:
     update_input = marshall_request(JobInput)
+    if update_input.error and not update_input.completed_at:
+        abort(
+            http_code=400,
+            error_code="CANNOT_ERROR_UNCOMPLETED_JOB",
+        )
     with session_scope() as session:
         jobs_store.update_job(
             job_name,
