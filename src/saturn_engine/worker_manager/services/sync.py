@@ -54,3 +54,5 @@ def sync_jobs(
                     # If the last job was an error, we resume from where we were.
                     if last_job and last_job.error:
                         job.cursor = last_job.cursor
+
+                    session.commit()
