@@ -30,7 +30,7 @@ class Job(Base):
     cursor = Column(Text, nullable=True)
     completed_at: Mapped[Optional[datetime]] = Column(UTCDateTime, nullable=True)  # type: ignore[assignment]  # noqa: B950
     started_at: Mapped[datetime] = Column(UTCDateTime, nullable=False)  # type: ignore[assignment]  # noqa: B950
-    queue_name = Column(Text, ForeignKey("queues.name"), nullable=False)
+    queue_name: Mapped[str] = Column(Text, ForeignKey("queues.name"), nullable=False)
     error = Column(Text, nullable=True)
     queue: "Queue" = relationship(
         "Queue",

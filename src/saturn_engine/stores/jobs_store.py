@@ -9,6 +9,7 @@ from sqlalchemy.orm import joinedload
 from saturn_engine.database import AnySession
 from saturn_engine.database import AnySyncSession
 from saturn_engine.models import Job
+from saturn_engine.stores import queues_store
 
 
 def create_job(
@@ -69,6 +70,12 @@ def update_job(
         stmt = stmt.values(completed_at=completed_at)
     if error:
         stmt = stmt.values(error=error)
+
+    if completed_at:
+        job = get_job(session=session, name=name)
+        if not job:
+            raise Exception("Updating unknown job")
+        queues_store.disable_queue(name=job.queue_name, session=session)
 
     if stmt is noop_stmt:
         return
