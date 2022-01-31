@@ -39,7 +39,14 @@ def all_extras(session: Session) -> str:
 def tests(session: Session) -> None:
     args = session.posargs
     session.install(".[worker-manager,structlog]", *tests_packages)
-    session.run("pytest", "-vv", *args, env={"PY_IGNORE_IMPORTMISMATCH": "1"})
+    session.run(
+        "pytest",
+        "-vv",
+        "-m",
+        "not rabbitmq",
+        *args,
+        env={"PY_IGNORE_IMPORTMISMATCH": "1"},
+    )
 
 
 @nox_session(python=python_all_versions)
@@ -54,7 +61,22 @@ def tests_worker(session: Session) -> None:
     """Worker tests must pass without installing the worker-manager extra."""
     args = session.posargs
     session.install(".", *tests_packages)
-    session.run("pytest", "tests/worker", *args)
+    session.run("pytest", "tests/worker", "-m", "not rabbitmq", *args)
+
+
+@nox_session(python=python_all_versions)
+def tests_rabbitmq(session: Session) -> None:
+    """Tests the rabbitmq"""
+    args = session.posargs
+    session.install(".", "flask", *tests_packages)
+    session.run(
+        "pytest",
+        "-vv",
+        "-m",
+        "rabbitmq",
+        *args,
+        env={"PY_IGNORE_IMPORTMISMATCH": "1"},
+    )
 
 
 @nox_session(python=python_tool_version)
