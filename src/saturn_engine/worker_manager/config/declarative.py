@@ -10,6 +10,7 @@ from saturn_engine.utils.declarative_config import load_uncompiled_objects_from_
 from saturn_engine.utils.options import fromdict
 
 from .declarative_inventory import Inventory
+from .declarative_job import Job
 from .declarative_job_definition import JobDefinition
 from .declarative_resource import Resource
 from .declarative_topic_item import TopicItem
@@ -40,6 +41,10 @@ def compile_static_definitions(
         definitions.job_definitions[
             job_definition.metadata.name
         ] = job_definition.to_core_object(definitions)
+
+    for uncompiled_job in objects_by_kind.pop("SaturnJob", list()):
+        job_data: Job = fromdict(uncompiled_job.data, Job)
+        definitions.jobs[job_data.metadata.name] = job_data.to_core_object(definitions)
 
     for uncompiled_resource in objects_by_kind.pop("SaturnResource", list()):
         resource: Resource = fromdict(uncompiled_resource.data, Resource)

@@ -171,3 +171,88 @@ spec:
 
     assert len(static_definitions.job_definitions) == 1
     assert len(static_definitions.inventories) == 1
+
+
+def test_load_job() -> None:
+    job_definition_str: str = """
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnInventory
+metadata:
+  name: test-inventory
+spec:
+  type: testtype
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJob
+metadata:
+  name: test-job
+spec:
+  name: test-job-spec
+  input:
+    inventory: test-inventory
+
+  pipeline:
+    name: something.saturn.pipelines.aa.bb
+    resources: {}
+"""
+    static_definitions = load_definitions_from_str(job_definition_str)
+
+    assert len(static_definitions.jobs) == 1
+    assert len(static_definitions.inventories) == 1
+    assert len(static_definitions.job_definitions) == 0
+    assert len(static_definitions.topics) == 0
+    assert (
+        static_definitions.jobs["test-job"].pipeline.info.name
+        == "something.saturn.pipelines.aa.bb"
+    )
+
+
+def test_load_jobs() -> None:
+    job_definition_str: str = """
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnInventory
+metadata:
+  name: test-inventory
+spec:
+  type: testtype
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJob
+metadata:
+  name: test-job
+spec:
+  name: test-job-spec
+  input:
+    inventory: test-inventory
+
+  pipeline:
+    name: something.saturn.pipelines.aa.bb
+    resources: {}
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJob
+metadata:
+  name: test-job-2
+spec:
+  name: test-job-spec
+  input:
+    inventory: test-inventory
+
+  pipeline:
+    name: something.saturn.pipelines.aa.bb.cc
+    resources: {}
+"""
+    static_definitions = load_definitions_from_str(job_definition_str)
+
+    assert len(static_definitions.jobs) == 2
+    assert len(static_definitions.inventories) == 1
+    assert len(static_definitions.job_definitions) == 0
+    assert len(static_definitions.topics) == 0
+    assert (
+        static_definitions.jobs["test-job"].pipeline.info.name
+        == "something.saturn.pipelines.aa.bb"
+    )
+    assert (
+        static_definitions.jobs["test-job-2"].pipeline.info.name
+        == "something.saturn.pipelines.aa.bb.cc"
+    )
