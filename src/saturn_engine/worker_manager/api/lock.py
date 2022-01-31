@@ -9,6 +9,7 @@ from saturn_engine.core.api import LockInput
 from saturn_engine.core.api import LockResponse
 from saturn_engine.database import session_scope
 from saturn_engine.models.queue import Queue
+from saturn_engine.stores import jobs_store
 from saturn_engine.stores import queues_store
 from saturn_engine.utils.flask import Json
 from saturn_engine.utils.flask import jsonify
@@ -62,8 +63,15 @@ def post_lock() -> Json[LockResponse]:
                     )
                 )
 
-            for item in assigned_items:
-                item.join_definitions(current_app.saturn.static_definitions)
+            for item in assigned_items.copy():
+                try:
+                    item.join_definitions(current_app.saturn.static_definitions)
+                except Exception as e:
+                    if item.job:
+                        jobs_store.set_failed(
+                            item.job.name, session=session, error=repr(e)
+                        )
+                    assigned_items.remove(item)
 
             # Collect resource for assigned work
             static_definitions = current_app.saturn.static_definitions

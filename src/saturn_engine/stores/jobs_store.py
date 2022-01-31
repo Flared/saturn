@@ -10,6 +10,7 @@ from saturn_engine.database import AnySession
 from saturn_engine.database import AnySyncSession
 from saturn_engine.models import Job
 from saturn_engine.stores import queues_store
+from saturn_engine.utils import utcnow
 
 
 def create_job(
@@ -58,10 +59,10 @@ def get_last_job(*, session: AnySyncSession, job_definition_name: str) -> Option
 def update_job(
     name: str,
     *,
-    cursor: Optional[str],
-    completed_at: Optional[datetime],
-    error: Optional[str],
     session: AnySyncSession,
+    cursor: Optional[str] = None,
+    completed_at: Optional[datetime] = None,
+    error: Optional[str] = None,
 ) -> None:
     noop_stmt = stmt = update(Job).where(Job.name == name)
     if cursor:
@@ -81,3 +82,15 @@ def update_job(
         return
 
     session.execute(stmt)
+
+
+def set_failed(
+    name: str,
+    *,
+    session: AnySyncSession,
+    error: str,
+    completed_at: Optional[datetime] = None,
+) -> None:
+    if completed_at is None:
+        completed_at = utcnow()
+    update_job(name, session=session, error=error, completed_at=completed_at)

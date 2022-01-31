@@ -200,3 +200,36 @@ def test_api_lock_with_resources(
     assert resp.json
     assert resp.json["items"][0]["name"] == "test"
     assert resp.json["resources"][0]["name"] == "test"
+
+
+def test_ignore_bad_jobs(
+    client: FlaskClient,
+    session: Session,
+    frozen_time: FreezeTime,
+    queue_item_maker: Callable[..., api.QueueItem],
+    static_definitions: StaticDefinitions,
+    fake_job_definition: api.JobDefinition,
+) -> None:
+    queues_store.create_queue(session=session, name="bogus")
+    jobs_store.create_job(
+        session=session,
+        name="bogus",
+        queue_name="bogus",
+        job_definition_name="do-not-exists",
+    )
+
+    queues_store.create_queue(session=session, name="good")
+    jobs_store.create_job(
+        session=session,
+        name="good",
+        queue_name="good",
+        job_definition_name=fake_job_definition.name,
+    )
+    session.commit()
+
+    # Try to lock the queue_item, but job definition do not exists, so skipped.
+    resp = client.post("/api/lock", json={"worker_id": "worker-1"})
+    assert resp.status_code == 200
+    assert resp.json
+    assert len(resp.json["items"]) == 1
+    assert resp.json["items"][0]["name"] == "good"
