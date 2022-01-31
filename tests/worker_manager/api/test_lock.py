@@ -1,5 +1,4 @@
 from typing import Callable
-from typing import Optional
 
 from datetime import datetime
 from datetime import timedelta
@@ -47,8 +46,6 @@ def test_api_lock(
 
     def create_job(
         name: str,
-        completed_at: Optional[datetime] = None,
-        error: Optional[str] = None,
     ) -> Job:
         queue = create_queue(name)
         job = jobs_store.create_job(
@@ -56,8 +53,6 @@ def test_api_lock(
             session=session,
             queue_name=queue.name,
             job_definition_name=fake_job_definition.name,
-            completed_at=completed_at,
-            error=error,
         )
         return job
 
@@ -66,8 +61,15 @@ def test_api_lock(
 
     # Create a completed job
     i = i + 1
-    create_job(f"job-{i}", completed_at=utcnow())
-
+    create_job(f"job-{i}")
+    session.commit()
+    jobs_store.update_job(
+        session=session,
+        name=f"job-{i}",
+        cursor="10",
+        completed_at=utcnow(),
+        error=None,
+    )
     session.commit()
 
     expected_items_worker1 = {

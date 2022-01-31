@@ -2,10 +2,11 @@ import datetime
 
 from sqlalchemy import or_
 from sqlalchemy import select
+from sqlalchemy import update
+from sqlalchemy.orm import joinedload
 
 from saturn_engine.database import AnySession
 from saturn_engine.database import AnySyncSession
-from saturn_engine.models import Job
 from saturn_engine.models import Queue
 
 
@@ -28,11 +29,11 @@ def get_assigned_queues(
     assigned_jobs: list[Queue] = (
         session.execute(
             select(Queue)
-            .join(Queue.job)
+            .options(joinedload(Queue.job))
             .where(
+                Queue.enabled.is_(True),
                 Queue.assigned_to == worker_id,
                 Queue.assigned_at >= assigned_after,
-                Job.completed_at.is_(None),
             )
             .order_by(Queue.name)
         )
@@ -51,13 +52,13 @@ def get_unassigned_queues(
     unassigned_queues: list[Queue] = (
         session.execute(
             select(Queue)
-            .join(Queue.job)
+            .options(joinedload(Queue.job))
             .where(
+                Queue.enabled.is_(True),
                 or_(
                     Queue.assigned_at.is_(None),
                     Queue.assigned_at < assigned_before,
                 ),
-                Job.completed_at.is_(None),
             )
             .limit(limit)
         )
@@ -65,3 +66,11 @@ def get_unassigned_queues(
         .all()
     )
     return unassigned_queues
+
+
+def disable_queue(
+    *,
+    name: str,
+    session: AnySyncSession,
+) -> None:
+    session.execute(update(Queue).where(Queue.name == name).values(enabled=False))

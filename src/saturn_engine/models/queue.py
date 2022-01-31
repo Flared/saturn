@@ -2,8 +2,11 @@ from typing import Optional
 
 import dataclasses
 
+from sqlalchemy import Boolean
 from sqlalchemy import Column
+from sqlalchemy import Index
 from sqlalchemy import Text
+from sqlalchemy import text
 from sqlalchemy.orm import Mapped
 from sqlalchemy.sql.sqltypes import DateTime
 
@@ -15,12 +18,20 @@ from .base import Base
 
 class Queue(Base):
     __tablename__ = "queues"
+    __table_args__ = (
+        Index(
+            "queues_enabled_assigned_at",
+            text("assigned_at"),
+            postgresql_where="enabled",
+        ),
+    )
 
     name: Mapped[str] = Column(Text, primary_key=True)
     assigned_at = Column(DateTime(timezone=True))
     assigned_to = Column(Text)
     job: Optional["Job"]
     _queue_item: Optional[QueueItem] = None
+    enabled = Column(Boolean, default=True, nullable=False)
 
     @property
     def queue_item(self) -> QueueItem:
