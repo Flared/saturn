@@ -40,8 +40,6 @@ metadata:
 spec:
   minimalInterval: "@weekly"
   template:
-    name: example-job
-
     input:
       inventory: static-inventory
 

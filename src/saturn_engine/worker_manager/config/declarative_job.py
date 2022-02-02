@@ -30,17 +30,17 @@ class JobOutput:
 
 @dataclasses.dataclass
 class JobSpec:
-    name: str
     input: JobInput
     pipeline: PipelineInfo
     output: dict[str, list[JobOutput]] = dataclasses.field(default_factory=dict)
 
     def to_core_object(
         self,
+        name: str,
         static_definitions: StaticDefinitions,
     ) -> api.QueueItem:
         return api.QueueItem(
-            name=self.name,
+            name=name,
             input=self.input.to_core_object(static_definitions),
             output={
                 key: [t.to_core_object(static_definitions) for t in topics]
@@ -61,15 +61,4 @@ class Job(BaseObject):
         self,
         static_definitions: StaticDefinitions,
     ) -> api.QueueItem:
-        return api.QueueItem(
-            name=self.metadata.name,
-            input=self.spec.input.to_core_object(static_definitions),
-            output={
-                key: [t.to_core_object(static_definitions) for t in topics]
-                for key, topics in self.spec.output.items()
-            },
-            pipeline=api.QueuePipeline(
-                info=self.spec.pipeline.to_core_object(),
-                args=dict(),
-            ),
-        )
+        return self.spec.to_core_object(self.metadata.name, static_definitions)
