@@ -41,12 +41,18 @@ class Queue(Base):
 
     def join_definitions(self, static_definitions: StaticDefinitions) -> None:
         if self.job:
-            self._queue_item = dataclasses.replace(
-                static_definitions.job_definitions[
-                    self.job.job_definition_name
-                ].template,
-                name=self.name,
-            )
+            if self.job.job_definition_name is not None:
+                self._queue_item = dataclasses.replace(
+                    static_definitions.job_definitions[
+                        self.job.job_definition_name
+                    ].template,
+                    name=self.name,
+                )
+            else:
+                self._queue_item = dataclasses.replace(
+                    static_definitions.jobs[self.job.name],
+                    name=self.name,
+                )
         else:
             raise NotImplementedError("Only support Job queue")
 

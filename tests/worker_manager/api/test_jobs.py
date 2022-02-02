@@ -455,3 +455,67 @@ spec:
     resp = client.get(f"/api/jobs/{new_job_name}")
     assert resp.status_code == 200
     assert resp.json and resp.json["data"]["cursor"] == "3"
+
+
+def test_instant_jobs_sync(
+    client: FlaskClient,
+    static_definitions: StaticDefinitions,
+    session: Session,
+    frozen_time: FreezeTime,
+) -> None:
+    """test for jobs that don't have an interval (instantaneous jobs)"""
+
+    new_definitions_str: str = """
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnTopic
+metadata:
+  name: test-topic
+spec:
+  type: RabbitMQ
+  options: {}
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnInventory
+metadata:
+  name: test-inventory
+spec:
+  type: testtype
+  options: {}
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJob
+metadata:
+  name: test-job
+spec:
+  name: test-job-spec
+  input:
+    inventory: test-inventory
+  output:
+    default:
+      - topic: test-topic
+  pipeline:
+    name: something.saturn.pipelines.aa.bb
+    resources: {"api_key": "GithubApiKey"}
+"""
+    new_definitions = load_definitions_from_str(new_definitions_str)
+    static_definitions.jobs = new_definitions.jobs
+
+    # Trigger sync
+    resp = client.post("/api/jobs/sync")
+    assert resp.status_code == 200
+    assert resp.json == {}
+
+    # Make sure our job is here
+    resp = client.get("/api/jobs")
+    assert resp.status_code == 200
+    assert resp.json == {
+        "items": [
+            {
+                "completed_at": None,
+                "started_at": "2018-01-02T00:00:00+00:00",
+                "cursor": None,
+                "error": None,
+                "name": "test-job",
+            }
+        ]
+    }
