@@ -24,7 +24,7 @@ class JobDefinition(BaseObject):
         return api.JobDefinition(
             name=self.metadata.name,
             template=self.spec.template.to_core_object(
-                static_definitions,
+                self.metadata.name, static_definitions
             ),
             minimal_interval=self.spec.minimalInterval,
         )

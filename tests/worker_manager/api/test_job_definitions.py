@@ -39,8 +39,6 @@ metadata:
 spec:
   minimalInterval: "@weekly"
   template:
-    name: test
-
     input:
       inventory: test-inventory
 
@@ -69,7 +67,7 @@ spec:
                             "type": "testtype",
                         },
                     },
-                    "name": "test",
+                    "name": "test-job-definition",
                     "output": {
                         "default": [
                             {"name": "test-topic", "options": {}, "type": "RabbitMQ"}

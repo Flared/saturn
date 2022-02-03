@@ -57,8 +57,6 @@ metadata:
 spec:
   minimalInterval: "@weekly"
   template:
-    name: test
-
     input:
       inventory: test-inventory
 
@@ -102,8 +100,6 @@ metadata:
 spec:
   minimalInterval: "@weekly"
   template:
-    name: test
-
     input:
       inventory: test-inventory
 
@@ -150,8 +146,6 @@ metadata:
 spec:
   minimalInterval: "@weekly"
   template:
-    name: test
-
     input:
       inventory: test-inventory
 
@@ -187,7 +181,6 @@ kind: SaturnJob
 metadata:
   name: test-job
 spec:
-  name: test-job-spec
   input:
     inventory: test-inventory
 
@@ -221,7 +214,6 @@ kind: SaturnJob
 metadata:
   name: test-job
 spec:
-  name: test-job-spec
   input:
     inventory: test-inventory
 
@@ -234,7 +226,6 @@ kind: SaturnJob
 metadata:
   name: test-job-2
 spec:
-  name: test-job-spec
   input:
     inventory: test-inventory
 

@@ -180,7 +180,6 @@ metadata:
 spec:
   minimalInterval: "@weekly"
   template:
-    name: test
     input:
       inventory: test-inventory
     output:
@@ -197,7 +196,6 @@ metadata:
 spec:
   minimalInterval: "@weekly"
   template:
-    name: test
     input:
       inventory: test-inventory
     output:
@@ -214,7 +212,6 @@ metadata:
 spec:
   minimalInterval: "@weekly"
   template:
-    name: test
     input:
       inventory: test-inventory
     output:
@@ -231,7 +228,6 @@ metadata:
 spec:
   minimalInterval: "@weekly"
   template:
-    name: test
     input:
       inventory: test-inventory
     output:
@@ -387,7 +383,6 @@ metadata:
 spec:
   minimalInterval: "@weekly"
   template:
-    name: test
     input:
       inventory: test-inventory
     pipeline:
