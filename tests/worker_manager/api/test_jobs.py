@@ -452,13 +452,13 @@ spec:
     assert resp.json and resp.json["data"]["cursor"] == "3"
 
 
-def test_instant_jobs_sync(
+def test_saturn_jobs_sync(
     client: FlaskClient,
     static_definitions: StaticDefinitions,
     session: Session,
     frozen_time: FreezeTime,
 ) -> None:
-    """test for jobs that don't have an interval (instantaneous jobs)"""
+    """test for jobs that don't have an interval (saturn jobs)"""
 
     new_definitions_str: str = """
 apiVersion: saturn.flared.io/v1alpha1
@@ -482,7 +482,6 @@ kind: SaturnJob
 metadata:
   name: test-job
 spec:
-  name: test-job-spec
   input:
     inventory: test-inventory
   output:
