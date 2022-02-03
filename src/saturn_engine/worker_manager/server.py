@@ -30,10 +30,12 @@ def get_app(
     from .api.jobs import bp as bp_jobs
     from .api.lock import bp as bp_lock
     from .api.status import bp as bp_status
+    from .api.topics import bp as bp_topics
 
     app.register_blueprint(bp_status)
     app.register_blueprint(bp_jobs)
     app.register_blueprint(bp_job_definitions)
+    app.register_blueprint(bp_topics)
     app.register_blueprint(bp_lock)
     app.register_blueprint(bp_inventories)
 
