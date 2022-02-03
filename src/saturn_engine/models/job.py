@@ -37,14 +37,14 @@ class Job(Base):
         uselist=False,
         backref=backref("job", uselist=False),
     )
-    job_definition_name: Mapped[str] = Column(Text, nullable=False)
+    job_definition_name: Mapped[Optional[str]] = Column(Text, nullable=True)
 
     def __init__(
         self,
         *,
         name: str,
         queue_name: str,
-        job_definition_name: str,
+        job_definition_name: Optional[str] = None,
         completed_at: Optional[datetime] = None,
         started_at: Optional[datetime] = None,
         error: Optional[str] = None,

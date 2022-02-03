@@ -20,6 +20,21 @@ def sync_jobs(
     if not _SYNC_LOCK.locked():
         with _SYNC_LOCK:
             with session_scope() as session:
+                # Jobs with no interval
+                for saturn_job in static_definitions.jobs.values():
+                    # Check if job exists and create if not
+                    existing_job = jobs_store.get_job(saturn_job.name, session)
+                    if not existing_job:
+                        job_queue = queues_store.create_queue(
+                            session=session, name=saturn_job.name
+                        )
+                        jobs_store.create_job(
+                            name=saturn_job.name,
+                            session=session,
+                            queue_name=job_queue.name,
+                        )
+
+                # Jobs ran at an interval
                 for job_definition in static_definitions.job_definitions.values():
                     last_job = jobs_store.get_last_job(
                         session=session,
