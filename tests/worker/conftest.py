@@ -27,6 +27,7 @@ from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources_manager import ResourcesManager
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.manager import ServicesManager
+from saturn_engine.worker.services.rabbitmq import RabbitMQService
 from saturn_engine.worker.topics import Topic
 from saturn_engine.worker.topics.memory import reset as reset_memory_queues
 from saturn_engine.worker.work_manager import WorkManager
@@ -166,3 +167,14 @@ class FakeResource(Resource):
 @pytest.fixture
 def fake_resource_class() -> str:
     return __name__ + "." + FakeResource.__name__
+
+
+@pytest.fixture
+async def rabbitmq_service(services_manager: ServicesManager) -> RabbitMQService:
+    services_manager._load_service(RabbitMQService)
+    _rabbitmq_service = services_manager.services.rabbitmq
+    try:
+        await _rabbitmq_service.connection
+        return _rabbitmq_service
+    except Exception:
+        raise pytest.skip("No connection to RabbmitMQ server.") from None
