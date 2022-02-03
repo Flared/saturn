@@ -26,7 +26,7 @@ class JobStoreService(Service["JobStoreService.Services", None]):
         if klass == "ApiJobStore":
             store = ApiJobStore(
                 http_client=self.services.http_client.session,
-                base_url=self.services.config.c.worker.worker_manager_url,
+                base_url=self.services.config.c.worker_manager_url,
                 job_name=queue.name,
             )
             self.api_stores.add(store)

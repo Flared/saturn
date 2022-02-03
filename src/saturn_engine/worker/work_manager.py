@@ -57,7 +57,7 @@ class WorkManager:
         http_client = services.cast_service(HttpClient)
         self.client: WorkerManagerClient = client or WorkerManagerClient(
             http_client=http_client.session,
-            base_url=services.s.config.c.worker.worker_manager_url,
+            base_url=services.s.config.c.worker_manager_url,
         )
         self.worker_items: WorkerItems = {}
         self.worker_resources: dict[str, ResourceData] = {}
