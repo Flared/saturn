@@ -88,9 +88,6 @@ filterwarnings = [
   "ignore:distutils Version classes are deprecated.:DeprecationWarning",
   "ignore::marshmallow.warnings.RemovedInMarshmallow4Warning",
 ]
-markers = [
-  "rabbitmq: Uses rabbitmq-server from bin/start_local_rabbitmq_server"
-]
 
 [tool.isort]
 profile = "black"

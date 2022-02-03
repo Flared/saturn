@@ -4,7 +4,6 @@ from collections.abc import Iterator
 import asyncstdlib as alib
 import pytest
 
-from saturn_engine.config import Config
 from saturn_engine.core import TopicMessage
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.services.rabbitmq import RabbitMQService
@@ -20,26 +19,21 @@ def event_loop() -> Iterator[asyncio.AbstractEventLoop]:
 
 
 @pytest.mark.asyncio
-@pytest.mark.rabbitmq
-async def test_rabbitmq_publish(config: Config) -> None:
-    # Create and open our services manager
-    test_svc_mgr = ServicesManager(config)
-    test_svc_mgr._load_service(RabbitMQService)
-
-    await test_svc_mgr.open()
-
+async def test_rabbitmq_publish(
+    rabbitmq_service: RabbitMQService, services_manager: ServicesManager
+) -> None:
     # Create our test queue and publisher
     queue1 = RabbitMQTopic(
-        RabbitMQTopic.Options("test_queue1", False, True), test_svc_mgr.services
+        RabbitMQTopic.Options("test_queue1", False, True), services_manager.services
     )
     queue2 = RabbitMQTopic(
-        RabbitMQTopic.Options("test_queue2", False, True), test_svc_mgr.services
+        RabbitMQTopic.Options("test_queue2", False, True), services_manager.services
     )
     publisher1 = RabbitMQTopic(
-        RabbitMQTopic.Options("test_queue1", False, True), test_svc_mgr.services
+        RabbitMQTopic.Options("test_queue1", False, True), services_manager.services
     )
     publisher2 = RabbitMQTopic(
-        RabbitMQTopic.Options("test_queue2", False, True), test_svc_mgr.services
+        RabbitMQTopic.Options("test_queue2", False, True), services_manager.services
     )
 
     # Create an asyncgenerator for our messages
@@ -63,4 +57,3 @@ async def test_rabbitmq_publish(config: Config) -> None:
     # Close our connections
     await queue1generator.aclose()
     await queue2generator.aclose()
-    await test_svc_mgr.close()
