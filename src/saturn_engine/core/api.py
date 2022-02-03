@@ -81,6 +81,11 @@ class JobDefinitionsResponse(ListResponse[JobDefinition]):
 
 
 @dataclasses.dataclass
+class TopicsResponse(ListResponse[TopicItem]):
+    items: list[TopicItem]
+
+
+@dataclasses.dataclass
 class InventoriesResponse(ListResponse[InventoryItem]):
     items: list[InventoryItem]
 
