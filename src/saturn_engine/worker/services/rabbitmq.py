@@ -1,8 +1,6 @@
 import aio_pika
 import asyncstdlib as alib
 
-from saturn_engine.utils import get_own_attr
-
 from . import MinimalService
 
 
@@ -14,6 +12,5 @@ class RabbitMQService(MinimalService):
         return await aio_pika.connect_robust(self.services.config.c.rabbitmq.url)
 
     async def close(self) -> None:
-        connection = get_own_attr(self, "connection", None)
-        if connection is not None:
-            await (await connection).close()
+        if "connection" in self.__dict__:
+            await (await self.connection).close()
