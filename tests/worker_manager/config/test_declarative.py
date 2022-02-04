@@ -40,7 +40,7 @@ kind: SaturnTopic
 metadata:
   name: test-topic
 spec:
-  type: RabbitMQ
+  type: RabbitMQTopic
 ---
 apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnInventory
@@ -116,7 +116,7 @@ kind: SaturnTopic
 metadata:
   name: test-topic
 spec:
-  type: RabbitMQ
+  type: RabbitMQTopic
   options: {}
 ---
 apiVersion: saturn.flared.io/v1alpha1
