@@ -1,3 +1,6 @@
+from typing import Optional
+from typing import Union
+
 import dataclasses
 
 from saturn_engine.core import api
@@ -8,13 +11,23 @@ from saturn_engine.worker_manager.config.static_definitions import StaticDefinit
 
 @dataclasses.dataclass
 class JobInput:
-    inventory: str
+    inventory: Optional[str]
+    topic: Optional[str]
+
+    def __post_init__(self) -> None:
+        if not self.inventory and not self.topic:
+            raise Exception("JobInput must specify one of inventory or topic")
 
     def to_core_object(
         self,
         static_definitions: StaticDefinitions,
-    ) -> api.InventoryItem:
-        return static_definitions.inventories[self.inventory]
+    ) -> Union[api.InventoryItem, api.TopicItem]:
+        if self.inventory:
+            return static_definitions.inventories[self.inventory]
+        elif self.topic:
+            return static_definitions.topics[self.topic]
+        else:
+            raise Exception("JobInput has no job or topic")
 
 
 @dataclasses.dataclass
