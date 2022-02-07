@@ -1,5 +1,7 @@
 import os
 
+import pytest
+
 from saturn_engine.core.api import InventoryItem
 from saturn_engine.core.api import JobDefinition
 from saturn_engine.core.api import ResourceItem
@@ -247,3 +249,22 @@ spec:
         static_definitions.jobs["test-job-2"].pipeline.info.name
         == "something.saturn.pipelines.aa.bb.cc"
     )
+
+
+def test_load_job_no_input() -> None:
+    job_definition_str: str = """
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJob
+metadata:
+  name: test-job
+spec:
+  input: {}
+  pipeline:
+    name: something.saturn.pipelines.aa.bb
+    resources: {}
+"""
+    with pytest.raises(
+        Exception,
+        match="JobInput must specify one of inventory or topic",
+    ):
+        load_definitions_from_str(job_definition_str)
