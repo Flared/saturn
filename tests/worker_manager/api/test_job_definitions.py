@@ -21,7 +21,7 @@ kind: SaturnTopic
 metadata:
   name: test-topic
 spec:
-  type: RabbitMQ
+  type: RabbitMQTopic
   options: {}
 ---
 apiVersion: saturn.flared.io/v1alpha1
@@ -70,7 +70,11 @@ spec:
                     "name": "test-job-definition",
                     "output": {
                         "default": [
-                            {"name": "test-topic", "options": {}, "type": "RabbitMQ"}
+                            {
+                                "name": "test-topic",
+                                "options": {},
+                                "type": "RabbitMQTopic",
+                            }
                         ]
                     },
                     "pipeline": {

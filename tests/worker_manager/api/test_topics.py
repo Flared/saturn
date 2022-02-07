@@ -21,7 +21,7 @@ kind: SaturnTopic
 metadata:
   name: test-topic
 spec:
-  type: RabbitMQ
+  type: RabbitMQTopic
   options: {}
 ---
 apiVersion: saturn.flared.io/v1alpha1
@@ -40,7 +40,7 @@ spec:
     assert resp.status_code == 200
     assert resp.json == {
         "items": [
-            {"name": "test-topic", "options": {}, "type": "RabbitMQ"},
+            {"name": "test-topic", "options": {}, "type": "RabbitMQTopic"},
             {
                 "name": "test-topic-2",
                 "options": {"mode": "w", "path": "-"},
