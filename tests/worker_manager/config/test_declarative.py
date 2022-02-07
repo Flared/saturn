@@ -268,3 +268,22 @@ spec:
         match="JobInput must specify one of inventory or topic",
     ):
         load_definitions_from_str(job_definition_str)
+
+    job_definition_str = """
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJob
+metadata:
+  name: test-job
+spec:
+  input:
+    topic: aa
+    inventory: bb
+  pipeline:
+    name: something.saturn.pipelines.aa.bb
+    resources: {}
+"""
+    with pytest.raises(
+        Exception,
+        match="JobInput can't specify both inventory and topic",
+    ):
+        load_definitions_from_str(job_definition_str)

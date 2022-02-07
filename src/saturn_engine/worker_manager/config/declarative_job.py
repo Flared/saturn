@@ -17,6 +17,8 @@ class JobInput:
     def __post_init__(self) -> None:
         if not self.inventory and not self.topic:
             raise Exception("JobInput must specify one of inventory or topic")
+        if self.inventory and self.topic:
+            raise Exception("JobInput can't specify both inventory and topic")
 
     def to_core_object(
         self,
