@@ -10,13 +10,13 @@ from .config import WorkerManagerConfig
 
 class config(SaturnConfig):
     env = Env(os.environ.get("SATURN_ENV", "development"))
+    worker_manager_url = os.environ.get(
+        "SATURN_WORKER_MANAGER_URL", "http://localhost:5000"
+    )
 
     class worker(WorkerConfig):
         job_store_cls = "ApiJobStore"
         executor_cls = os.environ.get("SATURN_WORKER__EXECUTOR_CLS", "ProcessExecutor")
-        worker_manager_url = os.environ.get(
-            "SATURN_WORKER_MANAGER_URL", "http://localhost:5000"
-        )
         services = [
             "saturn_engine.worker.services.loggers.ConsoleLogging",
             "saturn_engine.worker.services.loggers.Logger",
