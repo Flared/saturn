@@ -44,6 +44,7 @@ spec:
     assert queue.get_nowait().args["a"] == 0
     queue.task_done()
     assert queue.qsize() == 0
+    saturn_client.close()
 
 
 @pytest.mark.asyncio
@@ -81,3 +82,4 @@ spec:
     assert queue.get_nowait().args["a"] == 0
     queue.task_done()
     assert queue.qsize() == 0
+    await saturn_client.close()
