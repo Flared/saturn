@@ -4,6 +4,7 @@ from saturn_engine.client.saturn import SaturnClient
 from saturn_engine.client.saturn import SyncSaturnClient
 from saturn_engine.config import Config
 from saturn_engine.core import TopicMessage
+from saturn_engine.worker.topics.memory import get_queue
 from saturn_engine.worker_manager.config.declarative import load_definitions_from_str
 from saturn_engine.worker_manager.config.static_definitions import StaticDefinitions
 from tests.utils import HttpClientMock
@@ -39,6 +40,11 @@ spec:
     with pytest.raises(KeyError):
         saturn_client.publish("test-topic2", TopicMessage({"a": 0}), True)
 
+    queue = get_queue("test-topic")
+    assert queue.get_nowait().args["a"] == 0
+    queue.task_done()
+    assert queue.qsize() == 0
+
 
 @pytest.mark.asyncio
 async def test_saturn_client_publish_async(
@@ -70,3 +76,8 @@ spec:
 
     with pytest.raises(KeyError):
         assert await saturn_client.publish("test-topic2", TopicMessage({"a": 0}), True)
+
+    queue = get_queue("test-topic")
+    assert queue.get_nowait().args["a"] == 0
+    queue.task_done()
+    assert queue.qsize() == 0
