@@ -101,7 +101,6 @@ class Broker:
         """
         # Go through all queue in the Ready state.
         async for message in self.scheduler.run():
-            self.logger.debug("Processing message: %s", message)
             await self.services_manager.services.s.hooks.message_scheduled.emit(
                 message.message
             )

@@ -8,11 +8,13 @@ from saturn_engine.worker.pipeline_message import PipelineMessage
 from ..services import Services
 from . import Executor
 from .bootstrap import bootstrap_pipeline
+from .bootstrap import wrap_remote_exception
 
 
 @ray.remote
 def ray_execute(message: PipelineMessage) -> PipelineResult:
-    return bootstrap_pipeline(message)
+    with wrap_remote_exception():
+        return bootstrap_pipeline(message)
 
 
 class RayExecutor(Executor):

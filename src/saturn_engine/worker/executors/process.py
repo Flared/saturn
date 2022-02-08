@@ -8,6 +8,7 @@ from saturn_engine.worker.services import Services
 
 from . import Executor
 from .bootstrap import bootstrap_pipeline
+from .bootstrap import wrap_remote_exception
 
 
 def process_initializer() -> None:
@@ -26,8 +27,13 @@ class ProcessExecutor(Executor):
 
     async def process_message(self, message: PipelineMessage) -> PipelineResult:
         loop = asyncio.get_running_loop()
-        execute = partial(bootstrap_pipeline, message=message)
+        execute = partial(self.remote_execute, message=message)
         return await loop.run_in_executor(self.pool_executor, execute)
 
     async def close(self) -> None:
         self.pool_executor.shutdown(wait=False, cancel_futures=True)
+
+    @staticmethod
+    def remote_execute(message: PipelineMessage) -> PipelineResult:
+        with wrap_remote_exception():
+            return bootstrap_pipeline(message)
