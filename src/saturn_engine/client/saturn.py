@@ -54,6 +54,7 @@ class SaturnClient:
         http_client: Optional[aiohttp.ClientSession] = None,
     ) -> "SaturnClient":
         services_manager = ServicesManager(config)
+        await services_manager.open()
         services = services_manager.services
         topic_definitions = await cls._load_topic_definitions(
             http_client=http_client or services.cast_service(HttpClient).session,
