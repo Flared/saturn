@@ -32,6 +32,8 @@ class ServicesManager:
             self._load_service(service_cls)
 
     async def open(self) -> None:
+        if self.is_opened:
+            return
         for service in self.loaded_services:
             await service.open()
         self.is_opened = True
