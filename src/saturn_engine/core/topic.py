@@ -1,4 +1,5 @@
 from typing import Any
+from typing import Optional
 
 import dataclasses
 import uuid
@@ -6,7 +7,7 @@ import uuid
 
 @dataclasses.dataclass
 class TopicMessage:
-    args: dict[str, Any]
+    args: dict[str, Optional[Any]]
     id: str = dataclasses.field(default_factory=lambda: str(uuid.uuid4()))
 
     def extend(self, args: dict[str, object]) -> "TopicMessage":

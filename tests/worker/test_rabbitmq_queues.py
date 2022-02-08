@@ -42,7 +42,7 @@ async def test_rabbitmq_publish(
 
     # Publish our test messages on both queues and test them
     for i in range(10):
-        await publisher1.publish(TopicMessage(args={"id": i}), wait=True)
+        await publisher1.publish(TopicMessage(args={"id": i, "none": None}), wait=True)
         await publisher2.publish(TopicMessage(args={"id": i}), wait=True)
         item = await alib.anext(queue1generator)
         async with item as message:
