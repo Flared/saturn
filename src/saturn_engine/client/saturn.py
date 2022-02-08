@@ -107,3 +107,7 @@ class SyncSaturnClient:
 
     def _run_sync(self, coroutine: Coroutine[Any, Any, T]) -> T:
         return self.loop.run_until_complete(coroutine)
+
+    def close(self) -> None:
+        self.loop.run_until_complete(self._client.close())
+        self.loop.close()
