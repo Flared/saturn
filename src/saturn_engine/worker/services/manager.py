@@ -19,7 +19,7 @@ class ServicesManager:
             strict=True,
         )
         self.loaded_services: list[Service] = []
-        self.strict = config.c.worker.strict_services
+        self.strict = config.c.services_manager.strict_services
         self.is_opened = False
 
         # Some services are required for saturn to work at all.
@@ -27,7 +27,7 @@ class ServicesManager:
             self._load_service(service_cls)
 
         # Load optional services based on config.
-        for service_cls_path in config.c.worker.services:
+        for service_cls_path in config.c.services_manager.services:
             service_cls = extra_inspect.import_name(service_cls_path)
             self._load_service(service_cls)
 

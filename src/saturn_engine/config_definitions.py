@@ -12,10 +12,6 @@ class Env(Enum):
 class WorkerConfig:
     job_store_cls: str
     executor_cls: str
-    services: list[str]
-    # Check services type dependancies match loaded services. `False` value is
-    # needed to load fake services.
-    strict_services: bool
 
 
 @dataclasses.dataclass
@@ -40,9 +36,20 @@ class RayConfig:
 
 
 @dataclasses.dataclass
+class ServicesManagerConfig:
+    # Services to load
+    services: list[str]
+    # Check services type dependancies match loaded services. `False` value is
+    # needed to load fake services.
+    strict_services: bool
+
+
+@dataclasses.dataclass
 class SaturnConfig:
     env: Env
+    # Worker Manager URL used by clients and workers.
     worker_manager_url: str
+    services_manager: ServicesManagerConfig
     worker: WorkerConfig
     worker_manager: WorkerManagerConfig
     rabbitmq: RabbitMQConfig

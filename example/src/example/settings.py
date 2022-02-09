@@ -8,7 +8,7 @@ from saturn_engine.worker.services.extras.sentry import Sentry
 
 class config(SaturnConfig):
     class worker(WorkerConfig):
-        services = default_config.worker.services + [
+        services = default_config.services_manager.services + [
             "saturn_engine.worker.services.extras.sentry.Sentry",
         ]
 
