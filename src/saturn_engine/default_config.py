@@ -51,7 +51,7 @@ class config(SaturnConfig):
 
 
 class client_config(config):
-    class services_manager(ServicesManagerConfig):
+    class services_manager(config.services_manager):
         services = [
             "saturn_engine.worker.services.rabbitmq.RabbitMQService",
         ]

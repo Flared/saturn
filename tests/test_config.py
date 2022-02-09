@@ -7,6 +7,7 @@ import re
 import pytest
 
 from saturn_engine.config import Config as SaturnConfig
+from saturn_engine.config import default_client_config
 from saturn_engine.config import default_config
 from saturn_engine.utils.config import Config
 
@@ -123,4 +124,8 @@ def test_default_config() -> None:
     # Test default_config can be loaded by itself.
     config = SaturnConfig().load_object(default_config)
     assert config
-    assert True
+
+
+def test_default_client_config() -> None:
+    config = SaturnConfig().load_object(default_client_config)
+    assert config
