@@ -58,7 +58,7 @@ class FakeService(Service["FakeService.Services", "FakeService.Options"]):
 async def test_services_manager(config: Config) -> None:
     config = config.load_object(
         {
-            "worker": {
+            "services_manager": {
                 "services": [
                     get_import_name(FakeServiceWithConfig),
                     get_import_name(FakeService),
@@ -92,7 +92,7 @@ def test_services_manager_check_options(config: Config) -> None:
     # Loading a services expecting config requires config.
     config = config.load_object(
         {
-            "worker": {
+            "services_manager": {
                 "services": [
                     get_import_name(FakeServiceWithConfig),
                 ],
@@ -118,7 +118,7 @@ def test_services_manager_check_options(config: Config) -> None:
     # Cannot load a service twice.
     config = config.load_object(
         {
-            "worker": {
+            "services_manager": {
                 "services": [
                     get_import_name(FakeServiceWithConfig),
                     get_import_name(FakeServiceWithConfig),
@@ -134,7 +134,7 @@ def test_services_manager_check_services(config: Config) -> None:
     # Loading a services expecting other services require these service to be loaded.
     config = config.load_object(
         {
-            "worker": {
+            "services_manager": {
                 "services": [
                     get_import_name(FakeServiceWithServices),
                 ],
@@ -151,7 +151,7 @@ def test_services_manager_check_services(config: Config) -> None:
 
     config = config.load_object(
         {
-            "worker": {
+            "services_manager": {
                 "services": [
                     get_import_name(FakestService),
                     get_import_name(FakeServiceWithServices),
@@ -167,7 +167,7 @@ def test_services_manager_check_services(config: Config) -> None:
 
     config = config.load_object(
         {
-            "worker": {
+            "services_manager": {
                 "services": [
                     get_import_name(FakeServiceWithConfig),
                     get_import_name(FakeServiceWithServices),

@@ -4,6 +4,7 @@ from .config import Env
 from .config import RabbitMQConfig
 from .config import RayConfig
 from .config import SaturnConfig
+from .config import ServicesManagerConfig
 from .config import WorkerConfig
 from .config import WorkerManagerConfig
 
@@ -14,9 +15,7 @@ class config(SaturnConfig):
         "SATURN_WORKER_MANAGER_URL", "http://localhost:5000"
     )
 
-    class worker(WorkerConfig):
-        job_store_cls = "ApiJobStore"
-        executor_cls = os.environ.get("SATURN_WORKER__EXECUTOR_CLS", "ProcessExecutor")
+    class services_manager(ServicesManagerConfig):
         services = [
             "saturn_engine.worker.services.loggers.ConsoleLogging",
             "saturn_engine.worker.services.loggers.Logger",
@@ -24,6 +23,10 @@ class config(SaturnConfig):
             "saturn_engine.worker.services.rabbitmq.RabbitMQService",
         ]
         strict_services = True
+
+    class worker(WorkerConfig):
+        job_store_cls = "ApiJobStore"
+        executor_cls = os.environ.get("SATURN_WORKER__EXECUTOR_CLS", "ProcessExecutor")
 
     class rabbitmq(RabbitMQConfig):
         url = os.environ.get("SATURN_AMQP_URL", "amqp://127.0.0.1/")
@@ -45,3 +48,10 @@ class config(SaturnConfig):
             "SATURN_STATIC_DEFINITIONS_DIR", "/opt/saturn/definitions"
         )
         work_items_per_worker = 10
+
+
+class client_config(config):
+    class services_manager(ServicesManagerConfig):
+        services = [
+            "saturn_engine.worker.services.rabbitmq.RabbitMQService",
+        ]
