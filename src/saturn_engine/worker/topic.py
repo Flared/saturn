@@ -5,6 +5,7 @@ from typing import Union
 import abc
 import asyncio
 from collections.abc import AsyncGenerator
+from datetime import timedelta
 
 from saturn_engine.core import TopicMessage
 from saturn_engine.utils.options import OptionsSchema
@@ -25,18 +26,28 @@ class Topic(OptionsSchema):
 
 
 class BlockingTopic(Topic, abc.ABC):
-    def __init__(self, max_concurrency: int = 1):
+    def __init__(
+        self,
+        max_concurrency: int = 1,
+        sleep_time: Optional[timedelta] = None,
+    ):
         self.semaphore = asyncio.Semaphore(max_concurrency)
+        self.sleep_time: timedelta = sleep_time or timedelta(seconds=0)
 
     async def run(self) -> AsyncGenerator[TopicOutput, None]:
         while True:
-            message = await asyncio.get_event_loop().run_in_executor(
+            messages = await asyncio.get_event_loop().run_in_executor(
                 None,
                 self.run_once_blocking,
             )
-            if message is None:
+            if messages is None:
                 break
-            yield message
+
+            for message in messages:
+                yield message
+
+            if len(messages) == 0:
+                await asyncio.sleep(self.sleep_time.total_seconds())
 
     async def publish(self, message: TopicMessage, wait: bool) -> bool:
         if not wait and self.semaphore.locked():
@@ -50,7 +61,7 @@ class BlockingTopic(Topic, abc.ABC):
                 wait,
             )
 
-    def run_once_blocking(self) -> Optional[TopicOutput]:
+    def run_once_blocking(self) -> Optional[list[TopicOutput]]:
         raise NotImplementedError()
 
     def publish_blocking(self, message: TopicMessage, wait: bool) -> bool:
