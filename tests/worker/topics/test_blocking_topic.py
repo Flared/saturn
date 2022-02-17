@@ -7,6 +7,7 @@ import asyncstdlib as alib
 import pytest
 
 from saturn_engine.core import TopicMessage
+from saturn_engine.worker.topic import TopicOutput
 from saturn_engine.worker.topics import BlockingTopic
 from tests.utils import TimeForwardLoop
 
@@ -21,11 +22,18 @@ async def test_blocking_topic(event_loop: TimeForwardLoop) -> None:
             self.published: list[str] = []
             self.x = 0
 
-        def run_once_blocking(self) -> Optional[TopicMessage]:
+        def run_once_blocking(self) -> Optional[list[TopicOutput]]:
+            if self.x == 0:
+                self.x += 2
+                return [
+                    TopicMessage(id=str(1), args={}),
+                    TopicMessage(id=str(2), args={}),
+                ]
+
             self.x += 1
             if self.x == 3:
                 return None
-            return TopicMessage(id=str(self.x), args={})
+            return [TopicMessage(id=str(self.x), args={})]
 
         def publish_blocking(self, message: TopicMessage, wait: bool) -> bool:
             if message.args["block"]:
