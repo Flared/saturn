@@ -11,6 +11,9 @@ import click
 from saturn_engine.utils.declarative_config import UncompiledObject
 from saturn_engine.utils.declarative_config import load_uncompiled_objects_from_path
 from saturn_engine.utils.options import fromdict
+from saturn_engine.utils.tester.config.topic_test import TopicTest
+from saturn_engine.utils.tester.topic_test import run_saturn_topic
+from saturn_engine.utils.tester.topic_test import run_saturn_topic_test
 from saturn_engine.worker_manager.config.declarative import compile_static_definitions
 from saturn_engine.worker_manager.config.static_definitions import StaticDefinitions
 
@@ -25,6 +28,7 @@ from .pipeline_test import run_saturn_pipeline_test
 class SaturnTests:
     pipeline_tests: dict[str, PipelineTest] = dataclasses.field(default_factory=dict)
     inventory_tests: dict[str, InventoryTest] = dataclasses.field(default_factory=dict)
+    topic_tests: dict[str, TopicTest] = dataclasses.field(default_factory=dict)
 
 
 def compile_tests(uncompiled_objects: list) -> SaturnTests:
@@ -46,6 +50,10 @@ def compile_tests(uncompiled_objects: list) -> SaturnTests:
             uncompiled_inventory_test.data, InventoryTest
         )
         tests.inventory_tests[inventory_test.metadata.name] = inventory_test
+
+    for uncompiled_topic_test in objects_by_kind.pop("SaturnTopicTest", list()):
+        topic_test: TopicTest = fromdict(uncompiled_topic_test.data, TopicTest)
+        tests.topic_tests[topic_test.metadata.name] = topic_test
 
     for object_kind in objects_by_kind.keys():
         raise Exception(f"Unsupported kind {object_kind}")
@@ -82,6 +90,13 @@ def run_tests(*, static_definitions: StaticDefinitions, tests: SaturnTests) -> N
         run_saturn_inventory_test(
             static_definitions=static_definitions,
             inventory_test=inventory_test,
+        )
+
+    for topic_test in tests.topic_tests.values():
+        print(f"Running {topic_test.metadata.name}...")
+        run_saturn_topic_test(
+            static_definitions=static_definitions,
+            topic_test=topic_test,
         )
 
 
@@ -136,6 +151,28 @@ def show_inventory(topology: str, name: str, limit: int, after: Optional[str]) -
         after=after,
     ):
         pprint.pprint(item)
+
+
+@cli.command()
+@click.option(
+    "--topology",
+    type=click.Path(exists=True, dir_okay=True),
+    required=True,
+)
+@click.option("--name", type=str, required=True)
+@click.option("--limit", type=int, required=True, default=1)
+@click.option("--skip", type=int, required=True, default=0)
+def show_topic(topology: str, name: str, limit: int, skip: int) -> None:
+    static_definitions = compile_static_definitions(
+        load_uncompiled_objects_from_path(topology),
+    )
+    for message in run_saturn_topic(
+        static_definitions=static_definitions,
+        topic_name=name,
+        limit=limit,
+        skip=skip,
+    ):
+        pprint.pprint(message)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,31 @@
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnTopicTest
+metadata:
+  name: test-static-topic-1
+spec:
+  selector:
+    topic: static-topic
+  limit: 2
+  skip: 1
+  messages:
+    - id: "1"
+      args: {message: hello-1}
+    - id: "2"
+      args: {message: hello-2}
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnTopicTest
+metadata:
+  name: test-static-topic-2
+spec:
+  selector:
+    topic: static-topic
+  messages:
+    - id: "0"
+      args: {message: hello-0}
+    - id: "1"
+      args: {message: hello-1}
+    - id: "2"
+      args: {message: hello-2}
+    - id: "3"
+      args: {message: hello-3}
