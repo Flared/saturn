@@ -1,3 +1,4 @@
+import typing
 from typing import Any
 from typing import Callable
 from typing import cast
@@ -48,8 +49,21 @@ class PipelineInfo:
             if not isinstance(data, dict):
                 continue
 
-            if dataclasses.is_dataclass(parameter.annotation):
-                schema = schema_for(parameter.annotation)
+            target_type = parameter.annotation
+
+            # Support Optional[dataclass], which is very common.
+            # This does not support Union of two dataclasses yet.
+            if typing.get_origin(target_type) is typing.Union:
+                target_args = [
+                    arg
+                    for arg in typing.get_args(target_type)
+                    if not isinstance(None, arg)
+                ]
+                if len(target_args) == 1:
+                    target_type = target_args[0]
+
+            if dataclasses.is_dataclass(target_type):
+                schema = schema_for(target_type)
                 args[parameter.name] = schema.load(data)
 
 
