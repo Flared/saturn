@@ -5,7 +5,7 @@ import contextlib
 from abc import abstractmethod
 
 from saturn_engine.core import PipelineOutput
-from saturn_engine.core import PipelineResult
+from saturn_engine.core import PipelineResults
 from saturn_engine.utils.inspect import import_name
 from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.pipeline_message import PipelineMessage
@@ -22,7 +22,7 @@ class Executor:
         pass
 
     @abstractmethod
-    async def process_message(self, message: PipelineMessage) -> PipelineResult:
+    async def process_message(self, message: PipelineMessage) -> PipelineResults:
         ...
 
     async def close(self) -> None:
@@ -68,7 +68,7 @@ class ExecutorManager:
                 async with processable.context:
 
                     @self.services.hooks.message_executed.emit
-                    async def scope(message: PipelineMessage) -> PipelineResult:
+                    async def scope(message: PipelineMessage) -> PipelineResults:
                         return await self.executor.process_message(message)
 
                     try:

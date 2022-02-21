@@ -13,7 +13,7 @@ from sentry_sdk import Hub
 from sentry_sdk.utils import capture_internal_exceptions
 from sentry_sdk.utils import event_from_exception
 
-from saturn_engine.core import PipelineResult
+from saturn_engine.core import PipelineResults
 from saturn_engine.core.api import QueueItem
 from saturn_engine.utils.options import asdict
 from saturn_engine.utils.traceback_data import FrameData
@@ -92,7 +92,7 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
 
     async def on_message_executed(
         self, message: PipelineMessage
-    ) -> AsyncGenerator[None, PipelineResult]:
+    ) -> AsyncGenerator[None, PipelineResults]:
         with Hub.current.push_scope() as scope:
 
             def _event_processor(event: Event, hint: Hint) -> Event:

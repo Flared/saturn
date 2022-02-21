@@ -1,6 +1,7 @@
 import typing
 from typing import Any
 from typing import Callable
+from typing import Union
 from typing import cast
 
 import dataclasses
@@ -89,7 +90,10 @@ class ResourceUsed:
         return cls(type=resource._typename(), release_at=release_at)
 
 
+PipelineResult = Union[ResourceUsed, PipelineOutput, TopicMessage]
+
+
 @dataclasses.dataclass
-class PipelineResult:
+class PipelineResults:
     outputs: list[PipelineOutput]
     resources: list[ResourceUsed]

@@ -5,14 +5,14 @@ from collections.abc import Iterable
 from collections.abc import Iterator
 
 from saturn_engine.core import PipelineOutput
-from saturn_engine.core import PipelineResult
+from saturn_engine.core import PipelineResults
 from saturn_engine.core import ResourceUsed
 from saturn_engine.core import TopicMessage
 from saturn_engine.utils.traceback_data import TracebackData
 from saturn_engine.worker.pipeline_message import PipelineMessage
 
 
-def bootstrap_pipeline(message: PipelineMessage) -> PipelineResult:
+def bootstrap_pipeline(message: PipelineMessage) -> PipelineResults:
     logger = logging.getLogger("pipeline")
     logger.info("Executing %s", message)
     execute_result = message.execute()
@@ -45,7 +45,7 @@ def bootstrap_pipeline(message: PipelineMessage) -> PipelineResult:
         else:
             logger.error("Invalid result type: %s", result.__class__)
 
-    return PipelineResult(outputs=outputs, resources=resources)
+    return PipelineResults(outputs=outputs, resources=resources)
 
 
 class RemoteException(Exception):
