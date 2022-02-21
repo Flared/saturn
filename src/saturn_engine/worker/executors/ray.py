@@ -2,7 +2,7 @@ from typing import Any
 
 import ray
 
-from saturn_engine.core import PipelineResult
+from saturn_engine.core import PipelineResults
 from saturn_engine.worker.pipeline_message import PipelineMessage
 
 from ..services import Services
@@ -12,7 +12,7 @@ from .bootstrap import wrap_remote_exception
 
 
 @ray.remote
-def ray_execute(message: PipelineMessage) -> PipelineResult:
+def ray_execute(message: PipelineMessage) -> PipelineResults:
     with wrap_remote_exception():
         return bootstrap_pipeline(message)
 
@@ -26,5 +26,5 @@ class RayExecutor(Executor):
             options["address"] = services.config.c.ray.address
         ray.init(**options)
 
-    async def process_message(self, message: PipelineMessage) -> PipelineResult:
+    async def process_message(self, message: PipelineMessage) -> PipelineResults:
         return await ray_execute.remote(message)

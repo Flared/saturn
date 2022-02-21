@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from saturn_engine.core import PipelineResult
+from saturn_engine.core import PipelineResults
 from saturn_engine.core.api import InventoryItem
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import PipelineInfo
@@ -23,12 +23,12 @@ class FakeExecutor(Executor):
     def __init__(self) -> None:
         self.done_event = asyncio.Event()
 
-    async def process_message(self, message: PipelineMessage) -> PipelineResult:
+    async def process_message(self, message: PipelineMessage) -> PipelineResults:
         assert isinstance(message.message.args["resource"], dict)
         assert message.message.args["resource"]["data"] == "fake"
         if message.message.args["n"] == 999:
             self.done_event.set()
-        return PipelineResult(outputs=[], resources=[])
+        return PipelineResults(outputs=[], resources=[])
 
 
 def pipeline(resource: FakeResource) -> None:

@@ -3,7 +3,7 @@ from typing import Optional
 
 from collections.abc import AsyncGenerator
 
-from saturn_engine.core import PipelineResult
+from saturn_engine.core import PipelineResults
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.services.hooks import MessagePublished
 
@@ -34,7 +34,7 @@ class BaseMetricsService(Generic[TServices, TOptions], Service[TServices, TOptio
 
     async def on_message_executed(
         self, message: PipelineMessage
-    ) -> AsyncGenerator[None, PipelineResult]:
+    ) -> AsyncGenerator[None, PipelineResults]:
         params = {"pipeline": message.info.name}
         await self.incr("message.executed.before", params=params)
         try:

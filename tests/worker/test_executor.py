@@ -7,7 +7,7 @@ import pytest
 
 from saturn_engine.core import PipelineInfo
 from saturn_engine.core import PipelineOutput
-from saturn_engine.core import PipelineResult
+from saturn_engine.core import PipelineResults
 from saturn_engine.core import TopicMessage
 from saturn_engine.worker.executors import ExecutableMessage
 from saturn_engine.worker.executors import Executor
@@ -27,11 +27,11 @@ class FakeExecutor(Executor):
         self.processing = 0
         self.processed = 0
 
-    async def process_message(self, message: PipelineMessage) -> PipelineResult:
+    async def process_message(self, message: PipelineMessage) -> PipelineResults:
         self.processing += 1
         await self.execute_semaphore.acquire()
         self.processed += 1
-        return PipelineResult(
+        return PipelineResults(
             outputs=[
                 PipelineOutput(
                     channel="default", message=TopicMessage(args={"n": self.processed})

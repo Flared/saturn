@@ -2,7 +2,7 @@ import asyncio
 import concurrent.futures
 from functools import partial
 
-from saturn_engine.core import PipelineResult
+from saturn_engine.core import PipelineResults
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.services import Services
 
@@ -25,7 +25,7 @@ class ProcessExecutor(Executor):
             initializer=process_initializer
         )
 
-    async def process_message(self, message: PipelineMessage) -> PipelineResult:
+    async def process_message(self, message: PipelineMessage) -> PipelineResults:
         loop = asyncio.get_running_loop()
         execute = partial(self.remote_execute, message=message)
         return await loop.run_in_executor(self.pool_executor, execute)
@@ -34,6 +34,6 @@ class ProcessExecutor(Executor):
         self.pool_executor.shutdown(wait=False, cancel_futures=True)
 
     @staticmethod
-    def remote_execute(message: PipelineMessage) -> PipelineResult:
+    def remote_execute(message: PipelineMessage) -> PipelineResults:
         with wrap_remote_exception():
             return bootstrap_pipeline(message)

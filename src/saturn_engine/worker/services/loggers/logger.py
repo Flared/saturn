@@ -4,7 +4,7 @@ import logging
 from collections.abc import AsyncGenerator
 
 from saturn_engine.core import PipelineOutput
-from saturn_engine.core import PipelineResult
+from saturn_engine.core import PipelineResults
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import QueueItem
 from saturn_engine.worker.pipeline_message import PipelineMessage
@@ -65,7 +65,7 @@ class Logger(Service[BaseServices, "Logger.Options"]):
 
     async def on_message_executed(
         self, message: PipelineMessage
-    ) -> AsyncGenerator[None, PipelineResult]:
+    ) -> AsyncGenerator[None, PipelineResults]:
         self.message_logger.debug(
             "Executing message", extra={"data": self.message_data(message)}
         )
@@ -118,7 +118,7 @@ class Logger(Service[BaseServices, "Logger.Options"]):
             "id": message.id,
         } | ({"args": message.args} if self.options.verbose else {})
 
-    def result_data(self, results: PipelineResult) -> list[dict[str, Any]]:
+    def result_data(self, results: PipelineResults) -> list[dict[str, Any]]:
         return [self.output_data(o) for o in results.outputs]
 
     def output_data(self, output: PipelineOutput) -> dict[str, Any]:
