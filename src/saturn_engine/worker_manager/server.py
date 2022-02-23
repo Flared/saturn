@@ -48,17 +48,20 @@ def get_app(
     return app
 
 
-def init_all() -> None:
-    sync_jobs(
-        static_definitions=current_app.saturn.static_definitions,
-    )
+def init_all(app: Optional[SaturnApp] = None) -> None:
+    if app is None:
+        app = get_app()
+
+    with app.app_context():
+        create_all()
+        sync_jobs(
+            static_definitions=current_app.saturn.static_definitions,
+        )
 
 
 def main() -> None:
     app = get_app()
-    with app.app_context():
-        create_all()
-        init_all()
+    init_all(app=app)
     app.run(
         host=app.saturn.config.flask_host,
         port=app.saturn.config.flask_port,

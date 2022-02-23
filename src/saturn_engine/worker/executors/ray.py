@@ -21,6 +21,8 @@ class RayExecutor(Executor):
     def __init__(self, services: Services) -> None:
         options: dict[str, Any] = {
             "local_mode": services.config.c.ray.local,
+            "configure_logging": services.config.c.ray.enable_logging,
+            "log_to_driver": services.config.c.ray.enable_logging,
         }
         if services.config.c.ray.address:
             options["address"] = services.config.c.ray.address

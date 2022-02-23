@@ -33,6 +33,7 @@ class RabbitMQConfig:
 class RayConfig:
     local: bool
     address: str
+    enable_logging: bool
 
 
 @dataclasses.dataclass
