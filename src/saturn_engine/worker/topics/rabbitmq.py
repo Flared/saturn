@@ -39,6 +39,18 @@ class RabbitMQTopic(Topic):
     async def run(self) -> AsyncGenerator[AsyncContextManager[TopicMessage], None]:
         self.logger.info("Starting queue %s", self.options.queue_name)
         connection: aio_pika.Connection = await self.services.rabbitmq.connection
+        while True:
+            try:
+                async for message in self.run_queue(connection=connection):
+                    yield message
+            except Exception:
+                self.logger.exception("RabbitMQ topic failed")
+            else:
+                break
+
+    async def run_queue(
+        self, *, connection: aio_pika.Connection
+    ) -> AsyncGenerator[AsyncContextManager[TopicMessage], None]:
         async with connection.channel() as channel:
             self.logger.info("Processing queue %s", self.options.queue_name)
             queue = await channel.declare_queue(
