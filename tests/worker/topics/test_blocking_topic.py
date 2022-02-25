@@ -74,3 +74,25 @@ async def test_blocking_topic(event_loop: TimeForwardLoop) -> None:
     assert await publish_task2
 
     assert topic.published == ["1", "2", "4", "6"]
+
+
+@pytest.mark.asyncio
+async def test_blocking_topic_error(event_loop: TimeForwardLoop) -> None:
+    class FakeTopic(BlockingTopic):
+        def __init__(self) -> None:
+            super().__init__()
+            self.items = ["1", ValueError(), "2", ValueError()]
+
+        def run_once_blocking(self) -> Optional[list[TopicOutput]]:
+            if not self.items:
+                return None
+            item = self.items.pop(0)
+            if isinstance(item, Exception):
+                raise item
+            return [TopicMessage(id=str(item), args={})]
+
+    topic = FakeTopic()
+    assert await alib.list(topic.run()) == [
+        TopicMessage(id="1", args={}),
+        TopicMessage(id="2", args={}),
+    ]
