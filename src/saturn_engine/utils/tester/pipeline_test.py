@@ -1,6 +1,7 @@
 from saturn_engine.core import TopicMessage
+from saturn_engine.utils.hooks import ContextHook
 from saturn_engine.utils.options import asdict
-from saturn_engine.worker.executors.bootstrap import bootstrap_pipeline
+from saturn_engine.worker.executors.bootstrap import PipelineBootstrap
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker_manager.config.static_definitions import StaticDefinitions
 
@@ -24,6 +25,7 @@ def run_saturn_pipeline_test(
 
     # Execute it.
     pipeline_results: list[dict] = []
+    bootstraper = PipelineBootstrap(ContextHook())
 
     for inventory_item in pipeline_test.spec.inventory:
         pipeline_message = PipelineMessage(
@@ -31,7 +33,7 @@ def run_saturn_pipeline_test(
             message=TopicMessage(args=inventory_item),
         )
         pipeline_message.update_with_resources(pipeline_test.spec.resources)
-        pipeline_result = bootstrap_pipeline(pipeline_message)
+        pipeline_result = bootstraper.bootstrap_pipeline(pipeline_message)
         pipeline_results.append(
             asdict(
                 PipelineResult(

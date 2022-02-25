@@ -87,6 +87,7 @@ filterwarnings = [
   "error",
   "ignore:distutils Version classes are deprecated.:DeprecationWarning",
   "ignore::marshmallow.warnings.RemovedInMarshmallow4Warning",
+  "ignore:.*/tmp/ray/.*:ResourceWarning",
 ]
 
 [tool.isort]

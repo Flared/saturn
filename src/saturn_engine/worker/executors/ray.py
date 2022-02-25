@@ -3,30 +3,55 @@ from typing import Any
 import ray
 
 from saturn_engine.core import PipelineResults
+from saturn_engine.utils.hooks import EventHook
+from saturn_engine.utils.ray import ActorPool
 from saturn_engine.worker.pipeline_message import PipelineMessage
 
 from ..services import Services
 from . import Executor
-from .bootstrap import bootstrap_pipeline
+from .bootstrap import PipelineBootstrap
+from .bootstrap import PipelineHook
 from .bootstrap import wrap_remote_exception
 
 
 @ray.remote
-def ray_execute(message: PipelineMessage) -> PipelineResults:
-    with wrap_remote_exception():
-        return bootstrap_pipeline(message)
+class SaturnExecutorActor:
+    def __init__(
+        self, executor_initialized: EventHook[None], pipeline_hook: PipelineHook
+    ):
+        executor_initialized.emit(None)
+        self.bootstrapper = PipelineBootstrap(pipeline_hook)
+
+    def process_message(self, message: PipelineMessage) -> PipelineResults:
+        with wrap_remote_exception():
+            return self.bootstrapper.bootstrap_pipeline(message)
 
 
 class RayExecutor(Executor):
     def __init__(self, services: Services) -> None:
+        config = services.config.c.ray
         options: dict[str, Any] = {
-            "local_mode": services.config.c.ray.local,
-            "configure_logging": services.config.c.ray.enable_logging,
-            "log_to_driver": services.config.c.ray.enable_logging,
+            "local_mode": config.local,
+            "configure_logging": config.enable_logging,
+            "log_to_driver": config.enable_logging,
         }
-        if services.config.c.ray.address:
-            options["address"] = services.config.c.ray.address
+        if config.address:
+            options["address"] = config.address
         ray.init(**options)
 
+        self.pool = ActorPool(
+            count=config.executor_actor_count,
+            actor_cls=SaturnExecutorActor,
+            actor_options={
+                "max_concurrency": config.executor_actor_concurrency,
+                "num_cpus": config.executor_actor_cpu_count,
+            },
+            actor_kwargs={
+                "executor_initialized": services.hooks.executor_initialized,
+                "pipeline_hook": services.hooks.pipeline_executed,
+            },
+        )
+
     async def process_message(self, message: PipelineMessage) -> PipelineResults:
-        return await ray_execute.remote(message)
+        async with self.pool.scoped_actor() as actor:
+            return await actor.process_message.remote(message)
