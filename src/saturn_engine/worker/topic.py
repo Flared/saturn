@@ -8,6 +8,7 @@ from collections.abc import AsyncGenerator
 from datetime import timedelta
 
 from saturn_engine.core import TopicMessage
+from saturn_engine.utils.log import getLogger
 from saturn_engine.utils.options import OptionsSchema
 
 TopicOutput = Union[AsyncContextManager[TopicMessage], TopicMessage]
@@ -31,15 +32,22 @@ class BlockingTopic(Topic, abc.ABC):
         max_concurrency: int = 1,
         sleep_time: Optional[timedelta] = None,
     ):
+        self.logger = getLogger(__name__, self)
         self.semaphore = asyncio.Semaphore(max_concurrency)
         self.sleep_time: timedelta = sleep_time or timedelta(seconds=0)
 
     async def run(self) -> AsyncGenerator[TopicOutput, None]:
         while True:
-            messages = await asyncio.get_event_loop().run_in_executor(
-                None,
-                self.run_once_blocking,
-            )
+            try:
+                messages = await asyncio.get_event_loop().run_in_executor(
+                    None,
+                    self.run_once_blocking,
+                )
+            except Exception:
+                self.logger.exception("Topic failed")
+                await asyncio.sleep(self.sleep_time.total_seconds())
+                continue
+
             if messages is None:
                 break
 
