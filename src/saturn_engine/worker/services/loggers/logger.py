@@ -163,7 +163,7 @@ class PipelineLogger:
                 "pipeline": message.info.name,
             }
         }
-        with self.log_context(extra.pop("data")):
+        with self.log_context(extra["data"]):
             self.logger.debug("Executing pipeline", extra=extra)
             try:
                 yield
