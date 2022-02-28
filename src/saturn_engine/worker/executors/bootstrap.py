@@ -9,6 +9,7 @@ from saturn_engine.core import PipelineResults
 from saturn_engine.core import ResourceUsed
 from saturn_engine.core import TopicMessage
 from saturn_engine.utils.hooks import ContextHook
+from saturn_engine.utils.hooks import EventHook
 from saturn_engine.utils.traceback_data import TracebackData
 from saturn_engine.worker.pipeline_message import PipelineMessage
 
@@ -16,8 +17,12 @@ PipelineHook = ContextHook[PipelineMessage, PipelineResults]
 
 
 class PipelineBootstrap:
-    def __init__(self, pipeline_hook: PipelineHook):
-        self.pipeline_hook = pipeline_hook
+    def __init__(self, initialized_hook: EventHook["PipelineBootstrap"]):
+        self.pipeline_hook: PipelineHook = ContextHook(
+            error_handler=self.pipeline_hook_failed
+        )
+        initialized_hook.emit(self)
+
         self.logger = logging.getLogger("saturn.bootstrap")
 
     def bootstrap_pipeline(self, message: PipelineMessage) -> PipelineResults:
@@ -55,6 +60,9 @@ class PipelineBootstrap:
                 self.logger.error("Invalid result type: %s", result.__class__)
 
         return PipelineResults(outputs=outputs, resources=resources)
+
+    def pipeline_hook_failed(self, exception: Exception) -> None:
+        self.logger.error("Error while handling pipeline hook", exc_info=exception)
 
 
 class RemoteException(Exception):

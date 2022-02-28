@@ -9,7 +9,6 @@ from saturn_engine.worker.services import Services
 
 from . import Executor
 from .bootstrap import PipelineBootstrap
-from .bootstrap import PipelineHook
 from .bootstrap import wrap_remote_exception
 
 _boostraper = None
@@ -17,8 +16,7 @@ _boostraper = None
 
 def process_initializer(
     *,
-    executor_initialized: EventHook[None],
-    pipeline_executed_hooks: PipelineHook,
+    executor_initialized: EventHook[PipelineBootstrap],
 ) -> None:
     global _boostraper
     # Ignore signals in the process pool since we handle it from the worker
@@ -27,8 +25,7 @@ def process_initializer(
 
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-    executor_initialized.emit(None)
-    _boostraper = PipelineBootstrap(pipeline_hook=pipeline_executed_hooks)
+    _boostraper = PipelineBootstrap(initialized_hook=executor_initialized)
 
 
 class ProcessExecutor(Executor):
@@ -37,7 +34,6 @@ class ProcessExecutor(Executor):
             initializer=partial(
                 process_initializer,
                 executor_initialized=services.hooks.executor_initialized,
-                pipeline_executed_hooks=services.hooks.pipeline_executed,
             )
         )
 

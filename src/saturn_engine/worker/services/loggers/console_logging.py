@@ -1,5 +1,4 @@
-from typing import Any
-from typing import Optional
+import typing as t
 
 import logging
 import logging.config
@@ -13,8 +12,13 @@ class ConsoleLogging(MinimalService):
     name = "console_logging"
 
     async def open(self) -> None:
-        if not setup_structlog():
-            setup_logging()
+        setup()
+        self.services.hooks.executor_initialized.register(setup)
+
+
+def setup(*args: t.Any) -> None:
+    if not setup_structlog():
+        setup_logging()
 
 
 def setup_structlog() -> bool:
@@ -30,13 +34,15 @@ def setup_structlog() -> bool:
     def unwrap_extra_data(
         logger: logging.Logger, name: str, event_dict: structlog.types.EventDict
     ) -> structlog.types.EventDict:
-        record: Optional[logging.LogRecord] = event_dict.get("_record")
+        record: t.Optional[logging.LogRecord] = event_dict.get("_record")
         if record is not None:
             for k, v in record.__dict__.get("data", {}).items():
                 event_dict[k] = v
         return event_dict
 
     pre_chain = [
+        structlog.threadlocal.merge_threadlocal,
+        structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         unwrap_extra_data,
         structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"),
@@ -90,7 +96,7 @@ class ExtraFormatter(logging.Formatter):
         return string
 
 
-def setup_logging(formatter: Optional[dict[str, Any]] = None) -> None:
+def setup_logging(formatter: t.Optional[dict[str, t.Any]] = None) -> None:
     logging.config.dictConfig(
         {
             "version": 1,

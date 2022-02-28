@@ -10,17 +10,13 @@ from saturn_engine.worker.pipeline_message import PipelineMessage
 from ..services import Services
 from . import Executor
 from .bootstrap import PipelineBootstrap
-from .bootstrap import PipelineHook
 from .bootstrap import wrap_remote_exception
 
 
 @ray.remote
 class SaturnExecutorActor:
-    def __init__(
-        self, executor_initialized: EventHook[None], pipeline_hook: PipelineHook
-    ):
-        executor_initialized.emit(None)
-        self.bootstrapper = PipelineBootstrap(pipeline_hook)
+    def __init__(self, executor_initialized: EventHook[PipelineBootstrap]):
+        self.bootstrapper = PipelineBootstrap(executor_initialized)
 
     def process_message(self, message: PipelineMessage) -> PipelineResults:
         with wrap_remote_exception():
@@ -48,7 +44,6 @@ class RayExecutor(Executor):
             },
             actor_kwargs={
                 "executor_initialized": services.hooks.executor_initialized,
-                "pipeline_hook": services.hooks.pipeline_executed,
             },
         )
 

@@ -1,23 +1,25 @@
-from typing import NamedTuple
+import typing as t
 
 from functools import partial
 
-from saturn_engine.core import PipelineOutput
-from saturn_engine.core import PipelineResults
-from saturn_engine.core.api import QueueItem
 from saturn_engine.utils.hooks import AsyncContextHook
 from saturn_engine.utils.hooks import AsyncEventHook
-from saturn_engine.utils.hooks import ContextHook
 from saturn_engine.utils.hooks import EventHook
-from saturn_engine.worker.pipeline_message import PipelineMessage
-from saturn_engine.worker.topic import Topic
-from saturn_engine.worker.work_item import WorkItem
+
+if t.TYPE_CHECKING:
+    from saturn_engine.core import PipelineOutput
+    from saturn_engine.core import PipelineResults
+    from saturn_engine.core.api import QueueItem
+    from saturn_engine.worker.executors.bootstrap import PipelineBootstrap
+    from saturn_engine.worker.pipeline_message import PipelineMessage
+    from saturn_engine.worker.topic import Topic
+    from saturn_engine.worker.work_item import WorkItem
 
 
-class MessagePublished(NamedTuple):
-    message: PipelineMessage
-    topic: Topic
-    output: PipelineOutput
+class MessagePublished(t.NamedTuple):
+    message: "PipelineMessage"
+    topic: "Topic"
+    output: "PipelineOutput"
 
 
 class Hooks:
@@ -25,15 +27,14 @@ class Hooks:
 
     hook_failed: AsyncEventHook[Exception]
 
-    message_polled: AsyncEventHook[PipelineMessage]
-    message_scheduled: AsyncEventHook[PipelineMessage]
-    message_submitted: AsyncEventHook[PipelineMessage]
-    message_executed: AsyncContextHook[PipelineMessage, PipelineResults]
-    message_published: AsyncContextHook[MessagePublished, None]
+    message_polled: AsyncEventHook["PipelineMessage"]
+    message_scheduled: AsyncEventHook["PipelineMessage"]
+    message_submitted: AsyncEventHook["PipelineMessage"]
+    message_executed: AsyncContextHook["PipelineMessage", "PipelineResults"]
+    message_published: AsyncContextHook["MessagePublished", None]
 
-    work_queue_built: AsyncContextHook[QueueItem, WorkItem]
-    executor_initialized: EventHook[None]
-    pipeline_executed: ContextHook[PipelineMessage, PipelineResults]
+    work_queue_built: AsyncContextHook["QueueItem", "WorkItem"]
+    executor_initialized: EventHook["PipelineBootstrap"]
 
     def __init__(self) -> None:
         self.hook_failed = AsyncEventHook()
@@ -45,9 +46,6 @@ class Hooks:
         self.message_published = AsyncContextHook(error_handler=self.hook_failed.emit)
         self.executor_initialized = EventHook(
             error_handler=partial(self.remote_hook_failed, name="executor_initialized")
-        )
-        self.pipeline_executed = ContextHook(
-            error_handler=partial(self.remote_hook_failed, name="pipeline_executed")
         )
 
     # `pipeline_hook_failed` is a static method with no dependency since it

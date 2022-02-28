@@ -1,5 +1,5 @@
 from saturn_engine.core import TopicMessage
-from saturn_engine.utils.hooks import ContextHook
+from saturn_engine.utils.hooks import EventHook
 from saturn_engine.utils.options import asdict
 from saturn_engine.worker.executors.bootstrap import PipelineBootstrap
 from saturn_engine.worker.pipeline_message import PipelineMessage
@@ -25,7 +25,7 @@ def run_saturn_pipeline_test(
 
     # Execute it.
     pipeline_results: list[dict] = []
-    bootstraper = PipelineBootstrap(ContextHook())
+    bootstraper = PipelineBootstrap(EventHook())
 
     for inventory_item in pipeline_test.spec.inventory:
         pipeline_message = PipelineMessage(
