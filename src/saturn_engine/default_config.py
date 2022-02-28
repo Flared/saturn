@@ -35,6 +35,9 @@ class config(SaturnConfig):
         local = os.environ.get("SATURN_RAY__LOCAL", "0") == "1"
         address = os.environ.get("SATURN_RAY__ADDRESS", "auto")
         enable_logging = True
+        executor_actor_count = 4
+        executor_actor_concurrency = 2
+        executor_actor_cpu_count = 1.0
 
     class worker_manager(WorkerManagerConfig):
         flask_host = os.environ.get("SATURN_FLASK_HOST", "127.0.0.1")

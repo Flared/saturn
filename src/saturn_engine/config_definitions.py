@@ -34,6 +34,9 @@ class RayConfig:
     local: bool
     address: str
     enable_logging: bool
+    executor_actor_count: int
+    executor_actor_concurrency: int
+    executor_actor_cpu_count: float
 
 
 @dataclasses.dataclass

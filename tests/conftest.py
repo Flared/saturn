@@ -114,3 +114,13 @@ def job_definition_maker(
 @pytest.fixture(scope="session")
 def config() -> Config:
     return Config().load_objects([default_config, test_config])
+
+
+@pytest.fixture(scope="session")
+def ray_cluster() -> None:
+    try:
+        import ray
+    except ImportError:
+        raise pytest.skip("Skipping ray tests") from None
+
+    ray.init(local_mode=True)
