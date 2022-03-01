@@ -20,21 +20,36 @@ from .static_definitions import StaticDefinitions
 def compile_static_definitions(
     uncompiled_objects: list[UncompiledObject],
 ) -> StaticDefinitions:
-    objects_by_kind: DefaultDict[str, list[UncompiledObject]] = defaultdict(list)
+    objects_by_kind: DefaultDict[str, dict[str, UncompiledObject]] = defaultdict(dict)
     for uncompiled_object in uncompiled_objects:
-        objects_by_kind[uncompiled_object.kind].append(uncompiled_object)
+        if uncompiled_object.name in objects_by_kind[uncompiled_object.kind]:
+            raise Exception(
+                f"{uncompiled_object.kind}/{uncompiled_object.name} already exists"
+            )
+        objects_by_kind[uncompiled_object.kind][
+            uncompiled_object.name
+        ] = uncompiled_object
 
     definitions: StaticDefinitions = StaticDefinitions()
 
-    for uncompiled_inventory in objects_by_kind.pop("SaturnInventory", list()):
+    for uncompiled_inventory in objects_by_kind.pop(
+        "SaturnInventory",
+        dict(),
+    ).values():
         inventory: Inventory = fromdict(uncompiled_inventory.data, Inventory)
         definitions.inventories[inventory.metadata.name] = inventory.to_core_object()
 
-    for uncompiled_topic in objects_by_kind.pop("SaturnTopic", list()):
+    for uncompiled_topic in objects_by_kind.pop(
+        "SaturnTopic",
+        dict(),
+    ).values():
         topic_item: TopicItem = fromdict(uncompiled_topic.data, TopicItem)
         definitions.topics[topic_item.metadata.name] = topic_item.to_core_object()
 
-    for uncompiled_job_definition in objects_by_kind.pop("SaturnJobDefinition", list()):
+    for uncompiled_job_definition in objects_by_kind.pop(
+        "SaturnJobDefinition",
+        dict(),
+    ).values():
         job_definition: JobDefinition = fromdict(
             uncompiled_job_definition.data, JobDefinition
         )
@@ -42,11 +57,17 @@ def compile_static_definitions(
             job_definition.metadata.name
         ] = job_definition.to_core_object(definitions)
 
-    for uncompiled_job in objects_by_kind.pop("SaturnJob", list()):
+    for uncompiled_job in objects_by_kind.pop(
+        "SaturnJob",
+        dict(),
+    ).values():
         job_data: Job = fromdict(uncompiled_job.data, Job)
         definitions.jobs[job_data.metadata.name] = job_data.to_core_object(definitions)
 
-    for uncompiled_resource in objects_by_kind.pop("SaturnResource", list()):
+    for uncompiled_resource in objects_by_kind.pop(
+        "SaturnResource",
+        dict(),
+    ).values():
         resource: Resource = fromdict(uncompiled_resource.data, Resource)
         resource_item = resource.to_core_object()
         definitions.resources[resource.metadata.name] = resource_item
