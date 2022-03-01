@@ -287,3 +287,28 @@ spec:
         match="JobInput can't specify both inventory and topic",
     ):
         load_definitions_from_str(job_definition_str)
+
+
+def test_already_defined() -> None:
+    definitions: str = """
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnTopic
+metadata:
+  name: test-topic
+spec:
+  type: RabbitMQTopic
+  options: {}
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnTopic
+metadata:
+  name: test-topic
+spec:
+  type: RabbitMQTopic
+  options: {}
+"""
+    with pytest.raises(
+        Exception,
+        match="SaturnTopic/test-topic already exists",
+    ):
+        load_definitions_from_str(definitions)

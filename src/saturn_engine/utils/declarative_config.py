@@ -22,6 +22,7 @@ class BaseObject:
 class UncompiledObject:
     api_version: str
     kind: str
+    name: str
     data: dict
 
 
@@ -48,6 +49,7 @@ def load_uncompiled_objects_from_str(definitions: str) -> list[UncompiledObject]
             UncompiledObject(
                 api_version=base_object.apiVersion,
                 kind=base_object.kind,
+                name=base_object.metadata.name,
                 data=yaml_object,
             )
         )

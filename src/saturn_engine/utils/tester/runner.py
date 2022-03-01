@@ -32,26 +32,40 @@ class SaturnTests:
 
 
 def compile_tests(uncompiled_objects: list) -> SaturnTests:
-
-    objects_by_kind: DefaultDict[str, list[UncompiledObject]] = defaultdict(list)
+    objects_by_kind: DefaultDict[str, dict[str, UncompiledObject]] = defaultdict(dict)
     for uncompiled_object in uncompiled_objects:
-        objects_by_kind[uncompiled_object.kind].append(uncompiled_object)
+        if uncompiled_object.name in objects_by_kind[uncompiled_object.kind]:
+            raise Exception(
+                f"{uncompiled_object.kind}/{uncompiled_object.name} already exists"
+            )
+        objects_by_kind[uncompiled_object.kind][
+            uncompiled_object.name
+        ] = uncompiled_object
 
     tests: SaturnTests = SaturnTests()
 
-    for uncompiled_pipeline_test in objects_by_kind.pop("SaturnPipelineTest", list()):
+    for uncompiled_pipeline_test in objects_by_kind.pop(
+        "SaturnPipelineTest",
+        dict(),
+    ).values():
         pipeline_test: PipelineTest = fromdict(
             uncompiled_pipeline_test.data, PipelineTest
         )
         tests.pipeline_tests[pipeline_test.metadata.name] = pipeline_test
 
-    for uncompiled_inventory_test in objects_by_kind.pop("SaturnInventoryTest", list()):
+    for uncompiled_inventory_test in objects_by_kind.pop(
+        "SaturnInventoryTest",
+        dict(),
+    ).values():
         inventory_test: InventoryTest = fromdict(
             uncompiled_inventory_test.data, InventoryTest
         )
         tests.inventory_tests[inventory_test.metadata.name] = inventory_test
 
-    for uncompiled_topic_test in objects_by_kind.pop("SaturnTopicTest", list()):
+    for uncompiled_topic_test in objects_by_kind.pop(
+        "SaturnTopicTest",
+        dict(),
+    ).values():
         topic_test: TopicTest = fromdict(uncompiled_topic_test.data, TopicTest)
         tests.topic_tests[topic_test.metadata.name] = topic_test
 
