@@ -13,7 +13,7 @@ from .bootstrap import PipelineBootstrap
 from .bootstrap import wrap_remote_exception
 
 
-@ray.remote
+@ray.remote(max_restarts=-1)
 class SaturnExecutorActor:
     def __init__(self, executor_initialized: EventHook[PipelineBootstrap]):
         self.bootstrapper = PipelineBootstrap(executor_initialized)
