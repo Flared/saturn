@@ -1,6 +1,7 @@
 from typing import Generic
 from typing import Optional
 
+from collections import Counter
 from collections.abc import AsyncGenerator
 
 from saturn_engine.core import PipelineResults
@@ -38,8 +39,23 @@ class BaseMetricsService(Generic[TServices, TOptions], Service[TServices, TOptio
         params = {"pipeline": message.info.name}
         await self.incr("message.executed.before", params=params)
         try:
-            yield
+            results = yield
             await self.incr("message.executed.success", params=params)
+            for resource in results.resources:
+                await self.incr("resource.used", params={"type": resource.type})
+
+            output_counters: Counter[str] = Counter()
+            for output in results.outputs:
+                output_counters[output.channel] += 1
+            for channel, count in output_counters.items():
+                await self.incr(
+                    "message.executed.outputs",
+                    params=params
+                    | {
+                        "channel": channel,
+                    },
+                    count=count,
+                )
         except Exception:
             await self.incr("message.executed.failed", params=params)
 
