@@ -4,6 +4,8 @@ import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+from ray.exceptions import RayActorError
+
 
 class ActorPool:
     def __init__(
@@ -55,8 +57,15 @@ class ActorPool:
 
     @asynccontextmanager
     async def scoped_actor(self) -> AsyncIterator:
+        release = True
         try:
             actor = await self.pop()
             yield actor
+        except RayActorError:
+            release = False
+            self.actors_slot.pop(id(actor), None)
+            self.add(count=1)
+            raise
         finally:
-            self.push(actor)
+            if release:
+                self.push(actor)
