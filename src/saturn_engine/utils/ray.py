@@ -42,6 +42,9 @@ class ActorPool:
 
     def push(self, actor: t.Any) -> None:
         actor_id = id(actor)
+        if actor_id not in self.actors_slot:
+            return
+
         self.actors_slot[actor_id] += 1
         self.actors_queue.put_nowait((-self.actors_slot[actor_id], actor_id, actor))
 
@@ -60,3 +63,8 @@ class ActorPool:
             yield actor
         finally:
             self.push(actor)
+
+    def close(self) -> None:
+        self.actors_slot.clear()
+        while not self.actors_queue.empty():
+            self.actors_queue.get_nowait()
