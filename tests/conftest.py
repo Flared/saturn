@@ -31,7 +31,10 @@ def event_loop() -> Iterator[TimeForwardLoop]:
     """
     loop = TimeForwardLoop()
     yield loop
+    loop.run_until_complete(loop.shutdown_asyncgens())
+    loop.run_until_complete(loop.shutdown_default_executor())
     tasks = asyncio.all_tasks(loop)
+
     try:
         assert not tasks
     finally:
