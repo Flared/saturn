@@ -124,3 +124,16 @@ def ray_cluster() -> None:
         raise pytest.skip("Skipping ray tests") from None
 
     ray.init(local_mode=True)
+
+
+@pytest.fixture(scope="session")
+def remote_ray_cluster() -> None:
+    try:
+        import ray
+    except ImportError:
+        raise pytest.skip("Skipping ray tests") from None
+
+    try:
+        ray.init(address="auto", local_mode=False)
+    except Exception:
+        raise pytest.skip("Skipping remote ray tests") from None

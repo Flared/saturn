@@ -2,12 +2,12 @@ import random
 
 import pytest
 
-from saturn_engine.utils.ray import ActorPool
-
 
 @pytest.mark.asyncio
 async def test_actor_pool(ray_cluster: None) -> None:
     import ray
+
+    from saturn_engine.utils.ray import ActorPool
 
     @ray.remote
     class Actor:
@@ -65,3 +65,58 @@ async def test_actor_pool(ray_cluster: None) -> None:
         assert actor is a1
         assert pool.empty()
     assert not pool.empty()
+
+
+@pytest.mark.asyncio
+async def test_actor_pool_removed(remote_ray_cluster: None) -> None:
+    import ray
+    from ray.exceptions import RayActorError
+
+    from saturn_engine.utils.ray import ActorPool
+
+    @ray.remote
+    class Actor:
+        def call(self) -> int:
+            return 0
+
+    pool = ActorPool(
+        count=2,
+        actor_cls=Actor,
+        actor_options={"max_concurrency": 2},
+        actor_args=(),
+        actor_kwargs={},
+    )
+
+    a1 = await pool.pop()
+    a2 = await pool.pop()
+
+    with pytest.raises(RayActorError):
+        async with pool.scoped_actor() as actor:
+            # Swap actors so a1 is actor
+            if a2 is actor:
+                a1, a2 = a2, a1
+
+            ray.kill(actor)
+            await actor.call.remote()
+
+    assert a1 not in pool
+    assert actor not in pool
+    assert a2 in pool
+    assert len(pool) == 2
+
+    # Trying to put them back won't change the pool.
+    pool.push(a1)
+    pool.push(actor)
+    assert a1 not in pool
+    assert actor not in pool
+    assert len(pool) == 2
+
+    # We also won't pop dead actor, even if they were still in queue.
+    pool.push(a2)
+    with pytest.raises(RayActorError):
+        async with pool.scoped_actor() as actor:
+            dead_actor = actor
+            ray.kill(actor)
+            await actor.call.remote()
+    while not pool.empty():
+        assert dead_actor is not await pool.pop()

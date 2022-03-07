@@ -4,6 +4,8 @@ import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+from ray.exceptions import RayActorError
+
 
 class ActorPool:
     def __init__(
@@ -49,22 +51,41 @@ class ActorPool:
         self.actors_queue.put_nowait((-self.actors_slot[actor_id], actor_id, actor))
 
     async def pop(self) -> t.Any:
-        _, actor_id, actor = await self.actors_queue.get()
-        self.actors_slot[actor_id] -= 1
-        return actor
+        while True:
+            _, actor_id, actor = await self.actors_queue.get()
+            if actor_id not in self.actors_slot:
+                continue
+            self.actors_slot[actor_id] -= 1
+            return actor
 
     def empty(self) -> bool:
         return self.actors_queue.empty()
 
     @asynccontextmanager
     async def scoped_actor(self) -> AsyncIterator:
+        release = True
         try:
             actor = await self.pop()
             yield actor
+        except RayActorError:
+            release = False
+            self.remove(actor)
+            self.add(count=1)
+            raise
         finally:
-            self.push(actor)
+            if release:
+                self.push(actor)
 
     def close(self) -> None:
         self.actors_slot.clear()
         while not self.actors_queue.empty():
             self.actors_queue.get_nowait()
+
+    def remove(self, actor: t.Any) -> None:
+        self.actors_slot.pop(id(actor), None)
+
+    def __len__(self) -> int:
+        return len(self.actors_slot)
+
+    def __contains__(self, actor: t.Any) -> int:
+        return id(actor) in self.actors_slot
