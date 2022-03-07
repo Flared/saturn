@@ -1,9 +1,13 @@
-from typing import Any
+import typing as t
+
+import contextlib
+from collections.abc import Iterator
 
 import ray
 
 from saturn_engine.core import PipelineResults
 from saturn_engine.utils.hooks import EventHook
+from saturn_engine.utils.log import getLogger
 from saturn_engine.utils.ray import ActorPool
 from saturn_engine.worker.pipeline_message import PipelineMessage
 
@@ -13,7 +17,7 @@ from .bootstrap import PipelineBootstrap
 from .bootstrap import wrap_remote_exception
 
 
-@ray.remote(max_restarts=-1)
+@ray.remote(max_restarts=-1)  # type: ignore
 class SaturnExecutorActor:
     def __init__(self, executor_initialized: EventHook[PipelineBootstrap]):
         self.bootstrapper = PipelineBootstrap(executor_initialized)
@@ -23,18 +27,18 @@ class SaturnExecutorActor:
             return self.bootstrapper.bootstrap_pipeline(message)
 
 
-class RayExecutor(Executor):
+class ExecutorSession:
     def __init__(self, services: Services) -> None:
         config = services.config.c.ray
-        options: dict[str, Any] = {
+        options: dict[str, t.Any] = {
             "local_mode": config.local,
             "configure_logging": config.enable_logging,
             "log_to_driver": config.enable_logging,
         }
         if config.address:
             options["address"] = config.address
-        ray.init(**options)
 
+        ray.init(**options)
         self.pool = ActorPool(
             count=config.executor_actor_count,
             actor_cls=SaturnExecutorActor,
@@ -47,6 +51,38 @@ class RayExecutor(Executor):
             },
         )
 
+    def close(self) -> None:
+        pass
+
+
+class RayExecutor(Executor):
+    def __init__(self, services: Services) -> None:
+        self.logger = getLogger(__name__, self)
+        self.services = services
+        self._session: t.Optional[ExecutorSession] = None
+
+    @contextlib.contextmanager
+    def session(self) -> Iterator[ExecutorSession]:
+        try:
+            if not self._session:
+                self._session = ExecutorSession(self.services)
+            yield self._session
+        except ConnectionError:
+            self.logger.error("Could not reconnect")
+            need_reconnect = True
+            raise
+        except Exception as e:
+            if "Ray Client is not connected" in str(e):
+                self.logger.error("Lost connection")
+                need_reconnect = True
+            raise
+        finally:
+            if need_reconnect:
+                if self._session:
+                    self._session.close()
+                self._session = None
+
     async def process_message(self, message: PipelineMessage) -> PipelineResults:
-        async with self.pool.scoped_actor() as actor:
-            return await actor.process_message.remote(message)
+        with self.session() as session:
+            async with session.pool.scoped_actor() as actor:
+                return await actor.process_message.remote(message)
