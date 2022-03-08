@@ -1,9 +1,7 @@
 from functools import cached_property
 
 from saturn_engine.config import WorkerManagerConfig
-from saturn_engine.worker_manager.config.declarative import (
-    load_definitions_from_directory,
-)
+from saturn_engine.worker_manager.config.declarative import load_definitions_from_path
 
 from .config.static_definitions import StaticDefinitions
 
@@ -26,4 +24,4 @@ class WorkerManagerContext:
         - Jobs
         - JobDefinitions
         """
-        return load_definitions_from_directory(self.config.static_definitions_directory)
+        return load_definitions_from_path(self.config.static_definitions_directory)
