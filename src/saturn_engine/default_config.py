@@ -1,3 +1,5 @@
+import typing as t
+
 import os
 
 from .config import Env
@@ -50,6 +52,9 @@ class config(SaturnConfig):
         )
         static_definitions_directory: str = os.environ.get(
             "SATURN_STATIC_DEFINITIONS_DIR", "/opt/saturn/definitions"
+        )
+        static_definitions_jobs_selector: t.Optional[str] = os.environ.get(
+            "SATURN_STATIC_DEFINITIONS_JOBS_SELECTOR"
         )
         work_items_per_worker = 10
 
