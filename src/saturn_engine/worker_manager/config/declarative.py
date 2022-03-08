@@ -1,11 +1,11 @@
 from typing import DefaultDict
 
+import dataclasses
+import re
 from collections import defaultdict
 
 from saturn_engine.utils.declarative_config import UncompiledObject
-from saturn_engine.utils.declarative_config import (
-    load_uncompiled_objects_from_directory,
-)
+from saturn_engine.utils.declarative_config import load_uncompiled_objects_from_path
 from saturn_engine.utils.declarative_config import load_uncompiled_objects_from_str
 from saturn_engine.utils.options import fromdict
 
@@ -83,7 +83,18 @@ def load_definitions_from_str(definitions: str) -> StaticDefinitions:
     return compile_static_definitions(load_uncompiled_objects_from_str(definitions))
 
 
-def load_definitions_from_directory(config_dir: str) -> StaticDefinitions:
-    return compile_static_definitions(
-        load_uncompiled_objects_from_directory(config_dir)
-    )
+def load_definitions_from_path(config_dir: str) -> StaticDefinitions:
+    return compile_static_definitions(load_uncompiled_objects_from_path(config_dir))
+
+
+def filter_with_jobs_selector(
+    *, selector: str, definitions: StaticDefinitions
+) -> StaticDefinitions:
+    pattern = re.compile(selector)
+    jobs = {name: job for name, job in definitions.jobs.items() if pattern.search(name)}
+    job_definitions = {
+        name: job
+        for name, job in definitions.job_definitions.items()
+        if pattern.search(name)
+    }
+    return dataclasses.replace(definitions, jobs=jobs, job_definitions=job_definitions)

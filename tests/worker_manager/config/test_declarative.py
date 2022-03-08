@@ -6,19 +6,19 @@ from saturn_engine.core.api import InventoryItem
 from saturn_engine.core.api import JobDefinition
 from saturn_engine.core.api import ResourceItem
 from saturn_engine.core.api import TopicItem
-from saturn_engine.worker_manager.config.declarative import (
-    load_definitions_from_directory,
-)
+from saturn_engine.worker_manager.config.declarative import filter_with_jobs_selector
+from saturn_engine.worker_manager.config.declarative import load_definitions_from_path
 from saturn_engine.worker_manager.config.declarative import load_definitions_from_str
+from saturn_engine.worker_manager.config.static_definitions import StaticDefinitions
 
 
-def test_load_definitions_from_directory_simple() -> None:
+def test_load_definitions_from_path_simple() -> None:
     test_dir = os.path.join(
         os.path.dirname(__file__),
         "testdata",
         "test_declarative_simple",
     )
-    static_definitions = load_definitions_from_directory(test_dir)
+    static_definitions = load_definitions_from_path(test_dir)
     assert (
         static_definitions.inventories["github-identifiers"].name
         == "github-identifiers"
@@ -312,3 +312,92 @@ spec:
         match="SaturnTopic/test-topic already exists",
     ):
         load_definitions_from_str(definitions)
+
+
+def test_filter_with_jobs_selector() -> None:
+    job_definition_str: str = """
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnInventory
+metadata:
+  name: test-inventory
+spec:
+  type: testtype
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJob
+metadata:
+  name: test-1-job
+spec:
+  input:
+    inventory: test-inventory
+  pipeline:
+    name: something.saturn.pipelines.aa.bb
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJob
+metadata:
+  name: test-2-job
+spec:
+  input:
+    inventory: test-inventory
+  pipeline:
+    name: something.saturn.pipelines.aa.bb.cc
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJobDefinition
+metadata:
+  name: test-1-job-definition
+spec:
+  minimalInterval: "@weekly"
+  template:
+    input:
+      inventory: test-inventory
+    pipeline:
+      name: something.saturn.pipelines.aa.bb
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJobDefinition
+metadata:
+  name: test-2-job-definition
+spec:
+  minimalInterval: "@weekly"
+  template:
+    input:
+      inventory: test-inventory
+    pipeline:
+      name: something.saturn.pipelines.aa.bb
+"""
+
+    def names(definitions: StaticDefinitions) -> dict[str, set[str]]:
+        return {
+            "jobs": set(definitions.jobs.keys()),
+            "job_definitions": set(definitions.job_definitions.keys()),
+        }
+
+    static_definitions = load_definitions_from_str(job_definition_str)
+    assert names(
+        filter_with_jobs_selector(definitions=static_definitions, selector="test-1-")
+    ) == {"jobs": {"test-1-job"}, "job_definitions": {"test-1-job-definition"}}
+
+    assert names(
+        filter_with_jobs_selector(
+            definitions=static_definitions, selector="test-.-job-definition"
+        )
+    ) == {
+        "jobs": set(),
+        "job_definitions": {"test-1-job-definition", "test-2-job-definition"},
+    }
+
+    assert names(
+        filter_with_jobs_selector(definitions=static_definitions, selector="foobar")
+    ) == {
+        "jobs": set(),
+        "job_definitions": set(),
+    }
+
+    assert names(
+        filter_with_jobs_selector(definitions=static_definitions, selector=".*")
+    ) == {
+        "jobs": {"test-1-job", "test-2-job"},
+        "job_definitions": {"test-1-job-definition", "test-2-job-definition"},
+    }
