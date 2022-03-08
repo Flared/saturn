@@ -63,6 +63,7 @@ class RayExecutor(Executor):
 
     @contextlib.contextmanager
     def session(self) -> Iterator[ExecutorSession]:
+        need_reconnect = False
         try:
             if not self._session:
                 self._session = ExecutorSession(self.services)
