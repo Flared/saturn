@@ -6,6 +6,7 @@ from ..topic import TopicOutput
 from .dummy import DummyTopic
 from .file import FileTopic
 from .memory import MemoryTopic
+from .periodic import PeriodicTopic
 from .rabbitmq import RabbitMQTopic
 from .static import StaticTopic
 
@@ -18,8 +19,9 @@ __all__ = (
 
 BUILTINS: dict[str, Type[Topic]] = {
     "DummyTopic": DummyTopic,
-    "MemoryTopic": MemoryTopic,
-    "RabbitMQTopic": RabbitMQTopic,
     "FileTopic": FileTopic,
+    "MemoryTopic": MemoryTopic,
+    "PeriodicTopic": PeriodicTopic,
+    "RabbitMQTopic": RabbitMQTopic,
     "StaticTopic": StaticTopic,
 }
