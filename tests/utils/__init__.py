@@ -55,7 +55,9 @@ class TimeForwardLoop(asyncio.SelectorEventLoop):  # type: ignore
         self._selector.forward_time = value
 
     def time(self) -> float:
-        return self._selector._current_time
+        if self.forward_time:
+            return self._selector._current_time
+        return super().time()
 
     def on_idle(self) -> None:
         self.idled.set()
