@@ -25,11 +25,15 @@ class TimeForwardSelector(DefaultSelector):
         super().__init__()
         self._current_time: float = 0
         self._on_idle = on_idle
+        self.forward_time = True
 
     def select(self, timeout: Optional[float] = None) -> Any:
-        # There are tasks to be scheduled. Continue simulating.
-        self._current_time += timeout or 0
-        events = DefaultSelector.select(self, 0)
+        select_timeout = timeout
+        if self.forward_time:
+            self._current_time += timeout or 0
+            select_timeout = 0
+        events = super().select(select_timeout)
+
         if not events and timeout is None:
             self._on_idle()
         return events
@@ -42,8 +46,18 @@ class TimeForwardLoop(asyncio.SelectorEventLoop):  # type: ignore
         super().__init__(selector=TimeForwardSelector(on_idle=self.on_idle))
         self._idled: Optional[asyncio.Event] = None
 
+    @property
+    def forward_time(self) -> bool:
+        return self._selector.forward_time
+
+    @forward_time.setter
+    def forward_time(self, value: bool) -> None:
+        self._selector.forward_time = value
+
     def time(self) -> float:
-        return self._selector._current_time
+        if self.forward_time:
+            return self._selector._current_time
+        return super().time()
 
     def on_idle(self) -> None:
         self.idled.set()

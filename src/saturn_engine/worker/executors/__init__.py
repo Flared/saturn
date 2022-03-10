@@ -145,6 +145,7 @@ class ExecutorManager:
                             return
                         if await topic.publish(item.message, wait=False):
                             return
+                        await self.services.s.hooks.output_blocked.emit(topic)
                         processable.park()
                         await topic.publish(item.message, wait=True)
 

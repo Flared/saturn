@@ -15,6 +15,8 @@ TopicOutput = Union[AsyncContextManager[TopicMessage], TopicMessage]
 
 
 class Topic(OptionsSchema):
+    name: str
+
     async def run(self) -> AsyncGenerator[TopicOutput, None]:
         raise NotImplementedError()
         yield

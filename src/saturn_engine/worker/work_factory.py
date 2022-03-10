@@ -44,7 +44,9 @@ def build_topic(topic_item: TopicItem, *, services: Services) -> Topic:
     if not issubclass(klass, Topic):
         raise ValueError(f"{klass} must be a Topic")
     options = {"name": topic_item.name} | topic_item.options
-    return klass.from_options(options, services=services)
+    topic = klass.from_options(options, services=services)
+    topic.name = topic_item.name
+    return topic
 
 
 def build_inventory_job(
