@@ -1,8 +1,12 @@
 from typing import Generic
 from typing import Optional
 
+import abc
+import asyncio
 from collections import Counter
 from collections.abc import AsyncGenerator
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from saturn_engine.core import PipelineResults
 from saturn_engine.worker.pipeline_message import PipelineMessage
@@ -14,7 +18,9 @@ from .. import TOptions
 from .. import TServices
 
 
-class BaseMetricsService(Generic[TServices, TOptions], Service[TServices, TOptions]):
+class BaseMetricsService(
+    Generic[TServices, TOptions], Service[TServices, TOptions], abc.ABC
+):
     async def open(self) -> None:
         self.services.hooks.message_polled.register(self.on_message_polled)
         self.services.hooks.message_scheduled.register(self.on_message_scheduled)
@@ -41,7 +47,8 @@ class BaseMetricsService(Generic[TServices, TOptions], Service[TServices, TOptio
         params = {"pipeline": message.info.name}
         await self.incr("message.executed.before", params=params)
         try:
-            results = yield
+            async with self.timeit("message.executed", params=params):
+                results = yield
             await self.incr("message.executed.success", params=params)
             for resource in results.resources:
                 await self.incr("resource.used", params={"type": resource.type})
@@ -76,7 +83,26 @@ class BaseMetricsService(Generic[TServices, TOptions], Service[TServices, TOptio
         params = {"topic": topic.name}
         await self.incr("topic.blocked", params=params)
 
+    @asynccontextmanager
+    async def timeit(
+        self, key: str, *, params: Optional[dict[str, str]] = None
+    ) -> AsyncIterator[None]:
+        loop = asyncio.get_running_loop()
+        started_at = loop.time()
+        try:
+            yield
+        finally:
+            elapsed = loop.time() - started_at
+            await self.timing(key, elapsed, params=params)
+
+    @abc.abstractmethod
     async def incr(
         self, key: str, *, count: int = 1, params: Optional[dict[str, str]] = None
+    ) -> None:
+        pass
+
+    @abc.abstractmethod
+    async def timing(
+        self, key: str, seconds: float, *, params: Optional[dict[str, str]] = None
     ) -> None:
         pass
