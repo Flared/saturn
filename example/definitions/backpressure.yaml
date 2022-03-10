@@ -1,0 +1,76 @@
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnTopic
+metadata:
+  name: backpressure-stdout
+spec:
+  type: FileTopic
+  options:
+    path: "-"
+    mode: "w"
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnTopic
+metadata:
+  name: backpressure-input
+spec:
+  type: StaticTopic
+  options:
+    messages:
+    - args: {}
+    cycle: true
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnTopic
+metadata:
+  name: backpressure-bounded-queue
+spec:
+  type: RabbitMQTopic
+  options:
+    queue_name: backpressure-bounded-queue
+    max_length: 10
+    prefetch_count: 5
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJobDefinition
+metadata:
+  name: backpressure-fast-pipeline
+spec:
+  minimalInterval: "@weekly"
+  template:
+    input:
+      topic: backpressure-input
+
+    output:
+      default:
+        - topic: backpressure-bounded-queue
+
+    pipeline:
+      name: example.pipelines.fast
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJobDefinition
+metadata:
+  name: backpressure-slow-pipeline
+spec:
+  minimalInterval: "@weekly"
+  template:
+    input:
+      topic: backpressure-bounded-queue
+
+    output:
+      default:
+        - topic: backpressure-stdout
+
+    pipeline:
+      name: example.pipelines.slow
+      resources: {"api_key": "example.resources.BackpressureApiKey"}
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnResource
+metadata:
+  name: backpressure-resource
+spec:
+  type: example.resources.BackpressureApiKey
+  data: {}
+  default_delay: 10

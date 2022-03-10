@@ -7,6 +7,7 @@ import json
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import timedelta
 
 import aio_pika
 import aio_pika.exceptions
@@ -26,7 +27,8 @@ from . import Topic
 class RabbitMQTopic(Topic):
     """A queue that consume message from RabbitMQ"""
 
-    RETRY_PUBLISH_DELAY = 1.0
+    RETRY_PUBLISH_DELAY = timedelta(seconds=1)
+    FAILURE_RETRY_DELAY = timedelta(seconds=30)
 
     @dataclasses.dataclass
     class Options:
@@ -55,6 +57,7 @@ class RabbitMQTopic(Topic):
                         yield self.message_context(message)
             except Exception:
                 self.logger.exception("RabbitMQ topic failed")
+                await asyncio.sleep(self.FAILURE_RETRY_DELAY.total_seconds())
             else:
                 break
 
@@ -81,7 +84,7 @@ class RabbitMQTopic(Topic):
                     return False
 
                 # Otherwise, take a small break and try again.
-                await asyncio.sleep(self.RETRY_PUBLISH_DELAY)
+                await asyncio.sleep(self.RETRY_PUBLISH_DELAY.total_seconds())
 
     @asynccontextmanager
     async def message_context(

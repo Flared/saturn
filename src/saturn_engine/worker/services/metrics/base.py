@@ -7,6 +7,7 @@ from collections.abc import AsyncGenerator
 from saturn_engine.core import PipelineResults
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.services.hooks import MessagePublished
+from saturn_engine.worker.topic import Topic
 
 from .. import Service
 from .. import TOptions
@@ -20,6 +21,7 @@ class BaseMetricsService(Generic[TServices, TOptions], Service[TServices, TOptio
         self.services.hooks.message_submitted.register(self.on_message_submitted)
         self.services.hooks.message_executed.register(self.on_message_executed)
         self.services.hooks.message_published.register(self.on_message_published)
+        self.services.hooks.output_blocked.register(self.on_output_blocked)
 
     async def on_message_polled(self, message: PipelineMessage) -> None:
         params = {"pipeline": message.info.name}
@@ -62,13 +64,17 @@ class BaseMetricsService(Generic[TServices, TOptions], Service[TServices, TOptio
     async def on_message_published(
         self, event: MessagePublished
     ) -> AsyncGenerator[None, None]:
-        params = {"pipeline": event.message.info.name, "channel": event.output.channel}
+        params = {"pipeline": event.message.info.name, "topic": event.topic.name}
         await self.incr("message.published.before", params=params)
         try:
             yield
             await self.incr("message.published.success", params=params)
         except Exception:
             await self.incr("message.published.failed", params=params)
+
+    async def on_output_blocked(self, topic: Topic) -> None:
+        params = {"topic": topic.name}
+        await self.incr("topic.blocked", params=params)
 
     async def incr(
         self, key: str, *, count: int = 1, params: Optional[dict[str, str]] = None

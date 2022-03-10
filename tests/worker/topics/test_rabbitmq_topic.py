@@ -3,6 +3,7 @@ import typing as t
 import asyncio
 from collections.abc import AsyncIterator
 from collections.abc import Awaitable
+from datetime import timedelta
 
 import aio_pika
 import asyncstdlib as alib
@@ -87,7 +88,7 @@ async def test_bounded_rabbitmq_topic_max_length(
     event_loop: TimeForwardLoop, topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]]
 ) -> None:
     topic = await topic_maker(max_length=2, prefetch_count=2)
-    topic.RETRY_PUBLISH_DELAY = 0.1
+    topic.RETRY_PUBLISH_DELAY = timedelta(seconds=0.1)
 
     message = TopicMessage(id="0", args={"n": 1})
 

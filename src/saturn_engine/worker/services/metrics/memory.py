@@ -3,6 +3,7 @@ from typing import Optional
 import asyncio
 import contextlib
 import logging
+import time
 from collections import defaultdict
 
 from .. import BaseServices
@@ -14,6 +15,7 @@ class MemoryMetrics(BaseMetricsService[BaseServices, None]):
 
     async def open(self) -> None:
         await super().open()
+        self.start_time = time.time()
         self.logger = logging.getLogger("saturn.metrics")
         self.counters: dict[str, int] = defaultdict(int)
         self.printer_task = asyncio.create_task(self.print_metrics())
@@ -33,6 +35,8 @@ class MemoryMetrics(BaseMetricsService[BaseServices, None]):
     async def print_metrics(self) -> None:
         while True:
             await asyncio.sleep(10)
+            uptime = time.time() - self.start_time
+            self.logger.info(f"Uptime: {uptime:0.3f} seconds")
             for k, v in sorted(self.counters.items()):
                 self.logger.info(f"{k}={v}")
 

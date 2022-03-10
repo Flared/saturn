@@ -32,6 +32,7 @@ class Hooks:
     message_submitted: AsyncEventHook["PipelineMessage"]
     message_executed: AsyncContextHook["PipelineMessage", "PipelineResults"]
     message_published: AsyncContextHook["MessagePublished", None]
+    output_blocked: AsyncEventHook["Topic"]
 
     work_queue_built: AsyncContextHook["QueueItem", "WorkItem"]
     executor_initialized: EventHook["PipelineBootstrap"]
@@ -44,6 +45,7 @@ class Hooks:
         self.message_submitted = AsyncEventHook(error_handler=self.hook_failed.emit)
         self.message_executed = AsyncContextHook(error_handler=self.hook_failed.emit)
         self.message_published = AsyncContextHook(error_handler=self.hook_failed.emit)
+        self.output_blocked = AsyncEventHook(error_handler=self.hook_failed.emit)
         self.executor_initialized = EventHook(
             error_handler=partial(self.remote_hook_failed, name="executor_initialized")
         )
