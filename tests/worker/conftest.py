@@ -88,14 +88,12 @@ async def executor_manager_maker(
 
         def maker(
             executor: Optional[Executor] = None,
-            concurrency: int = 5,
             services: Services = services_manager.services,
         ) -> ExecutorManager:
             executor = executor or executor_maker(services_manager.services)
             manager = ExecutorManager(
                 resources_manager=resources_manager,
                 executor=executor,
-                concurrency=concurrency,
                 services=services,
             )
             manager.start()

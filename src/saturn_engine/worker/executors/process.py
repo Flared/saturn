@@ -1,5 +1,6 @@
 import asyncio
 import concurrent.futures
+import os
 from functools import partial
 
 from saturn_engine.core import PipelineResults
@@ -30,17 +31,23 @@ def process_initializer(
 
 class ProcessExecutor(Executor):
     def __init__(self, services: Services) -> None:
+        self.max_workers = os.cpu_count() or 1
         self.pool_executor = concurrent.futures.ProcessPoolExecutor(
+            max_workers=self.concurrency,
             initializer=partial(
                 process_initializer,
                 executor_initialized=services.hooks.executor_initialized,
-            )
+            ),
         )
 
     async def process_message(self, message: PipelineMessage) -> PipelineResults:
         loop = asyncio.get_running_loop()
         execute = partial(self.remote_execute, message=message)
         return await loop.run_in_executor(self.pool_executor, execute)
+
+    @property
+    def concurrency(self) -> int:
+        return self.max_workers
 
     async def close(self) -> None:
         self.pool_executor.shutdown(wait=False, cancel_futures=True)

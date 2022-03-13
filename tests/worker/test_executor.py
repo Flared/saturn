@@ -22,6 +22,8 @@ from tests.worker.conftest import FakeResource
 
 
 class FakeExecutor(Executor):
+    concurrency = 1
+
     def __init__(self) -> None:
         self.execute_semaphore = asyncio.Semaphore(0)
         self.processing = 0
@@ -48,6 +50,7 @@ async def test_base_executor(
     executor_manager_maker: Callable[..., ExecutorManager],
 ) -> None:
     executor = FakeExecutor()
+    executor.concurrency = 5
     executor_manager = executor_manager_maker(executor=executor)
 
     async with event_loop.until_idle():
@@ -74,7 +77,7 @@ async def test_executor_wait_resources_and_queue(
     executor_manager_maker: Callable[..., ExecutorManager],
 ) -> None:
     executor = FakeExecutor()
-    executor_manager = executor_manager_maker(executor=executor, concurrency=1)
+    executor_manager = executor_manager_maker(executor=executor)
     await executor_manager.resources_manager.add(
         ResourceData(name="r1", type="FakeResource", data={})
     )
@@ -130,7 +133,7 @@ async def test_executor_wait_pusblish_and_queue(
     executor_manager_maker: Callable[..., ExecutorManager],
 ) -> None:
     executor = FakeExecutor()
-    executor_manager = executor_manager_maker(executor=executor, concurrency=1)
+    executor_manager = executor_manager_maker(executor=executor)
     await executor_manager.resources_manager.add(
         ResourceData(name="r1", type="FakeResource", data={})
     )

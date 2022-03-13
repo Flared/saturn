@@ -2,6 +2,7 @@ from typing import Type
 
 import asyncio
 import contextlib
+from abc import ABC
 from abc import abstractmethod
 
 from saturn_engine.core import PipelineOutput
@@ -17,13 +18,18 @@ from ..resources_manager import ResourcesManager
 from ..resources_manager import ResourceUnavailable
 
 
-class Executor:
+class Executor(ABC):
     def __init__(self, services: Services) -> None:
         pass
 
     @abstractmethod
     async def process_message(self, message: PipelineMessage) -> PipelineResults:
         ...
+
+    @property
+    @abstractmethod
+    def concurrency(self) -> int:
+        pass
 
     async def close(self) -> None:
         pass
@@ -43,10 +49,8 @@ class ExecutorManager:
         resources_manager: ResourcesManager,
         executor: Executor,
         services: Services,
-        concurrency: int = 8,
     ) -> None:
         self.logger = getLogger(__name__, self)
-        self.concurrency = concurrency
         self.queue: asyncio.Queue[ExecutableMessage] = asyncio.Queue(maxsize=1)
         self.submit_tasks: set[asyncio.Task] = set()
         self.processing_tasks: set[asyncio.Task] = set()
@@ -56,7 +60,7 @@ class ExecutorManager:
         self.services = services
 
     def start(self) -> None:
-        for _ in range(self.concurrency):
+        for _ in range(self.executor.concurrency):
             self.logger.debug("Spawning new queue task")
             self.processing_tasks.add(asyncio.create_task(self.run_queue()))
 
