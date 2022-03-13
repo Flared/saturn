@@ -23,7 +23,7 @@ def main() -> None:
     logger = logging.getLogger(__name__)
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(async_main())
+    asyncio.run(async_main())
     if tasks := asyncio.all_tasks(loop):
         logger.error("Leftover tasks: %s", tasks)
 

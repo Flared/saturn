@@ -63,6 +63,7 @@ def test_get_own_attr() -> None:
 @pytest.mark.asyncio
 async def test_delayed_throttle() -> None:
     mock = AsyncMock()
+    mock.__qualname__ = "mock"
     throttle = DelayedThrottle(mock, delay=1.0)
     await throttle(1, a=2)
     await asyncio.sleep(0.9)

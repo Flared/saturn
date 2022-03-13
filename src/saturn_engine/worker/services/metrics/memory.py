@@ -20,7 +20,9 @@ class MemoryMetrics(BaseMetricsService[BaseServices, None]):
         self.logger = logging.getLogger("saturn.metrics")
         self.counters: dict[str, int] = defaultdict(int)
         self.timings: dict[str, float] = defaultdict(float)
-        self.printer_task = asyncio.create_task(self.print_metrics())
+        self.printer_task = asyncio.create_task(
+            self.print_metrics(), name="print-metrics"
+        )
 
     async def close(self) -> None:
         self.printer_task.cancel()

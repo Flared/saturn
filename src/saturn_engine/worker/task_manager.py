@@ -1,4 +1,4 @@
-from typing import Union
+import typing as t
 
 import asyncio
 from collections.abc import Coroutine
@@ -12,9 +12,11 @@ class TaskManager:
         self.logger = getLogger(__name__, self)
         self.tasks = TasksGroup()
 
-    def add(self, task: Union[asyncio.Task, Coroutine]) -> asyncio.Task:
+    def add(
+        self, task: t.Union[asyncio.Task, Coroutine], name: t.Optional[str] = None
+    ) -> asyncio.Task:
         if isinstance(task, Coroutine):
-            task = asyncio.create_task(task)
+            task = asyncio.create_task(task, name=name)
         if not isinstance(task, asyncio.Task):
             raise ValueError("Expected asyncio.Task or Coroutine")
         self.tasks.add(task)
