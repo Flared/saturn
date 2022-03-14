@@ -60,9 +60,11 @@ class ExecutorManager:
         self.services = services
 
     def start(self) -> None:
-        for _ in range(self.executor.concurrency):
+        for i in range(self.executor.concurrency):
             self.logger.debug("Spawning new queue task")
-            self.processing_tasks.add(asyncio.create_task(self.run_queue()))
+            self.processing_tasks.add(
+                asyncio.create_task(self.run_queue(), name=f"executor-queue-{i}")
+            )
 
     async def run_queue(self) -> None:
         while True:
@@ -84,7 +86,8 @@ class ExecutorManager:
                         asyncio.create_task(
                             self.consume_output(
                                 processable=processable, output=output.outputs
-                            )
+                            ),
+                            name=f"consume-output({processable})",
                         )
             except Exception:
                 self.logger.exception("Failed to process queue item")
@@ -101,7 +104,12 @@ class ExecutorManager:
             processable.park()
             # To avoid blocking the executor queue while we wait on resource,
             # create a background task to wait on resources.
-            self.submit_tasks.add(asyncio.create_task(self.delayed_submit(processable)))
+            self.submit_tasks.add(
+                asyncio.create_task(
+                    self.delayed_submit(processable),
+                    name=f"delayed-submit({processable})",
+                )
+            )
 
     async def acquire_resources(
         self, processable: ExecutableMessage, *, wait: bool

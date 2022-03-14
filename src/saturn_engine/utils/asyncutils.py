@@ -27,11 +27,16 @@ async def aiter2agen(iterator: AsyncIterator[T]) -> AsyncGenerator[T, None]:
 
 
 class TasksGroup:
-    def __init__(self, tasks: Iterable[asyncio.Task] = ()) -> None:
+    def __init__(
+        self, tasks: Iterable[asyncio.Task] = (), *, name: Optional[str] = None
+    ) -> None:
         self.logger = getLogger(__name__, self)
         self.tasks = set(tasks)
         self.updated = asyncio.Event()
-        self.updated_task = asyncio.create_task(self.updated.wait())
+        if name:
+            name = f"task-group-{name}.wait"
+        self.name = name
+        self.updated_task = asyncio.create_task(self.updated.wait(), name=self.name)
 
     def add(self, task: asyncio.Task) -> None:
         self.tasks.add(task)
@@ -49,7 +54,7 @@ class TasksGroup:
 
         if self.updated_task in done:
             done.remove(self.updated_task)
-            self.updated_task = asyncio.create_task(self.updated.wait())
+            self.updated_task = asyncio.create_task(self.updated.wait(), name=self.name)
 
         return done
 
@@ -89,7 +94,8 @@ class DelayedThrottle(Generic[AsyncFNone]):
             self.delayed_kwargs = kwargs
 
             if self.delayed_task is None:
-                self.delayed_task = asyncio.create_task(self._delay_call())
+                name = f"{self.func.__qualname__}.delayed"
+                self.delayed_task = asyncio.create_task(self._delay_call(), name=name)
 
     async def _delay_call(self) -> None:
         await asyncio.sleep(self.delay)
@@ -111,3 +117,15 @@ class DelayedThrottle(Generic[AsyncFNone]):
             await self.cancel()
             await self.func(*self.delayed_args, **self.delayed_kwargs)
             self.delayed_task = None
+
+
+def print_tasks_summary(loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
+    loop = loop or asyncio.get_running_loop()
+    tasks = list(asyncio.all_tasks(loop))
+    tasks.sort(key=lambda t: t.get_name())
+    for task in tasks:
+        print(task.get_name() + f" <{task._state}>")
+        stack = task.get_stack()
+        if stack:
+            frame = stack[-1]
+            print(f"  {frame.f_code.co_name}:{frame.f_lineno}")

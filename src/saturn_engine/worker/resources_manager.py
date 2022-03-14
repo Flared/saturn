@@ -32,7 +32,10 @@ class ResourceContext:
             return
 
         if self.release_at:
-            asyncio.create_task(self._delayed_release(self.resource))
+            asyncio.create_task(
+                self._delayed_release(self.resource),
+                name=f"delayed-release({self.resource.name})",
+            )
         else:
             await self.manager.release(self.resource)
 
