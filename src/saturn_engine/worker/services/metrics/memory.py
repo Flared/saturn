@@ -5,6 +5,7 @@ import contextlib
 import logging
 import time
 from collections import defaultdict
+from io import StringIO
 
 from .. import BaseServices
 from .base import BaseMetricsService
@@ -18,6 +19,7 @@ class MemoryMetrics(BaseMetricsService[BaseServices, None]):
         self.start_time = time.time()
         self.logger = logging.getLogger("saturn.metrics")
         self.counters: dict[str, int] = defaultdict(int)
+        self.timings: dict[str, float] = defaultdict(float)
         self.printer_task = asyncio.create_task(self.print_metrics())
 
     async def close(self) -> None:
@@ -32,13 +34,31 @@ class MemoryMetrics(BaseMetricsService[BaseServices, None]):
         if params:
             self.counters[f"{key}{{{stringify_params(params)}}}"] += count
 
+    async def timing(
+        self, key: str, seconds: float, *, params: Optional[dict[str, str]] = None
+    ) -> None:
+        self.timings[key] += seconds
+        if params:
+            self.timings[f"{key}{{{stringify_params(params)}}}"] += seconds
+
     async def print_metrics(self) -> None:
         while True:
             await asyncio.sleep(10)
             uptime = time.time() - self.start_time
-            self.logger.info(f"Uptime: {uptime:0.3f} seconds")
-            for k, v in sorted(self.counters.items()):
-                self.logger.info(f"{k}={v}")
+            metrics_summary = StringIO()
+            metrics_summary.writelines(
+                ["Metrics\n", f"  Uptime: {uptime:0.3f} seconds\n", "  Counters\n"]
+            )
+            metrics_summary.writelines(
+                f"    {k}={v}\n" for k, v in sorted(self.counters.items())
+            )
+
+            metrics_summary.write("  Timings\n")
+            metrics_summary.writelines(
+                f"    {k}={v:0.3f}s\n" for k, v in sorted(self.timings.items())
+            )
+
+            self.logger.info(metrics_summary.getvalue())
 
 
 def stringify_params(params: dict[str, str]) -> str:

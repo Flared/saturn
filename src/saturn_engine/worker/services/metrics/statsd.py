@@ -57,3 +57,15 @@ class StatsdMetrics(BaseMetricsService[BaseServices, "StatsdMetrics.Options"]):
                 self.client.increment(key, value=count)
         else:
             self.client.increment(key, value=count, tags=params)
+
+    async def timing(
+        self, key: str, seconds: float, *, params: Optional[dict[str, str]] = None
+    ) -> None:
+        value_ms = int(seconds * 1000)
+        if self.options.tags_in_metric:
+            self.client.timing(key, value=value_ms)
+            if params:
+                key = format_metric_tags(key, params)
+                self.client.timing(key, value=value_ms)
+        else:
+            self.client.timing(key, value=value_ms, tags=params)
