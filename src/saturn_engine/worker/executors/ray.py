@@ -17,7 +17,9 @@ from .bootstrap import PipelineBootstrap
 from .bootstrap import wrap_remote_exception
 
 
-@ray.remote(max_restarts=-1)  # type: ignore
+# Set max_restarts to 0 since the ActorPool take care of popping new actor in
+# case of failure.
+@ray.remote(max_restarts=0)  # type: ignore
 class SaturnExecutorActor:
     def __init__(self, executor_initialized: EventHook[PipelineBootstrap]):
         self.bootstrapper = PipelineBootstrap(executor_initialized)
