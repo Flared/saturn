@@ -51,6 +51,11 @@ class ExecutorSession:
             },
         )
 
+    @staticmethod
+    def concurrency(services: Services) -> int:
+        config = services.config.c.ray
+        return config.executor_actor_concurrency * config.executor_actor_count
+
     def close(self) -> None:
         pass
 
@@ -60,6 +65,10 @@ class RayExecutor(Executor):
         self.logger = getLogger(__name__, self)
         self.services = services
         self._session: t.Optional[ExecutorSession] = None
+
+    @property
+    def concurrency(self) -> int:
+        return ExecutorSession.concurrency(self.services)
 
     @contextlib.contextmanager
     def session(self) -> Iterator[ExecutorSession]:

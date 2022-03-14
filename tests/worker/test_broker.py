@@ -20,6 +20,8 @@ from tests.worker.conftest import FakeResource
 
 
 class FakeExecutor(Executor):
+    concurrency = 5
+
     def __init__(self) -> None:
         self.done_event = asyncio.Event()
 
