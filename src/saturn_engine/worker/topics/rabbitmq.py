@@ -74,17 +74,26 @@ class RabbitMQTopic(Topic):
                     routing_key=self.options.queue_name,
                 )
                 return True
+            except aio_pika.exceptions.ChannelInvalidStateError:
+                # The channel is broken. Let's create a new one.
+                await self.reset()
+                self.logger.exception("Channel error on publish")
             except aio_pika.exceptions.DeliveryError as e:
                 # Only handle Nack
                 if e.frame.name != "Basic.Nack":
                     raise
 
-                # If we are non blocking, we stop trying.
-                if not wait:
-                    return False
+            # If we are non blocking, we stop trying.
+            if not wait:
+                return False
 
-                # Otherwise, take a small break and try again.
-                await asyncio.sleep(self.RETRY_PUBLISH_DELAY.total_seconds())
+            # Otherwise, take a small break and try again.
+            await asyncio.sleep(self.RETRY_PUBLISH_DELAY.total_seconds())
+
+    async def reset(self) -> None:
+        await self.close()
+        del self.channel
+        del self.queue
 
     @asynccontextmanager
     async def message_context(
