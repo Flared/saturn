@@ -45,9 +45,9 @@ async def topic_maker(
                 connection=await services_manager.services.rabbitmq.connection,
             )
 
-        options = RabbitMQTopic.Options(
-            queue_name=queue_name, auto_delete=True, durable=False, **kwargs
-        )
+        kwargs.setdefault("auto_delete", True)
+        kwargs.setdefault("durable", False)
+        options = RabbitMQTopic.Options(queue_name=queue_name, **kwargs)
         topic = RabbitMQTopic(options, services=services_manager.services)
         topics.append(topic)
         queue_names.add(queue_name)
@@ -116,5 +116,36 @@ async def test_bounded_rabbitmq_topic_max_length(
         assert await unwrap(await alib.anext(topic_iter)) == message
         assert await unwrap(await alib.anext(topic_iter)) == message
         assert await publish_task
+
+    await topic.close()
+
+
+@pytest.mark.asyncio
+async def test_rabbitmq_topic_channel_closed(
+    services_manager: ServicesManager,
+    topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]],
+) -> None:
+    async def lose_connection() -> None:
+        connection = await services_manager.services.rabbitmq.connection
+        connection.connection.reader._transport.close()
+        connection.connection.writer._transport.close()
+
+    async def close_all_channels() -> None:
+        connection = await services_manager.services.rabbitmq.connection
+        for channel in dict(connection.connection.channels).values():
+            await channel.close()
+
+    topic = await topic_maker(durable=True, auto_delete=False)
+
+    message = TopicMessage(id="0", args={"n": 1})
+
+    assert await topic.publish(message, wait=False)
+    assert await topic.publish(message, wait=False)
+
+    await lose_connection()
+    assert await topic.publish(message, wait=False)
+
+    await close_all_channels()
+    assert await topic.publish(message, wait=False)
 
     await topic.close()
