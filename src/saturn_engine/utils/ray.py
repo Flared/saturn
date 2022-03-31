@@ -30,17 +30,23 @@ class ActorPool:
         self.actors_queue: asyncio.PriorityQueue[
             tuple[int, int, t.Any]
         ] = asyncio.PriorityQueue()
+        self._start_actors()
 
-        self.add(count)
+    def _start_actors(self) -> None:
+        for _ in range(self.count - len(self.actors_slot)):
+            self._start_actor()
 
-    def add(self, count: int) -> None:
-        for _ in range(count):
-            actor = self.actor_cls.options(**self.actor_options).remote(
-                *self.actor_args, **self.actor_kwargs
-            )
-            self.actors_slot[id(actor)] = 0
-            for _ in range(self.actor_concurrency):
-                self.push(actor)
+    def _start_actor(self) -> None:
+        actor = self.actor_cls.options(**self.actor_options).remote(
+            *self.actor_args, **self.actor_kwargs
+        )
+        self.actors_slot[id(actor)] = 0
+        for _ in range(self.actor_concurrency):
+            self.push(actor)
+
+    def _restart_actor(self, actor: t.Any) -> None:
+        self.actors_slot.pop(id(actor), None)
+        self._start_actors()
 
     def push(self, actor: t.Any) -> None:
         actor_id = id(actor)
@@ -69,8 +75,7 @@ class ActorPool:
             yield actor
         except RayActorError:
             release = False
-            self.remove(actor)
-            self.add(count=1)
+            self._restart_actor(actor)
             raise
         finally:
             if release:
@@ -80,9 +85,6 @@ class ActorPool:
         self.actors_slot.clear()
         while not self.actors_queue.empty():
             self.actors_queue.get_nowait()
-
-    def remove(self, actor: t.Any) -> None:
-        self.actors_slot.pop(id(actor), None)
 
     def __len__(self) -> int:
         return len(self.actors_slot)
