@@ -26,7 +26,7 @@ aiosqlite = "^0.17.0"
 marshmallow = "^3.13.0"
 desert = "^2020.11.18"
 asyncstdlib = "^3.10.2"
-aio-pika = "^6.8.0"
+aio-pika = "^7.1"
 ####################
 ## worker-manager ##
 ####################
@@ -37,7 +37,7 @@ aiohttp = {extras = ["speedups"], version = "^3.8.0"}
 croniter = "^1.0.15"
 types-croniter = "^1.0.3"
 marshmallow-enum = "^1.5.1"
-ray = {version = "^1.8.0", optional = true}
+ray = {version = "^1.11", optional = true}
 click = "^8.0.3"
 aiodogstatsd = {version = "^0.16.0", optional = true}
 structlog = "^21.5.0"
@@ -61,24 +61,25 @@ sentry = [
 ]
 
 [tool.poetry.dev-dependencies]
-black = "^21.9b0"
-flake8 = "^3.9.2"
-flake8-bandit = "^2.1.2"
-flake8-black = "^0.2.3"
-flake8-bugbear = "^21.9.2"
-flake8-breakpoint = "^1.1.0"
-flake8-isort = "^4.0.0"
-isort = "^5.9.3"
-mypy = "^0.931"
-pytest = "^6.2.5"
-nox-poetry = "^0.8.6"
-pytest-asyncio = "^0.15.1"
-pytest-icdiff = "^0.5"
-pytest-mock = "^3.6.1"
-freezegun = "^1.1.0"
-types-freezegun = "^1.1.2"
+black = "*"
+flake8 = "*"
+flake8-bandit = "*"
+flake8-black = "*"
+flake8-bugbear = "*"
+flake8-breakpoint = "*"
+flake8-isort = "*"
+isort = "*"
+mypy = "*"
+pytest = "*"
+nox-poetry = "*"
+pytest-asyncio = "*"
+pytest-icdiff = "*"
+pytest-mock = "*"
+freezegun = "*"
+types-freezegun = "*"
 
 [tool.pytest.ini_options]
+asyncio_mode = "auto"
 addopts = '''
   --doctest-modules
   --doctest-ignore-import-errors
