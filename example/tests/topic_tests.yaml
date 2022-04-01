@@ -10,8 +10,10 @@ spec:
   messages:
     - id: "1"
       args: {message: hello-1}
+      tags: {}
     - id: "2"
       args: {message: hello-2}
+      tags: {}
 ---
 apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnTopicTest
@@ -23,9 +25,13 @@ spec:
   messages:
     - id: "0"
       args: {message: hello-0}
+      tags: {}
     - id: "1"
       args: {message: hello-1}
+      tags: {}
     - id: "2"
       args: {message: hello-2}
+      tags: {}
     - id: "3"
       args: {message: hello-3}
+      tags: {}

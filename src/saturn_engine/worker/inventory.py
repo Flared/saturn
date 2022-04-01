@@ -15,6 +15,7 @@ from saturn_engine.utils.options import OptionsSchema
 class Item:
     id: str
     args: dict[str, Any]
+    tags: dict[str, str] = dataclasses.field(default_factory=dict)
 
 
 class Inventory(abc.ABC, OptionsSchema):

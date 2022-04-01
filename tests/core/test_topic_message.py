@@ -8,8 +8,10 @@ def test_save_load_topic_message() -> None:
         args={
             "hey": "ho",
             "none": None,
-        }
+        },
+        tags={"tag": "tag"},
     )
     m_loaded = fromdict(asdict(m), TopicMessage)
     assert m_loaded.args["hey"] == "ho"
     assert m_loaded.args["none"] is None
+    assert m_loaded.tags["tag"] == "tag"
