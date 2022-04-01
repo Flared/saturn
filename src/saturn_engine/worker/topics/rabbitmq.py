@@ -10,8 +10,8 @@ from contextlib import asynccontextmanager
 from datetime import timedelta
 
 import aio_pika
+import aio_pika.abc
 import aio_pika.exceptions
-from aio_pika import IncomingMessage
 
 from saturn_engine.core import TopicMessage
 from saturn_engine.utils.log import getLogger
@@ -45,8 +45,8 @@ class RabbitMQTopic(Topic):
         self.options = options
         self.services = services.cast(RabbitMQTopic.TopicServices)
         self.exit_stack = contextlib.AsyncExitStack()
-        self._channel: t.Optional[aio_pika.Channel] = None
-        self._queue: t.Optional[aio_pika.Queue] = None
+        self._channel: t.Optional[aio_pika.abc.AbstractChannel] = None
+        self._queue: t.Optional[aio_pika.abc.AbstractQueue] = None
 
     async def run(self) -> AsyncGenerator[t.AsyncContextManager[TopicMessage], None]:
         self.logger.info("Starting queue %s", self.options.queue_name)
@@ -127,12 +127,12 @@ class RabbitMQTopic(Topic):
 
     @asynccontextmanager
     async def message_context(
-        self, message: IncomingMessage
+        self, message: aio_pika.abc.AbstractIncomingMessage
     ) -> AsyncIterator[TopicMessage]:
         async with message.process():
             yield fromdict(json.loads(message.body.decode()), TopicMessage)
 
-    async def get_channel(self) -> aio_pika.Channel:
+    async def get_channel(self) -> aio_pika.abc.AbstractChannel:
         if self._channel is None:
             connection: aio_pika.Connection = await self.services.rabbitmq.connection
             channel = await self.exit_stack.enter_async_context(
@@ -145,7 +145,7 @@ class RabbitMQTopic(Topic):
 
         return self._channel
 
-    async def get_queue(self) -> aio_pika.Queue:
+    async def get_queue(self) -> aio_pika.abc.AbstractQueue:
         if self._queue is None:
             arguments: dict[str, t.Any] = {}
             if self.options.max_length:
