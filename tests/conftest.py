@@ -1,7 +1,7 @@
-from typing import Callable
-from typing import Union
+import typing as t
 
 import asyncio
+from collections.abc import Awaitable
 from collections.abc import Iterator
 
 import freezegun
@@ -17,6 +17,7 @@ from saturn_engine.core import api
 from .config import config as test_config
 from .utils import HttpClientMock
 from .utils import TimeForwardLoop
+from .utils.tcp_proxy import TcpProxy
 
 
 @pytest.fixture
@@ -41,7 +42,7 @@ def event_loop() -> Iterator[TimeForwardLoop]:
         loop.close()
 
 
-FreezeTime = Union[FrozenDateTimeFactory, StepTickTimeFactory]
+FreezeTime = t.Union[FrozenDateTimeFactory, StepTickTimeFactory]
 
 
 @pytest.fixture
@@ -58,20 +59,20 @@ def pipeline() -> None:
 
 
 @pytest.fixture
-def fake_pipeline(mocker: MockerFixture) -> Iterator[Callable]:
+def fake_pipeline(mocker: MockerFixture) -> Iterator[t.Callable]:
     mock = mocker.patch(__name__ + ".pipeline", autospec=True)
     yield mock
 
 
 @pytest.fixture
-def fake_pipeline_info(fake_pipeline: Callable) -> api.PipelineInfo:
+def fake_pipeline_info(fake_pipeline: t.Callable) -> api.PipelineInfo:
     return api.PipelineInfo.from_pipeline(fake_pipeline)
 
 
 @pytest.fixture
 def queue_pipeline_maker(
     fake_pipeline_info: api.PipelineInfo,
-) -> Callable[..., api.QueuePipeline]:
+) -> t.Callable[..., api.QueuePipeline]:
     def maker() -> api.QueuePipeline:
         return api.QueuePipeline(info=fake_pipeline_info, args={})
 
@@ -79,7 +80,7 @@ def queue_pipeline_maker(
 
 
 @pytest.fixture
-def topic_item_maker() -> Callable[..., api.TopicItem]:
+def topic_item_maker() -> t.Callable[..., api.TopicItem]:
     def maker() -> api.TopicItem:
         return api.TopicItem(name="test", type="test", options={})
 
@@ -88,9 +89,9 @@ def topic_item_maker() -> Callable[..., api.TopicItem]:
 
 @pytest.fixture
 def queue_item_maker(
-    queue_pipeline_maker: Callable[..., api.QueuePipeline],
-    topic_item_maker: Callable[..., api.TopicItem],
-) -> Callable[..., api.QueueItem]:
+    queue_pipeline_maker: t.Callable[..., api.QueuePipeline],
+    topic_item_maker: t.Callable[..., api.TopicItem],
+) -> t.Callable[..., api.QueueItem]:
     def maker() -> api.QueueItem:
         return api.QueueItem(
             name="test",
@@ -104,8 +105,8 @@ def queue_item_maker(
 
 @pytest.fixture
 def job_definition_maker(
-    queue_item_maker: Callable[..., api.QueueItem]
-) -> Callable[..., api.JobDefinition]:
+    queue_item_maker: t.Callable[..., api.QueueItem]
+) -> t.Callable[..., api.JobDefinition]:
     def maker() -> api.JobDefinition:
         return api.JobDefinition(
             name="test", template=queue_item_maker(), minimal_interval="@weekly"
@@ -115,8 +116,18 @@ def job_definition_maker(
 
 
 @pytest.fixture(scope="session")
-def config() -> Config:
+def session_config() -> Config:
     return Config().load_objects([default_config, test_config])
+
+
+@pytest.fixture
+def config_overridable() -> dict:
+    return {}
+
+
+@pytest.fixture
+def config(session_config: Config, config_overridable: dict) -> Config:
+    return session_config.load_object(config_overridable)
 
 
 @pytest.fixture(scope="session")
@@ -140,3 +151,21 @@ def remote_ray_cluster() -> None:
         ray.init(address="auto", local_mode=False)
     except Exception:
         raise pytest.skip("Skipping remote ray tests") from None
+
+
+@pytest.fixture
+async def tcp_proxy() -> t.AsyncIterator[t.Callable[[int, int], Awaitable[TcpProxy]]]:
+    proxies: list[TcpProxy] = []
+
+    async def factory(src_port: int, dst_port: int) -> TcpProxy:
+        proxy = TcpProxy(
+            dst_port=dst_port,
+            src_port=src_port,
+        )
+        await proxy.start()
+        proxies.append(proxy)
+        return proxy
+
+    yield factory
+    for proxy in proxies:
+        await proxy.disconnect()

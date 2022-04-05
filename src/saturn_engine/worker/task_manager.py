@@ -40,7 +40,6 @@ class TaskManager:
             self.logger.warning(
                 "Task '%s' completed with result: %s", task, task.result()
             )
-        self.tasks.remove(task)
 
     async def close(self) -> None:
         await self.tasks.close()

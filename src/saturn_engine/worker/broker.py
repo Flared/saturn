@@ -126,8 +126,8 @@ class Broker:
                 await self.resources_manager.remove(resource)
 
     async def close(self) -> None:
-        await self.scheduler.close()
         await self.executor.close()
+        await self.scheduler.close()
         await self.services_manager.close()
 
     def stop(self) -> None:
