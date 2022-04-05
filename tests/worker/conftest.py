@@ -31,6 +31,7 @@ from saturn_engine.worker.services.rabbitmq import RabbitMQService
 from saturn_engine.worker.topics import Topic
 from saturn_engine.worker.topics.memory import reset as reset_memory_queues
 from saturn_engine.worker.work_manager import WorkManager
+from tests.utils import TimeForwardLoop
 
 
 @pytest.fixture
@@ -168,7 +169,10 @@ def fake_resource_class() -> str:
 
 
 @pytest.fixture
-async def rabbitmq_service(services_manager: ServicesManager) -> RabbitMQService:
+async def rabbitmq_service(
+    event_loop: TimeForwardLoop, services_manager: ServicesManager
+) -> RabbitMQService:
+    event_loop.forward_time = False
     services_manager._load_service(RabbitMQService)
     _rabbitmq_service = services_manager.services.rabbitmq
     try:

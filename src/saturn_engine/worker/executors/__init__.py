@@ -2,11 +2,13 @@ from typing import Type
 
 import asyncio
 import contextlib
+import datetime
 from abc import ABC
 from abc import abstractmethod
 
 from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResults
+from saturn_engine.utils.asyncutils import TasksGroupRunner
 from saturn_engine.utils.inspect import import_name
 from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.pipeline_message import PipelineMessage
@@ -44,6 +46,8 @@ def get_executor_class(path: str) -> Type[Executor]:
 
 
 class ExecutorManager:
+    CLOSE_TIMEOUT = datetime.timedelta(seconds=10)
+
     def __init__(
         self,
         resources_manager: ResourcesManager,
@@ -52,22 +56,28 @@ class ExecutorManager:
     ) -> None:
         self.logger = getLogger(__name__, self)
         self.queue: asyncio.Queue[ExecutableMessage] = asyncio.Queue(maxsize=1)
-        self.submit_tasks: set[asyncio.Task] = set()
-        self.processing_tasks: set[asyncio.Task] = set()
+        self.submit_tasks = TasksGroupRunner(name="executor-submit")
+        self.processing_tasks = TasksGroupRunner(name="executor-queue")
+        self.consuming_tasks = TasksGroupRunner(name="executor-consuming")
         self.message_executor = executor
         self.resources_manager = resources_manager
         self.executor = executor
         self.services = services
+        self.is_running = False
 
     def start(self) -> None:
+        self.is_running = True
         for i in range(self.executor.concurrency):
             self.logger.debug("Spawning new queue task")
-            self.processing_tasks.add(
-                asyncio.create_task(self.run_queue(), name=f"executor-queue-{i}")
+            self.processing_tasks.create_task(
+                self.run_queue(), name=f"executor-queue-{i}"
             )
+        self.consuming_tasks.start()
+        self.submit_tasks.start()
+        self.processing_tasks.start()
 
     async def run_queue(self) -> None:
-        while True:
+        while self.is_running:
             processable = await self.queue.get()
             processable.context.callback(self.queue.task_done)
             try:
@@ -83,7 +93,7 @@ class ExecutorManager:
                         pass
                     else:
                         processable.update_resources_used(output.resources)
-                        asyncio.create_task(
+                        self.consuming_tasks.create_task(
                             self.consume_output(
                                 processable=processable, output=output.outputs
                             ),
@@ -104,11 +114,9 @@ class ExecutorManager:
             processable.park()
             # To avoid blocking the executor queue while we wait on resource,
             # create a background task to wait on resources.
-            self.submit_tasks.add(
-                asyncio.create_task(
-                    self.delayed_submit(processable),
-                    name=f"delayed-submit({processable})",
-                )
+            self.submit_tasks.create_task(
+                self.delayed_submit(processable),
+                name=f"delayed-submit({processable})",
             )
 
     async def acquire_resources(
@@ -155,8 +163,9 @@ class ExecutorManager:
                     async def scope(_: MessagePublished) -> None:
                         if topic is None:
                             return
-                        if await topic.publish(item.message, wait=False):
-                            return
+                        with contextlib.suppress(Exception):
+                            if await topic.publish(item.message, wait=False):
+                                return
                         await self.services.s.hooks.output_blocked.emit(topic)
                         processable.park()
                         await topic.publish(item.message, wait=True)
@@ -171,11 +180,14 @@ class ExecutorManager:
             await processable.unpark()
 
     async def close(self) -> None:
-        for task in self.submit_tasks:
-            task.cancel()
+        # Shutdown the queue task first so we don't process any new item.
+        await self.processing_tasks.close(timeout=self.CLOSE_TIMEOUT.total_seconds())
+        # Delayed tasks waiting on resource
+        await self.submit_tasks.close()
+        # Then close the output consuming task.
+        await self.consuming_tasks.close(timeout=self.CLOSE_TIMEOUT.total_seconds())
 
-        for task in self.processing_tasks:
-            task.cancel()
+        await self.executor.close()
 
 
 from .process import ProcessExecutor

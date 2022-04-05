@@ -91,7 +91,6 @@ class Scheduler(Generic[T]):
     async def process_task(self, task: asyncio.Task) -> AsyncIterator[T]:
         item = self.tasks[task]
         del self.tasks[task]
-        self.tasks_group.remove(task)
 
         try:
             # Even if the task finished, if the item was removed we

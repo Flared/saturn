@@ -117,6 +117,17 @@ def setup_logging(formatter: t.Optional[dict[str, t.Any]] = None) -> None:
                 },
             },
             "root": {"handlers": ["default"], "level": "DEBUG"},
-            "loggers": {"aio_pika": {"handlers": ["default"], "level": "INFO"}},
+            "loggers": {
+                "aio_pika": {
+                    "handlers": ["default"],
+                    "level": "INFO",
+                    "propagate": False,
+                },
+                "aiormq": {
+                    "handlers": ["default"],
+                    "level": "INFO",
+                    "propagate": False,
+                },
+            },
         }
     )
