@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "saturn-engine"
-version = "0.2.0dev58" # Also in setup.py
+version = "0.2.0dev59" # Also in setup.py
 description = ""
 readme = "README.md"
 authors = ["Flare Systems <oss@flare.systems>"]
