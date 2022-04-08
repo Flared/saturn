@@ -40,7 +40,7 @@ class ExecutorSession:
         if config.address:
             options["address"] = config.address
 
-        ray.init(**options)
+        ray.init(ignore_reinit_error=True, **options)
         self.pool = ActorPool(
             count=config.executor_actor_count,
             actor_cls=SaturnExecutorActor,
@@ -59,7 +59,7 @@ class ExecutorSession:
         return config.executor_actor_concurrency * config.executor_actor_count
 
     def close(self) -> None:
-        pass
+        ray.shutdown()
 
 
 class RayExecutor(Executor):
