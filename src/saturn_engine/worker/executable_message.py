@@ -55,4 +55,4 @@ class ExecutableMessage:
             self.resources[resource_used.type].release_later(resource_used.release_at)
 
     def __str__(self) -> str:
-        return self.message.message.id
+        return str(self.message.message.id)

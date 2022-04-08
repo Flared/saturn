@@ -112,7 +112,7 @@ class TracebackData:
             linecache.lazycache(filename, f.f_globals)
             f_locals = f.f_locals
             _locals: dict[str, str] = (
-                {k: repr(v) for k, v in f_locals.items()} if f_locals else {}
+                {k: str(v) for k, v in f_locals.items()} if f_locals else {}
             )
 
             firstlineno = co.co_firstlineno

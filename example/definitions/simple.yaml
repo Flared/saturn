@@ -17,10 +17,10 @@ spec:
   type: StaticTopic
   options:
     messages:
-    - {"id": 0, "args": {"message": "hello-0"}}
-    - {"id": 1, "args": {"message": "hello-1"}}
-    - {"id": 2, "args": {"message": "hello-2"}}
-    - {"id": 3, "args": {"message": "hello-3"}}
+    - {"id": "0", "args": {"message": "hello-0"}}
+    - {"id": "1", "args": {"message": "hello-1"}}
+    - {"id": "2", "args": {"message": "hello-2"}}
+    - {"id": "3", "args": {"message": "hello-3"}}
 ---
 apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnInventory
