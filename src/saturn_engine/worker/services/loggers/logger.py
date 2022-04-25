@@ -121,6 +121,7 @@ class Logger(Service[BaseServices, "Logger.Options"]):
     def topic_message_data(self, message: TopicMessage) -> dict[str, t.Any]:
         return {
             "id": message.id,
+            "tags": message.tags,
         } | ({"args": message.args} if self.options.verbose else {})
 
     def result_data(self, results: PipelineResults) -> list[dict[str, t.Any]]:
