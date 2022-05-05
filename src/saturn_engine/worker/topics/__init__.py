@@ -3,6 +3,7 @@ from typing import Type
 from ..topic import BlockingTopic
 from ..topic import Topic
 from ..topic import TopicOutput
+from .batching import BatchingTopic
 from .dummy import DummyTopic
 from .file import FileTopic
 from .memory import MemoryTopic
@@ -24,4 +25,5 @@ BUILTINS: dict[str, Type[Topic]] = {
     "PeriodicTopic": PeriodicTopic,
     "RabbitMQTopic": RabbitMQTopic,
     "StaticTopic": StaticTopic,
+    "BatchingTopic": BatchingTopic,
 }

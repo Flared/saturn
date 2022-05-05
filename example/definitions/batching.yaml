@@ -1,0 +1,30 @@
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnTopic
+metadata:
+  name: batching-topic
+spec:
+  type: BatchingTopic
+  options:
+    topic:
+      type: PeriodicTopic
+      name: periodic-topic
+      options:
+        interval: "* * * * * */5"
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJobDefinition
+metadata:
+  name: example-job-definition
+spec:
+  minimalInterval: "@weekly"
+  template:
+    input:
+      topic: batching-topic
+
+    output:
+      default:
+        - topic: stdout
+
+    pipeline:
+      name: example.pipelines.echo
+      resources: {"api_key": "example.resources.TestApiKey"}
