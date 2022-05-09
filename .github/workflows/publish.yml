@@ -1,0 +1,20 @@
+name: Publish
+on:
+  release:
+    types: [published]
+jobs:
+  release-pypi:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.9'
+        architecture: x64
+    - run: pip install poetry==1.1.11 awscli==1.23.9 twine==4.0.0
+    - run: poetry build
+    - run: |
+        export TWINE_USERNAME=aws
+        export TWINE_PASSWORD=$(aws codeartifact get-authorization-token --domain flared --domain-owner 409905535292 --query authorizationToken --output text)
+        export TWINE_REPOSITORY_URL=$(aws codeartifact get-repository-endpoint --domain flared --domain-owner 409905535292 --repository pypi-private --format pypi --query repositoryEndpoint --output text)
+        twine upload dist/*
