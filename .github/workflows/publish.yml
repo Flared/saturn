@@ -19,3 +19,8 @@ jobs:
         export TWINE_PASSWORD=$(aws codeartifact get-authorization-token --domain flared --domain-owner 409905535292 --query authorizationToken --output text)
         export TWINE_REPOSITORY_URL=$(aws codeartifact get-repository-endpoint --domain flared --domain-owner 409905535292 --repository pypi-private --format pypi --query repositoryEndpoint --output text)
         twine upload dist/*
+      env:
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
