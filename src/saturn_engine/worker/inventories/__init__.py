@@ -7,6 +7,7 @@ from ..inventory import IteratorInventory
 from .chained import ChainedInventory
 from .dummy import DummyInventory
 from .joined import JoinedInventory
+from .periodic import PeriodicInventory
 from .static import StaticInventory
 
 __all__ = ("Item", "Inventory", "IteratorInventory", "BlockingInventory", "BUILTINS")
@@ -16,4 +17,5 @@ BUILTINS: dict[str, Type[Inventory]] = {
     "StaticInventory": StaticInventory,
     "JoinedInventory": JoinedInventory,
     "ChainedInventory": ChainedInventory,
+    "PeriodicInventory": PeriodicInventory,
 }
