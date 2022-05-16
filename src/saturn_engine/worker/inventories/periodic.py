@@ -28,7 +28,7 @@ class PeriodicInventory(IteratorInventory):
 
     @staticmethod
     def _now() -> datetime.datetime:
-        return datetime.datetime.fromtimestamp(
+        return datetime.datetime.utcfromtimestamp(
             asyncio.get_running_loop().time(),
         )
 
