@@ -25,23 +25,6 @@ def http_client_mock(event_loop: TimeForwardLoop) -> HttpClientMock:
     return HttpClientMock(loop=event_loop)
 
 
-@pytest.fixture
-def event_loop() -> Iterator[TimeForwardLoop]:
-    """Define a custom event loop.
-    This event loop use a custom Selector that wraps sleep forward.
-    """
-    loop = TimeForwardLoop()
-    yield loop
-    loop.run_until_complete(loop.shutdown_asyncgens())
-    loop.run_until_complete(loop.shutdown_default_executor())
-    tasks = asyncio.all_tasks(loop)
-
-    try:
-        assert not tasks
-    finally:
-        loop.close()
-
-
 FreezeTime = t.Union[FrozenDateTimeFactory, StepTickTimeFactory]
 
 
@@ -52,6 +35,30 @@ def frozen_time() -> Iterator[FreezeTime]:
         ignore=["_pytest.runner"],
     ) as frozen_time:
         yield frozen_time
+
+
+@pytest.fixture
+def event_loop(
+    frozen_time: FreezeTime,
+) -> Iterator[TimeForwardLoop]:
+    """Define a custom event loop.
+    This event loop use a custom Selector that wraps sleep forward.
+    """
+    loop = TimeForwardLoop(
+        frozen_time=t.cast(
+            FrozenDateTimeFactory,
+            frozen_time,
+        ),
+    )
+    yield loop
+    loop.run_until_complete(loop.shutdown_asyncgens())
+    loop.run_until_complete(loop.shutdown_default_executor())
+    tasks = asyncio.all_tasks(loop)
+
+    try:
+        assert not tasks
+    finally:
+        loop.close()
 
 
 def pipeline() -> None:

@@ -4,10 +4,13 @@ from typing import Optional
 from typing import cast
 
 import asyncio
+import datetime
 import json
+import time
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import timezone
 from selectors import DefaultSelector
 from unittest import mock
 from unittest.mock import AsyncMock
@@ -15,23 +18,38 @@ from unittest.mock import Mock
 
 import aiohttp
 import yarl
+from freezegun.api import FrozenDateTimeFactory
 
 from saturn_engine.worker.services import Services
 
 
 # From https://github.com/spulec/freezegun/issues/290
 class TimeForwardSelector(DefaultSelector):
-    def __init__(self, *, on_idle: Callable[[], None]) -> None:
+    def __init__(
+        self,
+        *,
+        on_idle: Callable[[], None],
+        frozen_time: FrozenDateTimeFactory,
+    ) -> None:
         super().__init__()
         self._current_time: float = 0
         self._on_idle = on_idle
         self.forward_time = True
+        self.frozen_time = frozen_time
 
     def select(self, timeout: Optional[float] = None) -> Any:
         select_timeout = timeout
         if self.forward_time:
-            self._current_time += timeout or 0
-            select_timeout = 0
+            time_delta = timeout or 0
+            self._current_time += time_delta
+            self.frozen_time.move_to(
+                datetime.datetime.fromtimestamp(
+                    time.time() + time_delta,
+                    tz=timezone.utc,
+                )
+            )
+        select_timeout = 0
+
         events = super().select(select_timeout)
 
         if not events and timeout is None:
@@ -42,8 +60,13 @@ class TimeForwardSelector(DefaultSelector):
 class TimeForwardLoop(asyncio.SelectorEventLoop):  # type: ignore
     _selector: TimeForwardSelector
 
-    def __init__(self) -> None:
-        super().__init__(selector=TimeForwardSelector(on_idle=self.on_idle))
+    def __init__(self, frozen_time: FrozenDateTimeFactory) -> None:
+        super().__init__(
+            selector=TimeForwardSelector(
+                on_idle=self.on_idle,
+                frozen_time=frozen_time,
+            ),
+        )
         self._idled: Optional[asyncio.Event] = None
 
     @property

@@ -30,10 +30,7 @@ class PeriodicInventory(IteratorInventory):
 
     @staticmethod
     def _now() -> datetime.datetime:
-        return datetime.datetime.fromtimestamp(
-            asyncio.get_running_loop().time(),
-            tz=timezone.utc,
-        )
+        return datetime.datetime.now(timezone.utc)
 
     def __init__(self, options: Options, **kwargs: object) -> None:
         super().__init__(

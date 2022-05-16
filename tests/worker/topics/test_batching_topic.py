@@ -45,7 +45,7 @@ async def test_batching_topic_flush_timeout() -> None:
                 name="periodic-topic",
                 type="PeriodicTopic",
                 options={
-                    "interval": "* * * * * */5",
+                    "interval": "* * * * * */4",
                 },
             ),
             flush_timeout=FLUSH_TIMEOUT,

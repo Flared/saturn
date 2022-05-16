@@ -9,7 +9,8 @@ from tests.utils import HttpClientMock
 
 @pytest.mark.asyncio
 async def test_api_jobstore(
-    http_client_mock: HttpClientMock, frozen_time: FreezeTime
+    http_client_mock: HttpClientMock,
+    frozen_time: FreezeTime,
 ) -> None:
     http_client_mock.get("/api/jobs/test").return_value = {
         "data": {
@@ -60,7 +61,7 @@ async def test_api_jobstore(
     http_client_mock.put("/api/jobs/test").assert_called_once_with(
         json={
             "cursor": "40",
-            "completed_at": "2018-01-02T00:00:00+00:00",
+            "completed_at": "2018-01-02T00:00:02.200000+00:00",
             "error": None,
         }
     )
@@ -74,7 +75,7 @@ async def test_api_jobstore(
     http_client_mock.put("/api/jobs/test").assert_called_once_with(
         json={
             "cursor": "50",
-            "completed_at": "2018-01-02T00:00:00+00:00",
+            "completed_at": "2018-01-02T00:00:03.300000+00:00",
             "error": "ValueError('test')",
         }
     )
