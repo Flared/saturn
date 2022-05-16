@@ -25,6 +25,7 @@ async def test_periodic_inventory(
         {
             "start_date": last_week.isoformat(),
             "interval": "@daily",
+            "batch_size": 3,
         },
     )
 
@@ -53,6 +54,9 @@ async def test_periodic_inventory(
         ).isoformat()
         == "1970-01-02T00:00:00+00:00"
     )
+
+    # We can call next_batch
+    assert len(await inventory.next_batch()) == 3
 
 
 @pytest.mark.asyncio
