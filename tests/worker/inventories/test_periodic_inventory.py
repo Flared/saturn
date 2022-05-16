@@ -1,4 +1,5 @@
 import datetime
+from datetime import timezone
 
 import asyncstdlib as alib
 import pytest
@@ -10,15 +11,11 @@ from tests.utils import TimeForwardLoop
 
 @pytest.mark.asyncio
 async def test_periodic_inventory(
-    frozen_time: FreezeTime,
     event_loop: TimeForwardLoop,
+    frozen_time: FreezeTime,
 ) -> None:
-    start_time = event_loop.time()
-    start_date = datetime.datetime.fromtimestamp(
-        event_loop.time(),
-        tz=datetime.timezone.utc,
-    )
-
+    frozen_time.move_to(datetime.datetime.fromisoformat("1970-01-01T00:00:00+00:00"))
+    start_date = datetime.datetime.now(timezone.utc)
     last_week = start_date - datetime.timedelta(days=7)
 
     inventory = PeriodicInventory.from_options(
@@ -43,16 +40,12 @@ async def test_periodic_inventory(
         assert (await iterator.__anext__()).id == expected_id
 
     # Didn't need to wait.
-    assert event_loop.time() == start_time
+    assert datetime.datetime.now(timezone.utc) == start_date
 
     # This "time" we needed to sleep. TIME. You get it?
     assert (await iterator.__anext__()).id == "1970-01-02T00:00:00+00:00"
     assert (
-        datetime.datetime.fromtimestamp(
-            event_loop.time(),
-            tz=datetime.timezone.utc,
-        ).isoformat()
-        == "1970-01-02T00:00:00+00:00"
+        datetime.datetime.now(timezone.utc).isoformat() == "1970-01-02T00:00:00+00:00"
     )
 
     # We can call next_batch
