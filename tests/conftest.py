@@ -39,16 +39,13 @@ def frozen_time() -> Iterator[FreezeTime]:
 
 @pytest.fixture
 def event_loop(
-    frozen_time: FreezeTime,
+    frozen_time: FrozenDateTimeFactory,
 ) -> Iterator[TimeForwardLoop]:
     """Define a custom event loop.
     This event loop use a custom Selector that wraps sleep forward.
     """
     loop = TimeForwardLoop(
-        frozen_time=t.cast(
-            FrozenDateTimeFactory,
-            frozen_time,
-        ),
+        frozen_time=frozen_time,
     )
     yield loop
     loop.run_until_complete(loop.shutdown_asyncgens())
