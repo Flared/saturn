@@ -4,6 +4,7 @@ import asyncio
 import dataclasses
 import datetime
 from collections.abc import AsyncIterator
+from datetime import timezone
 
 import croniter
 
@@ -28,8 +29,9 @@ class PeriodicInventory(IteratorInventory):
 
     @staticmethod
     def _now() -> datetime.datetime:
-        return datetime.datetime.utcfromtimestamp(
+        return datetime.datetime.fromtimestamp(
             asyncio.get_running_loop().time(),
+            tz=timezone.utc,
         )
 
     def __init__(self, options: Options, **kwrags: object) -> None:

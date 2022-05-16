@@ -14,7 +14,10 @@ async def test_periodic_inventory(
     event_loop: TimeForwardLoop,
 ) -> None:
     start_time = event_loop.time()
-    start_date = datetime.datetime.utcfromtimestamp(event_loop.time())
+    start_date = datetime.datetime.fromtimestamp(
+        event_loop.time(),
+        tz=datetime.timezone.utc,
+    )
 
     last_week = start_date - datetime.timedelta(days=7)
 
@@ -28,13 +31,13 @@ async def test_periodic_inventory(
     # The first batch should be from last week to now.
     iterator = inventory.iterate()
     for expected_id in [
-        "1969-12-26T00:00:00",
-        "1969-12-27T00:00:00",
-        "1969-12-28T00:00:00",
-        "1969-12-29T00:00:00",
-        "1969-12-30T00:00:00",
-        "1969-12-31T00:00:00",
-        "1970-01-01T00:00:00",
+        "1969-12-26T00:00:00+00:00",
+        "1969-12-27T00:00:00+00:00",
+        "1969-12-28T00:00:00+00:00",
+        "1969-12-29T00:00:00+00:00",
+        "1969-12-30T00:00:00+00:00",
+        "1969-12-31T00:00:00+00:00",
+        "1970-01-01T00:00:00+00:00",
     ]:
         assert (await iterator.__anext__()).id == expected_id
 
@@ -42,10 +45,13 @@ async def test_periodic_inventory(
     assert event_loop.time() == start_time
 
     # This "time" we needed to sleep. TIME. You get it?
-    assert (await iterator.__anext__()).id == "1970-01-02T00:00:00"
+    assert (await iterator.__anext__()).id == "1970-01-02T00:00:00+00:00"
     assert (
-        datetime.datetime.utcfromtimestamp(event_loop.time()).isoformat()
-        == "1970-01-02T00:00:00"
+        datetime.datetime.fromtimestamp(
+            event_loop.time(),
+            tz=datetime.timezone.utc,
+        ).isoformat()
+        == "1970-01-02T00:00:00+00:00"
     )
 
 
@@ -54,7 +60,10 @@ async def test_periodic_end_date(
     frozen_time: FreezeTime,
     event_loop: TimeForwardLoop,
 ) -> None:
-    start_date = datetime.datetime.utcfromtimestamp(event_loop.time())
+    start_date = datetime.datetime.fromtimestamp(
+        event_loop.time(),
+        tz=datetime.timezone.utc,
+    )
     last_week = start_date - datetime.timedelta(days=7)
     yesterday = start_date - datetime.timedelta(days=1)
 
@@ -68,10 +77,10 @@ async def test_periodic_end_date(
 
     batch_ids = [i.id for i in await alib.list(inventory.iterate())]
     assert batch_ids == [
-        "1969-12-26T00:00:00",
-        "1969-12-27T00:00:00",
-        "1969-12-28T00:00:00",
-        "1969-12-29T00:00:00",
-        "1969-12-30T00:00:00",
-        "1969-12-31T00:00:00",
+        "1969-12-26T00:00:00+00:00",
+        "1969-12-27T00:00:00+00:00",
+        "1969-12-28T00:00:00+00:00",
+        "1969-12-29T00:00:00+00:00",
+        "1969-12-30T00:00:00+00:00",
+        "1969-12-31T00:00:00+00:00",
     ]
