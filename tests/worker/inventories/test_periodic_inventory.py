@@ -4,6 +4,7 @@ from datetime import timezone
 import asyncstdlib as alib
 import pytest
 
+from saturn_engine.utils import utcnow
 from saturn_engine.worker.inventories import PeriodicInventory
 from tests.conftest import FreezeTime
 from tests.utils import TimeForwardLoop
@@ -15,7 +16,7 @@ async def test_periodic_inventory(
     frozen_time: FreezeTime,
 ) -> None:
     frozen_time.move_to(datetime.datetime.fromisoformat("1970-01-01T00:00:00+00:00"))
-    start_date = datetime.datetime.now(timezone.utc)
+    start_date = utcnow()
     last_week = start_date - datetime.timedelta(days=7)
 
     inventory = PeriodicInventory.from_options(
@@ -44,9 +45,7 @@ async def test_periodic_inventory(
 
     # This "time" we needed to sleep. TIME. You get it?
     assert (await iterator.__anext__()).id == "1970-01-02T00:00:00+00:00"
-    assert (
-        datetime.datetime.now(timezone.utc).isoformat() == "1970-01-02T00:00:00+00:00"
-    )
+    assert utcnow().isoformat() == "1970-01-02T00:00:00+00:00"
 
     # We can call next_batch
     assert len(await inventory.next_batch()) == 3
@@ -57,10 +56,8 @@ async def test_periodic_end_date(
     frozen_time: FreezeTime,
     event_loop: TimeForwardLoop,
 ) -> None:
-    start_date = datetime.datetime.fromtimestamp(
-        event_loop.time(),
-        tz=datetime.timezone.utc,
-    )
+    frozen_time.move_to(datetime.datetime.fromisoformat("1970-01-01T00:00:00+00:00"))
+    start_date = utcnow()
     last_week = start_date - datetime.timedelta(days=7)
     yesterday = start_date - datetime.timedelta(days=1)
 

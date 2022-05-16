@@ -4,13 +4,10 @@ from typing import Optional
 from typing import cast
 
 import asyncio
-import datetime
 import json
-import time
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import timezone
 from selectors import DefaultSelector
 from unittest import mock
 from unittest.mock import AsyncMock
@@ -42,12 +39,7 @@ class TimeForwardSelector(DefaultSelector):
         if self.forward_time:
             time_delta = timeout or 0
             self._current_time += time_delta
-            self.frozen_time.move_to(
-                datetime.datetime.fromtimestamp(
-                    time.time() + time_delta,
-                    tz=timezone.utc,
-                )
-            )
+            self.frozen_time.tick(time_delta)
         select_timeout = 0
 
         events = super().select(select_timeout)

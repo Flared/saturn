@@ -4,9 +4,10 @@ import asyncio
 import dataclasses
 import datetime
 from collections.abc import AsyncIterator
-from datetime import timezone
 
 import croniter
+
+from saturn_engine.utils import utcnow
 
 from . import Item
 from . import IteratorInventory
@@ -28,17 +29,13 @@ class PeriodicInventory(IteratorInventory):
         interval: str
         batch_size: Optional[int]
 
-    @staticmethod
-    def _now() -> datetime.datetime:
-        return datetime.datetime.now(timezone.utc)
-
     def __init__(self, options: Options, **kwargs: object) -> None:
         super().__init__(
             options=options,
             batch_size=options.batch_size or 1,
             **kwargs,
         )
-        self.start_date = options.start_date or self._now()
+        self.start_date = options.start_date or utcnow()
         self.end_date = options.end_date
         self.interval = options.interval
 
@@ -56,7 +53,7 @@ class PeriodicInventory(IteratorInventory):
                 continue
             if self.end_date is not None and tick > self.end_date:
                 break
-            now = self._now()
+            now = utcnow()
             if tick > now:
                 await asyncio.sleep((tick - now).total_seconds())
             yield Item(
