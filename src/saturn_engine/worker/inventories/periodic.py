@@ -56,5 +56,5 @@ class PeriodicInventory(IteratorInventory):
                 await asyncio.sleep((tick - now).total_seconds())
             yield Item(
                 id=tick.isoformat(),
-                args={"timestamp": tick},
+                args={"timestamp": tick.isoformat()},
             )
