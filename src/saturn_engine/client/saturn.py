@@ -4,6 +4,7 @@ from typing import Optional
 from typing import TypeVar
 
 import asyncio
+import threading
 
 import aiohttp
 
@@ -11,6 +12,8 @@ from saturn_engine.config import Config
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import TopicItem
 from saturn_engine.core.api import TopicsResponse
+from saturn_engine.utils import LONG_TIMEOUT
+from saturn_engine.utils import MEDIUM_TIMEOUT
 from saturn_engine.utils import urlcat
 from saturn_engine.utils.options import fromdict
 from saturn_engine.worker import work_factory
@@ -83,7 +86,16 @@ class SyncSaturnClient:
         *,
         http_client: Optional[aiohttp.ClientSession] = None,
     ) -> None:
-        self.loop = asyncio.new_event_loop()
+        self._loop: asyncio.AbstractEventLoop
+        self._loop_initialized = threading.Event()
+        self._loop_thread = threading.Thread(
+            target=self._run_loop, name="saturn-client", daemon=True
+        )
+        self._loop_thread.start()
+
+        if not self._loop_initialized.wait(timeout=MEDIUM_TIMEOUT):
+            raise RuntimeError("Client intializing timed out")
+
         self._client = self._run_sync(
             SaturnClient.from_config(
                 config=config,
@@ -103,12 +115,35 @@ class SyncSaturnClient:
             http_client=http_client,
         )
 
-    def publish(self, topic_name: str, message: TopicMessage, wait: bool) -> bool:
-        return self._run_sync(self._client.publish(topic_name, message, wait))
+    def publish(
+        self,
+        topic_name: str,
+        message: TopicMessage,
+        wait: bool,
+        *,
+        timeout: Optional[float] = MEDIUM_TIMEOUT,
+    ) -> bool:
+        return self._run_sync(
+            self._client.publish(topic_name, message, wait), timeout=timeout
+        )
 
-    def _run_sync(self, coroutine: Coroutine[Any, Any, T]) -> T:
-        return self.loop.run_until_complete(coroutine)
+    def _run_loop(self) -> None:
+        self._loop = asyncio.new_event_loop()
+        self._loop_initialized.set()
+        self._loop.run_forever()
+        self._loop.close()
+
+    def _run_sync(
+        self,
+        coroutine: Coroutine[Any, Any, T],
+        timeout: Optional[float] = MEDIUM_TIMEOUT,
+    ) -> T:
+        future = asyncio.run_coroutine_threadsafe(coroutine, self._loop)
+        return future.result(timeout=timeout)
 
     def close(self) -> None:
-        self.loop.run_until_complete(self._client.close())
-        self.loop.close()
+        try:
+            self._run_sync(self._client.close(), timeout=LONG_TIMEOUT)
+        finally:
+            self._loop.call_soon_threadsafe(self._loop.stop)
+            self._loop_thread.join(timeout=LONG_TIMEOUT)
