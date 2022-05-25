@@ -123,7 +123,7 @@ def get_own_attr(inst: object, attr: str, default: Union[T, Sentinel] = MISSING)
     """
     try:
         if hasattr(inst, "__slots__"):
-            if attr not in inst.__slots__:
+            if attr not in inst.__slots__:  # type: ignore[attr-defined]
                 raise AttributeError(attr)
             return getattr(inst, attr)
 

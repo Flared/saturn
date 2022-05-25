@@ -202,3 +202,10 @@ try:
     BUILTINS["RayExecutor"] = RayExecutor
 except ImportError:
     pass
+
+try:
+    from .arq.executor import ARQExecutor
+
+    BUILTINS["ARQExecutor"] = ARQExecutor
+except ImportError:
+    pass

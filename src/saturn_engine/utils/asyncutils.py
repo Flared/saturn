@@ -193,7 +193,7 @@ def print_tasks_summary(loop: t.Optional[asyncio.AbstractEventLoop] = None) -> N
 
 
 class CachedProperty(t.Generic[T]):
-    def __init__(self, getter: t.Callable[[t.Any], Awaitable[T]]) -> None:
+    def __init__(self, getter: t.Callable[[t.Any], Coroutine[t.Any, t.Any, T]]) -> None:
         self.__wrapped__ = getter
         self._name = getter.__name__
         self.__doc__ = getter.__doc__
@@ -246,6 +246,9 @@ class WouldBlock(Exception):
 class FakeSemaphore(contextlib.AbstractAsyncContextManager):
     def locked(self) -> bool:
         return False
+
+    async def __aexit__(self, *exc: object) -> None:
+        return None
 
 
 class SharedLock:
