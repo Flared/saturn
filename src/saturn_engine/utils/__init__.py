@@ -23,6 +23,11 @@ class Sentinel(enum.Enum):
 MISSING = Sentinel.sentinel
 
 
+# Some magic number used here and there.
+LONG_TIMEOUT = 60
+MEDIUM_TIMEOUT = 10
+
+
 class Scope:
     value: Any
 
