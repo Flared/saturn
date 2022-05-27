@@ -15,10 +15,10 @@ from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import ResourceItem
 from saturn_engine.utils.log import getLogger
 from saturn_engine.worker import work_factory
+from saturn_engine.worker.executors.executable import ExecutableQueue
 from saturn_engine.worker.resources_manager import ResourceData
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.http_client import HttpClient
-from saturn_engine.worker.work_item import WorkItem
 
 T = TypeVar("T")
 
@@ -35,7 +35,7 @@ class ItemsSync(Generic[T]):
 
 @dataclasses.dataclass
 class WorkSync:
-    queues: ItemsSync[WorkItem]
+    queues: ItemsSync[ExecutableQueue]
     resources: ItemsSync[ResourceData]
 
     @classmethod
@@ -46,7 +46,7 @@ class WorkSync:
         )
 
 
-WorkerItems = dict[str, WorkItem]
+WorkerItems = dict[str, ExecutableQueue]
 
 
 class WorkManager:
@@ -83,7 +83,9 @@ class WorkManager:
             resources=resources_sync,
         )
 
-    async def load_queues(self, lock_response: LockResponse) -> ItemsSync[WorkItem]:
+    async def load_queues(
+        self, lock_response: LockResponse
+    ) -> ItemsSync[ExecutableQueue]:
         current_items = set(self.worker_items.keys())
         sync_items = {item.name: item for item in lock_response.items}
         sync_items_ids = set(sync_items.keys())
@@ -99,7 +101,7 @@ class WorkManager:
 
         return ItemsSync(add=add_items, drop=drop_items)
 
-    def work_queue_by_name(self, name: str) -> Optional[WorkItem]:
+    def work_queue_by_name(self, name: str) -> Optional[ExecutableQueue]:
         return self.worker_items.get(name)
 
     async def build_queues_for_worker_items(
@@ -111,11 +113,13 @@ class WorkManager:
             if (queue := await self.build_queue_for_worker_item(item))
         }
 
-    async def build_queue_for_worker_item(self, item: QueueItem) -> Optional[WorkItem]:
+    async def build_queue_for_worker_item(
+        self, item: QueueItem
+    ) -> Optional[ExecutableQueue]:
         try:
 
             @self.services.s.hooks.work_queue_built.emit
-            async def scope(item: QueueItem) -> WorkItem:
+            async def scope(item: QueueItem) -> ExecutableQueue:
                 return work_factory.build(item, services=self.services)
 
             return await scope(item)

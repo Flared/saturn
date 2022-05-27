@@ -1,4 +1,5 @@
-from typing import TypeVar
+import dataclasses
+import typing as t
 
 import asyncio
 from collections import Counter
@@ -11,8 +12,8 @@ import asyncstdlib as alib
 import pytest
 
 from saturn_engine.utils.asyncutils import aiter2agen
-from saturn_engine.worker.scheduler import Schedulable
-from saturn_engine.worker.scheduler import Scheduler
+from saturn_engine.worker.executors.scheduler import Schedulable
+from saturn_engine.worker.executors.scheduler import Scheduler
 
 
 @pytest.fixture
@@ -24,11 +25,17 @@ async def scheduler(
     await _scheduler.close()
 
 
-T = TypeVar("T")
+T = t.TypeVar("T")
+
+
+@dataclasses.dataclass
+class SimpleSchedulable(t.Generic[T]):
+    iterable: AsyncGenerator[T, None]
+    name: str
 
 
 def make_schedulable(iterable: AsyncGenerator[T, None]) -> Schedulable[T]:
-    return Schedulable(iterable=iterable, name="")
+    return SimpleSchedulable(iterable=iterable, name="")
 
 
 @pytest.mark.asyncio

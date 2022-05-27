@@ -3,17 +3,16 @@ from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import TopicItem
 from saturn_engine.utils import inspect as extra_inspect
 
+from .executors.executable import ExecutableQueue
 from . import inventories
 from . import topics
 from .inventories import Inventory
 from .job import Job
-from .queue import ExecutableQueue
 from .services import Services
 from .topics import Topic
-from .work_item import WorkItem
 
 
-def build(queue_item: QueueItem, *, services: Services) -> WorkItem:
+def build(queue_item: QueueItem, *, services: Services) -> ExecutableQueue:
     if isinstance(queue_item.input, TopicItem):
         topic = build_topic(queue_item.input, services=services)
     if isinstance(queue_item.input, InventoryItem):
@@ -26,13 +25,14 @@ def build(queue_item: QueueItem, *, services: Services) -> WorkItem:
         for k, ts in queue_item.output.items()
     }
 
-    executable_queue = ExecutableQueue(
+    return ExecutableQueue(
+        name=queue_item.name,
+        executor=queue_item.executor,
         topic=topic,
         pipeline=queue_item.pipeline,
         output=output,
         services=services,
     )
-    return WorkItem(iterable=executable_queue.run(), name=queue_item.name)
 
 
 def build_topic(topic_item: TopicItem, *, services: Services) -> Topic:

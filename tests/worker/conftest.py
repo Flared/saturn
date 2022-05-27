@@ -21,7 +21,7 @@ from saturn_engine.worker.broker import ExecutorInit
 from saturn_engine.worker.broker import WorkManagerInit
 from saturn_engine.worker.executable_message import ExecutableMessage
 from saturn_engine.worker.executors import Executor
-from saturn_engine.worker.executors import ExecutorManager
+from saturn_engine.worker.executors.queue import ExecutorQueue
 from saturn_engine.worker.parkers import Parkers
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources_manager import ResourcesManager
@@ -84,15 +84,15 @@ async def executor_manager_maker(
     resources_manager: ResourcesManager,
     executor_maker: ExecutorInit,
     services_manager: ServicesManager,
-) -> AsyncIterator[Callable[..., ExecutorManager]]:
+) -> AsyncIterator[Callable[..., ExecutorQueue]]:
     async with contextlib.AsyncExitStack() as stack:
 
         def maker(
             executor: Optional[Executor] = None,
             services: Services = services_manager.services,
-        ) -> ExecutorManager:
+        ) -> ExecutorQueue:
             executor = executor or executor_maker(services_manager.services)
-            manager = ExecutorManager(
+            manager = ExecutorQueue(
                 resources_manager=resources_manager,
                 executor=executor,
                 services=services,

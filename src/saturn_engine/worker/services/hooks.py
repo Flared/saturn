@@ -11,9 +11,9 @@ if t.TYPE_CHECKING:
     from saturn_engine.core import PipelineResults
     from saturn_engine.core.api import QueueItem
     from saturn_engine.worker.executors.bootstrap import PipelineBootstrap
+    from saturn_engine.worker.executors.executable import ExecutableQueue
     from saturn_engine.worker.pipeline_message import PipelineMessage
     from saturn_engine.worker.topic import Topic
-    from saturn_engine.worker.work_item import WorkItem
 
 
 class MessagePublished(t.NamedTuple):
@@ -34,7 +34,7 @@ class Hooks:
     message_published: AsyncContextHook["MessagePublished", None]
     output_blocked: AsyncEventHook["Topic"]
 
-    work_queue_built: AsyncContextHook["QueueItem", "WorkItem"]
+    work_queue_built: AsyncContextHook["QueueItem", "ExecutableQueue"]
     executor_initialized: EventHook["PipelineBootstrap"]
 
     def __init__(self) -> None:

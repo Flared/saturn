@@ -11,9 +11,9 @@ from saturn_engine.core import PipelineResults
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import QueueItem
 from saturn_engine.worker.executors.bootstrap import PipelineBootstrap
+from saturn_engine.worker.executors.executable import ExecutableQueue
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.services.hooks import MessagePublished
-from saturn_engine.worker.work_item import WorkItem
 
 from .. import BaseServices
 from .. import Service
@@ -45,7 +45,7 @@ class Logger(Service[BaseServices, "Logger.Options"]):
 
     async def on_work_queue_built(
         self, item: QueueItem
-    ) -> AsyncGenerator[None, WorkItem]:
+    ) -> AsyncGenerator[None, ExecutableQueue]:
         try:
             yield
         except Exception:
