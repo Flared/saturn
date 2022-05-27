@@ -12,21 +12,21 @@ from . import Executor
 from .bootstrap import PipelineBootstrap
 from .bootstrap import wrap_remote_exception
 
-_boostraper = None
+_bootstraper = None
 
 
 def process_initializer(
     *,
     executor_initialized: EventHook[PipelineBootstrap],
 ) -> None:
-    global _boostraper
+    global _bootstraper
     # Ignore signals in the process pool since we handle it from the worker
     # process.
     import signal
 
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-    _boostraper = PipelineBootstrap(initialized_hook=executor_initialized)
+    _bootstraper = PipelineBootstrap(initialized_hook=executor_initialized)
 
 
 class ProcessExecutor(Executor):
@@ -54,7 +54,7 @@ class ProcessExecutor(Executor):
 
     @staticmethod
     def remote_execute(message: PipelineMessage) -> PipelineResults:
-        if not _boostraper:
+        if not _bootstraper:
             raise ValueError("process_initializer must be called")
         with wrap_remote_exception():
-            return _boostraper.bootstrap_pipeline(message)
+            return _bootstraper.bootstrap_pipeline(message)

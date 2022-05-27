@@ -1,5 +1,7 @@
+import typing as t
+
 import asyncio
-import time
+import threading
 
 import pytest
 
@@ -16,10 +18,22 @@ from tests.utils import HttpClientMock
 
 
 class DelayedMemoryTopic(MemoryTopic):
+    published_event: threading.Event
+    publishing_event: asyncio.Event
+
+    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.published_event = threading.Event()
+
     async def publish(self, message: TopicMessage, wait: bool) -> bool:
-        loop = asyncio.get_running_loop()
-        asyncio.run_coroutine_threadsafe(super().publish(message, wait), loop)
+        self.publishing_event = asyncio.Event()
+        asyncio.create_task(self.delayed_publish(message, wait))
         return True
+
+    async def delayed_publish(self, message: TopicMessage, wait: bool) -> None:
+        await self.publishing_event.wait()
+        await super().publish(message, wait)
+        self.published_event.set()
 
 
 def test_saturn_client_publish_sync(
@@ -45,9 +59,13 @@ def test_saturn_client_publish_sync(
     queue = get_queue("test-topic")
     assert queue.qsize() == 0
 
-    # Racy, but 0.1 should be more than enough to let the background task to
-    # run.
-    time.sleep(0.1)
+    topic = t.cast(DelayedMemoryTopic, saturn_client._client.topics["test-topic"])
+
+    async def set_event() -> None:
+        topic.publishing_event.set()
+
+    saturn_client._run_sync(set_event())
+    topic.published_event.wait()
 
     assert queue.get_nowait().args["a"] == 0
     queue.task_done()

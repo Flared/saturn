@@ -32,6 +32,9 @@ class Handlers(Generic[F, E]):
     def unregister(self, handler: F) -> None:
         self.handlers.remove(handler)
 
+    def __bool__(self) -> bool:
+        return bool(self.handlers)
+
 
 class EventHook(Generic[A], Handlers[Callable[[A], Any], None]):
     def emit(self, arg: A) -> None:

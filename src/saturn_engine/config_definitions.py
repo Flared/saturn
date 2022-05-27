@@ -14,6 +14,7 @@ class Env(Enum):
 class WorkerConfig:
     job_store_cls: str
     executor_cls: str
+    executor_concurrency: int
 
 
 @dataclasses.dataclass
@@ -43,6 +44,11 @@ class RayConfig:
 
 
 @dataclasses.dataclass
+class RedisConfig:
+    dsn: str
+
+
+@dataclasses.dataclass
 class ServicesManagerConfig:
     # Services to load
     services: list[str]
@@ -61,3 +67,4 @@ class SaturnConfig:
     worker_manager: WorkerManagerConfig
     rabbitmq: RabbitMQConfig
     ray: RayConfig
+    redis: RedisConfig

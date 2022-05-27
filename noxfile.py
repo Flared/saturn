@@ -86,7 +86,7 @@ def mypy(session: Session) -> None:
         # Packages required to check tests typing.
         *mypy_packages,
     )
-    session.run("mypy", *args)
+    session.run("mypy", "--show-error-codes", *args)
 
 
 @nox_session(python=python_tool_version)

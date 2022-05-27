@@ -1,33 +1,33 @@
-from typing import Generic
-from typing import TypeVar
+import typing as t
 
 import asyncio
 import contextlib
 import dataclasses
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
+from collections.abc import Coroutine
 
 from saturn_engine.utils.asyncutils import TasksGroup
 from saturn_engine.utils.log import getLogger
 
-T = TypeVar("T")
+T = t.TypeVar("T")
 
 
 @dataclasses.dataclass(eq=False)
-class Schedulable(Generic[T]):
+class Schedulable(t.Generic[T]):
     iterable: AsyncGenerator[T, None]
     name: str
     # property for scheduling such as "weight" or priority would come here.
 
 
 @dataclasses.dataclass
-class ScheduleSlot(Generic[T]):
+class ScheduleSlot(t.Generic[T]):
     generator: AsyncGenerator[T, None]
     task: asyncio.Task
     order: int = 0
 
 
-class Scheduler(Generic[T]):
+class Scheduler(t.Generic[T]):
     schedule_slots: dict[Schedulable[T], ScheduleSlot[T]]
     tasks: dict[asyncio.Task, Schedulable[T]]
 
@@ -38,9 +38,10 @@ class Scheduler(Generic[T]):
         self.tasks_group = TasksGroup()
 
     def add(self, item: Schedulable[T]) -> None:
-        generator = item.iterable.__aiter__()
+        generator = t.cast(AsyncGenerator[T, None], item.iterable.__aiter__())
         name = f"scheduler.anext({item.name})"
-        task = asyncio.create_task(generator.__anext__(), name=name)
+        anext = t.cast(Coroutine[t.Any, t.Any, T], generator.__anext__())
+        task = asyncio.create_task(anext, name=name)
         self.schedule_slots[item] = ScheduleSlot(task=task, generator=generator)
         self.tasks[task] = item
         self.tasks_group.add(task)
@@ -129,7 +130,8 @@ class Scheduler(Generic[T]):
             return
 
         name = f"scheduler.anext({item.name})"
-        new_task = asyncio.create_task(schedule_slot.generator.__anext__(), name=name)
+        anext = t.cast(Coroutine[t.Any, t.Any, T], schedule_slot.generator.__anext__())
+        new_task = asyncio.create_task(anext, name=name)
         self.tasks[new_task] = item
         self.tasks_group.add(new_task)
 

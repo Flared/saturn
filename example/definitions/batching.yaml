@@ -14,7 +14,7 @@ spec:
 apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
-  name: example-job-definition
+  name: example-batching-job-definition
 spec:
   minimalInterval: "@weekly"
   template:

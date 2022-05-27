@@ -5,6 +5,7 @@ import os
 from .config import Env
 from .config import RabbitMQConfig
 from .config import RayConfig
+from .config import RedisConfig
 from .config import SaturnConfig
 from .config import ServicesManagerConfig
 from .config import WorkerConfig
@@ -29,6 +30,7 @@ class config(SaturnConfig):
     class worker(WorkerConfig):
         job_store_cls = "ApiJobStore"
         executor_cls = os.environ.get("SATURN_WORKER__EXECUTOR_CLS", "ProcessExecutor")
+        executor_concurrency = 16
 
     class rabbitmq(RabbitMQConfig):
         url = os.environ.get("SATURN_AMQP_URL", "amqp://127.0.0.1/")
@@ -57,6 +59,9 @@ class config(SaturnConfig):
             "SATURN_STATIC_DEFINITIONS_JOBS_SELECTOR"
         )
         work_items_per_worker = 10
+
+    class redis(RedisConfig):
+        dsn = "redis://localhost:6379"
 
 
 class client_config(config):
