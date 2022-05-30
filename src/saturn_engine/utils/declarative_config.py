@@ -1,6 +1,7 @@
 import dataclasses
 import os
 
+import marshmallow
 import yaml
 
 from saturn_engine.utils.options import schema_for
@@ -36,7 +37,7 @@ def load_uncompiled_objects_from_str(definitions: str) -> list[UncompiledObject]
 
         base_object: BaseObject = schema_for(BaseObject).load(
             data=yaml_object,
-            unknown="EXCLUDE",
+            unknown=marshmallow.EXCLUDE,
         )
 
         if base_object.apiVersion != "saturn.flared.io/v1alpha1":
