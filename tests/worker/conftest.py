@@ -1,13 +1,14 @@
-from typing import Callable
-from typing import Optional
+import typing as t
 
 import contextlib
 import dataclasses
 from collections.abc import AsyncIterator
+from collections.abc import Awaitable
 from collections.abc import Iterator
 from unittest.mock import Mock
 from unittest.mock import create_autospec
 
+import aio_pika
 import pytest
 
 from saturn_engine.client.worker_manager import WorkerManagerClient
@@ -17,12 +18,11 @@ from saturn_engine.core import Resource
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import LockResponse
 from saturn_engine.worker.broker import Broker
-from saturn_engine.worker.broker import ExecutorInit
 from saturn_engine.worker.broker import WorkManagerInit
-from saturn_engine.worker.executable_message import ExecutableMessage
 from saturn_engine.worker.executors import Executor
+from saturn_engine.worker.executors.executable import ExecutableMessage
+from saturn_engine.worker.executors.parkers import Parkers
 from saturn_engine.worker.executors.queue import ExecutorQueue
-from saturn_engine.worker.parkers import Parkers
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources_manager import ResourcesManager
 from saturn_engine.worker.services import Services
@@ -59,11 +59,27 @@ def work_manager_maker(
 
 
 @pytest.fixture
-async def services_manager(config: Config) -> AsyncIterator[ServicesManager]:
-    _services_manager = ServicesManager(config)
-    await _services_manager.open()
-    yield _services_manager
-    await _services_manager.close()
+async def services_manager_maker(
+    config: Config,
+) -> AsyncIterator[t.Callable[[Config], Awaitable[ServicesManager]]]:
+    services = []
+
+    async def maker(config: Config = config) -> ServicesManager:
+        services_manager = ServicesManager(config)
+        await services_manager.open()
+        services.append(services_manager)
+        return services_manager
+
+    yield maker
+    for service in services:
+        await service.close()
+
+
+@pytest.fixture
+async def services_manager(
+    services_manager_maker: t.Callable[..., Awaitable[ServicesManager]]
+) -> AsyncIterator[ServicesManager]:
+    yield await services_manager_maker()
 
 
 @pytest.fixture
@@ -71,27 +87,22 @@ def resources_manager() -> ResourcesManager:
     return ResourcesManager()
 
 
-@pytest.fixture
-def executor_maker() -> ExecutorInit:
-    def maker(services: Services) -> Executor:
-        return create_autospec(Executor, instance=True)
-
-    return maker
+def mock_executor_maker(services: Services) -> Executor:
+    return create_autospec(Executor, instance=True)
 
 
 @pytest.fixture
-async def executor_manager_maker(
+async def executor_queue_maker(
     resources_manager: ResourcesManager,
-    executor_maker: ExecutorInit,
     services_manager: ServicesManager,
-) -> AsyncIterator[Callable[..., ExecutorQueue]]:
+) -> AsyncIterator[t.Callable[..., ExecutorQueue]]:
     async with contextlib.AsyncExitStack() as stack:
 
         def maker(
-            executor: Optional[Executor] = None,
+            executor: t.Optional[Executor] = None,
             services: Services = services_manager.services,
         ) -> ExecutorQueue:
-            executor = executor or executor_maker(services_manager.services)
+            executor = executor or mock_executor_maker(services_manager.services)
             manager = ExecutorQueue(
                 resources_manager=resources_manager,
                 executor=executor,
@@ -106,15 +117,14 @@ async def executor_manager_maker(
 
 @pytest.fixture
 async def broker_maker(
-    work_manager_maker: WorkManagerInit, executor_maker: ExecutorInit, config: Config
-) -> AsyncIterator[Callable[..., Broker]]:
+    work_manager_maker: WorkManagerInit, config: Config
+) -> AsyncIterator[t.Callable[..., Broker]]:
     brokers = []
 
     def maker(
-        work_manager: WorkManagerInit = work_manager_maker,
-        executor: ExecutorInit = executor_maker,
+        work_manager: WorkManagerInit = work_manager_maker, config: Config = config
     ) -> Broker:
-        _broker = Broker(work_manager=work_manager, executor=executor, config=config)
+        _broker = Broker(work_manager=work_manager, config=config)
         brokers.append(_broker)
         return _broker
 
@@ -126,19 +136,19 @@ async def broker_maker(
 
 
 @pytest.fixture
-async def broker(broker_maker: Callable[..., Broker]) -> AsyncIterator[Broker]:
+async def broker(broker_maker: t.Callable[..., Broker]) -> AsyncIterator[Broker]:
     yield broker_maker()
 
 
 @pytest.fixture
 def executable_maker(
     fake_pipeline_info: PipelineInfo,
-) -> Callable[..., ExecutableMessage]:
+) -> t.Callable[..., ExecutableMessage]:
     def maker(
-        args: Optional[dict[str, object]] = None,
-        parker: Optional[Parkers] = None,
+        args: t.Optional[dict[str, object]] = None,
+        parker: t.Optional[Parkers] = None,
         pipeline_info: PipelineInfo = fake_pipeline_info,
-        output: Optional[dict[str, list[Topic]]] = None,
+        output: t.Optional[dict[str, list[Topic]]] = None,
     ) -> ExecutableMessage:
         return ExecutableMessage(
             message=PipelineMessage(
@@ -169,14 +179,37 @@ def fake_resource_class() -> str:
 
 
 @pytest.fixture
-async def rabbitmq_service(
-    event_loop: TimeForwardLoop, services_manager: ServicesManager
-) -> RabbitMQService:
+async def rabbitmq_url(event_loop: TimeForwardLoop, config: Config) -> str:
     event_loop.forward_time = False
-    services_manager._load_service(RabbitMQService)
-    _rabbitmq_service = services_manager.services.rabbitmq
+    url = config.c.rabbitmq.url
     try:
-        await _rabbitmq_service.connection
-        return _rabbitmq_service
+        connection = await aio_pika.connect(url)
+        await connection.close()
     except Exception:
         raise pytest.skip("No connection to RabbmitMQ server.") from None
+    return url
+
+
+@pytest.fixture
+async def rabbitmq_service_loader(
+    services_manager: ServicesManager, rabbitmq_url: str
+) -> AsyncIterator[t.Callable[..., Awaitable[RabbitMQService]]]:
+    async def loader(
+        services_manager: ServicesManager = services_manager,
+    ) -> RabbitMQService:
+        if services_manager.has_loaded(RabbitMQService):
+            return services_manager.services.cast_service(RabbitMQService)
+
+        services_manager._load_service(RabbitMQService)
+        _rabbitmq_service = services_manager.services.rabbitmq
+        await _rabbitmq_service.connection
+        return _rabbitmq_service
+
+    yield loader
+
+
+@pytest.fixture
+async def rabbitmq_service(
+    rabbitmq_service_loader: t.Callable[..., Awaitable[RabbitMQService]]
+) -> RabbitMQService:
+    return await rabbitmq_service_loader()

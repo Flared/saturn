@@ -8,6 +8,7 @@ import freezegun
 import pytest
 from freezegun.api import FrozenDateTimeFactory
 from freezegun.api import StepTickTimeFactory
+from freezegun.api import freeze_factories  # type: ignore[attr-defined]
 from pytest_mock import MockerFixture
 
 from saturn_engine.config import Config
@@ -29,22 +30,31 @@ FreezeTime = t.Union[FrozenDateTimeFactory, StepTickTimeFactory]
 
 
 @pytest.fixture
-def frozen_time() -> Iterator[FreezeTime]:
-    with freezegun.freeze_time(
+def freezer() -> t.Any:
+    return freezegun.freeze_time(
         "2018-01-02T00:00:00+00:00",
         ignore=["_pytest.runner"],
-    ) as frozen_time:
-        yield frozen_time
+    )
+
+
+@pytest.fixture
+def frozen_time(freezer: t.Any) -> Iterator[FreezeTime]:
+    frozen_time = freezer.start()
+    yield frozen_time
+    if len(freeze_factories):
+        freezer.stop()
 
 
 @pytest.fixture
 def event_loop(
     frozen_time: FrozenDateTimeFactory,
+    freezer: t.Any,
 ) -> Iterator[TimeForwardLoop]:
     """Define a custom event loop.
     This event loop use a custom Selector that wraps sleep forward.
     """
     loop = TimeForwardLoop(
+        freezer=freezer,
         frozen_time=frozen_time,
     )
     yield loop
@@ -120,18 +130,8 @@ def job_definition_maker(
 
 
 @pytest.fixture(scope="session")
-def session_config() -> Config:
+def config() -> Config:
     return Config().load_objects([default_config, test_config])
-
-
-@pytest.fixture
-def config_overridable() -> dict:
-    return {}
-
-
-@pytest.fixture
-def config(session_config: Config, config_overridable: dict) -> Config:
-    return session_config.load_object(config_overridable)
 
 
 @pytest.fixture(scope="session")

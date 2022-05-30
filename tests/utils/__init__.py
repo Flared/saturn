@@ -1,7 +1,4 @@
-from typing import Any
-from typing import Callable
-from typing import Optional
-from typing import cast
+import typing as t
 
 import asyncio
 import json
@@ -25,7 +22,7 @@ class TimeForwardSelector(DefaultSelector):
     def __init__(
         self,
         *,
-        on_idle: Callable[[], None],
+        on_idle: t.Callable[[], None],
         frozen_time: FrozenDateTimeFactory,
     ) -> None:
         super().__init__()
@@ -34,13 +31,13 @@ class TimeForwardSelector(DefaultSelector):
         self.forward_time = True
         self.frozen_time = frozen_time
 
-    def select(self, timeout: Optional[float] = None) -> Any:
+    def select(self, timeout: t.Optional[float] = None) -> t.Any:
         select_timeout = timeout
         if self.forward_time:
             time_delta = timeout or 0
             self._current_time += time_delta
             self.frozen_time.tick(time_delta)
-        select_timeout = 0
+            select_timeout = 0
 
         events = super().select(select_timeout)
 
@@ -52,14 +49,15 @@ class TimeForwardSelector(DefaultSelector):
 class TimeForwardLoop(asyncio.SelectorEventLoop):  # type: ignore
     _selector: TimeForwardSelector
 
-    def __init__(self, frozen_time: FrozenDateTimeFactory) -> None:
+    def __init__(self, frozen_time: FrozenDateTimeFactory, freezer: t.Any) -> None:
         super().__init__(
             selector=TimeForwardSelector(
                 on_idle=self.on_idle,
                 frozen_time=frozen_time,
             ),
         )
-        self._idled: Optional[asyncio.Event] = None
+        self.freezer = freezer
+        self._idled: t.Optional[asyncio.Event] = None
 
     @property
     def forward_time(self) -> bool:
@@ -67,6 +65,8 @@ class TimeForwardLoop(asyncio.SelectorEventLoop):  # type: ignore
 
     @forward_time.setter
     def forward_time(self, value: bool) -> None:
+        if not value:
+            self.freezer.stop()
         self._selector.forward_time = value
 
     def time(self) -> float:
@@ -105,9 +105,9 @@ class FakeHttpClient:
         self.post = Mock(side_effect=self.response_context("post"))
         self.put = Mock(side_effect=self.response_context("put"))
 
-    def response_context(self, method: str) -> Callable:
+    def response_context(self, method: str) -> t.Callable:
         @asynccontextmanager
-        async def request(url: str, *args: Any, **kwargs: Any) -> AsyncIterator:
+        async def request(url: str, *args: t.Any, **kwargs: t.Any) -> AsyncIterator:
             response = self.responses[method][url](*args, **kwargs)
             obj = self.make_response(method, url, response)
             yield obj
@@ -115,7 +115,7 @@ class FakeHttpClient:
         return request
 
     def make_response(
-        self, method: str, url: str, response: Any
+        self, method: str, url: str, response: t.Any
     ) -> aiohttp.ClientResponse:
         if isinstance(response, aiohttp.ClientResponse):
             return response
@@ -133,7 +133,7 @@ class FakeHttpClient:
         method: str,
         url: str,
         response: dict,
-        headers: Optional[dict[str, str]] = None,
+        headers: t.Optional[dict[str, str]] = None,
         status: int = 200,
         reason: str = "OK",
     ) -> aiohttp.ClientResponse:
@@ -152,7 +152,7 @@ class FakeHttpClient:
         method: str,
         url: str,
         response: str,
-        headers: Optional[dict[str, str]] = None,
+        headers: t.Optional[dict[str, str]] = None,
         status: int = 200,
         reason: str = "OK",
     ) -> aiohttp.ClientResponse:
@@ -171,7 +171,7 @@ class FakeHttpClient:
         method: str,
         url: str,
         response: bytes,
-        headers: Optional[dict[str, str]] = None,
+        headers: t.Optional[dict[str, str]] = None,
         status: int = 200,
         reason: str = "OK",
     ) -> aiohttp.ClientResponse:
@@ -221,7 +221,7 @@ class HttpClientMock:
                 req_mock.reset_mock()
 
     def client(self) -> aiohttp.ClientSession:
-        return cast(
+        return t.cast(
             aiohttp.ClientSession,
             FakeHttpClient(responses=self.responses, loop=self.loop),
         )
@@ -229,8 +229,8 @@ class HttpClientMock:
 
 def async_context_mock_handler(
     mock: AsyncMock,
-) -> Callable[[Any], AsyncGenerator[None, Any]]:
-    async def scope(event: Any) -> AsyncGenerator[None, Any]:
+) -> t.Callable[[t.Any], AsyncGenerator[None, t.Any]]:
+    async def scope(event: t.Any) -> AsyncGenerator[None, t.Any]:
         await mock.before(event)
         try:
             result = yield

@@ -3,9 +3,9 @@ from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import TopicItem
 from saturn_engine.utils import inspect as extra_inspect
 
-from .executors.executable import ExecutableQueue
 from . import inventories
 from . import topics
+from .executors.executable import ExecutableQueue
 from .inventories import Inventory
 from .job import Job
 from .services import Services

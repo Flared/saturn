@@ -67,6 +67,9 @@ class ServicesManager:
         self.loaded_services.append(service)
         self.services[service_cls.name] = service
 
+    def has_loaded(self, service_cls: Type[TService]) -> bool:
+        return service_cls.name in self.services
+
 
 from .http_client import HttpClient
 from .job_store import JobStoreService

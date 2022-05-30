@@ -9,10 +9,10 @@ from saturn_engine.core import PipelineInfo
 from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResults
 from saturn_engine.core import TopicMessage
-from saturn_engine.worker.executors import ExecutableMessage
 from saturn_engine.worker.executors import Executor
+from saturn_engine.worker.executors.executable import ExecutableMessage
+from saturn_engine.worker.executors.parkers import Parkers
 from saturn_engine.worker.executors.queue import ExecutorQueue
-from saturn_engine.worker.parkers import Parkers
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources_manager import ResourceData
 from saturn_engine.worker.topics.memory import MemoryTopic
@@ -47,11 +47,11 @@ class FakeExecutor(Executor):
 async def test_base_executor(
     executable_maker: Callable[[], ExecutableMessage],
     event_loop: TimeForwardLoop,
-    executor_manager_maker: Callable[..., ExecutorQueue],
+    executor_queue_maker: Callable[..., ExecutorQueue],
 ) -> None:
     executor = FakeExecutor()
     executor.concurrency = 5
-    executor_manager = executor_manager_maker(executor=executor)
+    executor_manager = executor_queue_maker(executor=executor)
 
     async with event_loop.until_idle():
         for _ in range(10):
@@ -74,10 +74,10 @@ def pipeline(resource: FakeResource) -> None:
 async def test_executor_wait_resources_and_queue(
     executable_maker: Callable[..., ExecutableMessage],
     event_loop: TimeForwardLoop,
-    executor_manager_maker: Callable[..., ExecutorQueue],
+    executor_queue_maker: Callable[..., ExecutorQueue],
 ) -> None:
     executor = FakeExecutor()
-    executor_manager = executor_manager_maker(executor=executor)
+    executor_manager = executor_queue_maker(executor=executor)
     await executor_manager.resources_manager.add(
         ResourceData(name="r1", type="FakeResource", data={})
     )
@@ -130,10 +130,10 @@ async def test_executor_wait_resources_and_queue(
 async def test_executor_wait_pusblish_and_queue(
     executable_maker: Callable[..., ExecutableMessage],
     event_loop: TimeForwardLoop,
-    executor_manager_maker: Callable[..., ExecutorQueue],
+    executor_queue_maker: Callable[..., ExecutorQueue],
 ) -> None:
     executor = FakeExecutor()
-    executor_manager = executor_manager_maker(executor=executor)
+    executor_manager = executor_queue_maker(executor=executor)
     await executor_manager.resources_manager.add(
         ResourceData(name="r1", type="FakeResource", data={})
     )

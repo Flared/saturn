@@ -1,7 +1,7 @@
-import dataclasses
 import typing as t
 
 import asyncio
+import dataclasses
 from collections import Counter
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
@@ -28,7 +28,7 @@ async def scheduler(
 T = t.TypeVar("T")
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(eq=False)
 class SimpleSchedulable(t.Generic[T]):
     iterable: AsyncGenerator[T, None]
     name: str

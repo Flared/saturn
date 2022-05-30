@@ -13,8 +13,6 @@ from saturn_engine.worker.resources_manager import ResourcesContext
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.topic import Topic
 
-from .scheduler import Schedulable
-
 
 class ExecutableMessage:
     def __init__(

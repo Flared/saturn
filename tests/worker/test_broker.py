@@ -1,10 +1,11 @@
-from typing import Callable
+import typing as t
 
 import asyncio
 from unittest.mock import Mock
 
 import pytest
 
+from saturn_engine.config import Config
 from saturn_engine.core import PipelineResults
 from saturn_engine.core.api import InventoryItem
 from saturn_engine.core.api import LockResponse
@@ -12,6 +13,7 @@ from saturn_engine.core.api import PipelineInfo
 from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import QueuePipeline
 from saturn_engine.core.api import ResourceItem
+from saturn_engine.utils.inspect import get_import_name
 from saturn_engine.worker.broker import Broker
 from saturn_engine.worker.executors import Executor
 from saturn_engine.worker.pipeline_message import PipelineMessage
@@ -21,15 +23,16 @@ from tests.worker.conftest import FakeResource
 
 class FakeExecutor(Executor):
     concurrency = 5
+    done_event: asyncio.Event
 
-    def __init__(self) -> None:
-        self.done_event = asyncio.Event()
+    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+        pass
 
     async def process_message(self, message: PipelineMessage) -> PipelineResults:
         assert isinstance(message.message.args["resource"], dict)
         assert message.message.args["resource"]["data"] == "fake"
         if message.message.args["n"] == 999:
-            self.done_event.set()
+            FakeExecutor.done_event.set()
         return PipelineResults(outputs=[], resources=[])
 
 
@@ -39,11 +42,16 @@ def pipeline(resource: FakeResource) -> None:
 
 @pytest.mark.asyncio
 async def test_broker_dummy(
-    broker_maker: Callable[..., Broker],
+    broker_maker: t.Callable[..., Broker],
+    config: Config,
     worker_manager_client: Mock,
 ) -> None:
-    executor = FakeExecutor()
-    broker = broker_maker(executor=lambda _: executor)
+    FakeExecutor.done_event = asyncio.Event()
+    config = config.load_object(
+        {"worker": {"executor_cls": get_import_name(FakeExecutor)}}
+    )
+    broker = broker_maker(config=config)
+
     hooks_handler = register_hooks_handler(broker.services_manager.services)
     pipeline_info = PipelineInfo.from_pipeline(pipeline)
     worker_manager_client.lock.return_value = LockResponse(
@@ -66,9 +74,10 @@ async def test_broker_dummy(
         ],
     )
 
-    wait_task = asyncio.create_task(executor.done_event.wait())
+    wait_task = asyncio.create_task(FakeExecutor.done_event.wait())
     broker_task = asyncio.create_task(broker.run())
     tasks: set[asyncio.Task] = {wait_task, broker_task}
+
     done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
     assert wait_task in done
     assert broker_task in pending
@@ -84,3 +93,4 @@ async def test_broker_dummy(
     assert hooks_handler.message_published.errors.await_count == 0
 
     broker_task.cancel()
+    await broker_task

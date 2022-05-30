@@ -42,8 +42,8 @@ class QueueItem:
     name: str
     pipeline: QueuePipeline
     output: dict[str, list[TopicItem]]
-    input: Union[TopicItem, InventoryItem] = (
-        field(ObjectUnion(union={"topic": TopicItem, "inventory": InventoryItem}))
+    input: Union[TopicItem, InventoryItem] = field(
+        ObjectUnion(union={"topic": TopicItem, "inventory": InventoryItem})
     )
     executor: str = "default"
 

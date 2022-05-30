@@ -9,8 +9,8 @@ from . import Executor
 from . import get_executor_class
 from .executable import ExecutableMessage
 from .executable import ExecutableQueue
-from .scheduler import Scheduler
 from .queue import ExecutorQueue
+from .scheduler import Scheduler
 
 
 class ExecutorsManager:
@@ -67,10 +67,8 @@ class ExecutorsManager:
         name = executor_definition.name
         self.executors[name] = executor
         self.executors_tasks_group.add(
-                asyncio.create_task(executor.run(),
-                    name=f"executor-worker({name})"
-                )
-            )
+            asyncio.create_task(executor.run(), name=f"executor-worker({name})")
+        )
 
 
 class ExecutorWorker:

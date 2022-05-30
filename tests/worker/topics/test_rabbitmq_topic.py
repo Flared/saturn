@@ -11,6 +11,7 @@ import pamqp.commands
 import pamqp.constants
 import pytest
 
+from saturn_engine.config import Config
 from saturn_engine.core import TopicMessage
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.services.rabbitmq import RabbitMQService
@@ -32,13 +33,19 @@ async def unwrap(context: t.AsyncContextManager[TopicMessage]) -> TopicMessage:
 
 @pytest.fixture
 async def topic_maker(
-    rabbitmq_service: RabbitMQService,
+    rabbitmq_service_loader: t.Callable[..., Awaitable[RabbitMQService]],
     services_manager: ServicesManager,
 ) -> AsyncIterator[t.Callable[..., Awaitable[RabbitMQTopic]]]:
     queue_names = set()
     topics = []
 
-    async def maker(queue_name: str = "test", **kwargs: t.Any) -> RabbitMQTopic:
+    async def maker(
+        services_manager: ServicesManager = services_manager,
+        queue_name: str = "test",
+        **kwargs: t.Any
+    ) -> RabbitMQTopic:
+        await rabbitmq_service_loader(services_manager)
+
         if queue_name not in queue_names:
             await ensure_clean_queue(
                 queue_name,
@@ -122,13 +129,17 @@ async def test_bounded_rabbitmq_topic_max_length(
 
 @pytest.mark.asyncio
 async def test_rabbitmq_topic_channel_closed(
-    services_manager: ServicesManager,
-    config_overridable: dict,
+    rabbitmq_url: str,
+    services_manager_maker: t.Callable[[Config], t.Awaitable[ServicesManager]],
+    config: Config,
     tcp_proxy: t.Callable[[int, int], Awaitable[TcpProxy]],
     topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]],
 ) -> None:
     proxy = await tcp_proxy(15672, 5672)
-    config_overridable.setdefault("rabbitmq", {})["url"] = "amqp://127.0.0.1:15672/"
+    config = config.load_object(
+        {"rabbitmq": {"url": "amqp://127.0.0.1:15672/", "reconnect_interval": 1}}
+    )
+    services_manager = await services_manager_maker(config)
 
     async def close_all_channels() -> None:
         connection = await services_manager.services.rabbitmq.connection
@@ -141,7 +152,9 @@ async def test_rabbitmq_topic_channel_closed(
                 ),
             )
 
-    topic = await topic_maker(durable=True, auto_delete=False)
+    topic = await topic_maker(
+        services_manager=services_manager, durable=True, auto_delete=False
+    )
 
     message = TopicMessage(id="0", args={"n": 1})
 
@@ -149,7 +162,9 @@ async def test_rabbitmq_topic_channel_closed(
     assert await topic.publish(message, wait=False)
 
     await proxy.disconnect()
-    assert await topic.publish(message, wait=False)
+    with pytest.raises(Exception):
+        assert await topic.publish(message, wait=False)
+    assert await topic.publish(message, wait=True)
 
     await close_all_channels()
     with pytest.raises(Exception):
