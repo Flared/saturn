@@ -9,6 +9,7 @@ from saturn_engine.utils.declarative_config import load_uncompiled_objects_from_
 from saturn_engine.utils.declarative_config import load_uncompiled_objects_from_str
 from saturn_engine.utils.options import fromdict
 
+from .declarative_executor import Executor
 from .declarative_inventory import Inventory
 from .declarative_job import Job
 from .declarative_job_definition import JobDefinition
@@ -31,6 +32,13 @@ def compile_static_definitions(
         ] = uncompiled_object
 
     definitions: StaticDefinitions = StaticDefinitions()
+
+    for uncompiled_executor in objects_by_kind.pop(
+        "SaturnExecutor",
+        dict(),
+    ).values():
+        executor: Executor = fromdict(uncompiled_executor.data, Executor)
+        definitions.executors[executor.metadata.name] = executor.to_core_object()
 
     for uncompiled_inventory in objects_by_kind.pop(
         "SaturnInventory",

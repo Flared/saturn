@@ -401,3 +401,21 @@ spec:
         "jobs": {"test-1-job", "test-2-job"},
         "job_definitions": {"test-1-job-definition", "test-2-job-definition"},
     }
+
+
+def test_load_executor() -> None:
+    executor_definition_str = """
+    apiVersion: saturn.flared.io/v1alpha1
+    kind: SaturnExecutor
+    metadata:
+      name: test-executor
+    spec:
+      type: ProcessExecutor
+      options:
+        pool_size: 2
+    """
+
+    static_definitions = load_definitions_from_str(executor_definition_str)
+
+    assert len(static_definitions.executors) == 1
+    assert static_definitions.executors["test-executor"].options["pool_size"] == 2
