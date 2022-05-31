@@ -1,5 +1,4 @@
-from typing import Callable
-from typing import Iterator
+import typing as t
 
 import pytest
 from flask.testing import FlaskClient
@@ -13,30 +12,87 @@ from saturn_engine.worker_manager.config.declarative import StaticDefinitions
 
 
 @pytest.fixture
-def session() -> Iterator[Session]:
+def queue_pipeline_maker(
+    fake_pipeline_info: api.PipelineInfo,
+) -> t.Callable[..., api.QueuePipeline]:
+    def maker() -> api.QueuePipeline:
+        return api.QueuePipeline(info=fake_pipeline_info, args={})
+
+    return maker
+
+
+@pytest.fixture
+def topic_item_maker() -> t.Callable[..., api.TopicItem]:
+    def maker() -> api.TopicItem:
+        return api.TopicItem(name="test", type="test", options={})
+
+    return maker
+
+
+@pytest.fixture
+def queue_item_maker(
+    queue_pipeline_maker: t.Callable[..., api.QueuePipeline],
+    topic_item_maker: t.Callable[..., api.TopicItem],
+    fake_executor: api.Executor,
+) -> t.Callable[..., api.QueueItem]:
+    def maker() -> api.QueueItem:
+        return api.QueueItem(
+            name="test",
+            pipeline=queue_pipeline_maker(),
+            input=topic_item_maker(),
+            output={"default": [topic_item_maker()]},
+            executor=fake_executor.name,
+        )
+
+    return maker
+
+
+@pytest.fixture
+def session() -> t.Iterator[Session]:
     yield database.session_factory()()
 
 
 @pytest.fixture
-def static_definitions() -> Iterator[StaticDefinitions]:
+def static_definitions() -> t.Iterator[StaticDefinitions]:
     new_definitions = StaticDefinitions()
     yield new_definitions
 
 
 @pytest.fixture
+def fake_executor(
+    static_definitions: StaticDefinitions,
+) -> api.Executor:
+    executor = api.Executor(name="default", type="ProcessExecutor")
+    static_definitions.executors[executor.name] = executor
+    return executor
+
+
+@pytest.fixture
+def job_definition_maker(
+    queue_item_maker: t.Callable[..., api.QueueItem]
+) -> t.Callable[..., api.JobDefinition]:
+    def maker() -> api.JobDefinition:
+        return api.JobDefinition(
+            name="test", template=queue_item_maker(), minimal_interval="@weekly"
+        )
+
+    return maker
+
+
+@pytest.fixture
 def fake_job_definition(
     static_definitions: StaticDefinitions,
-    job_definition_maker: Callable[..., api.JobDefinition],
+    job_definition_maker: t.Callable[..., api.JobDefinition],
 ) -> api.JobDefinition:
     job_definition = job_definition_maker()
-    static_definitions.job_definitions["test"] = job_definition
+    static_definitions.job_definitions[job_definition.name] = job_definition
     return job_definition
 
 
 @pytest.fixture
 def client(
     static_definitions: StaticDefinitions,
-) -> Iterator[FlaskClient]:
+) -> t.Iterator[FlaskClient]:
     app = worker_manager_server.get_app(
         config={
             "TESTING": True,

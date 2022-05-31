@@ -1,3 +1,5 @@
+import typing as t
+
 import logging
 import threading
 from datetime import datetime
@@ -5,8 +7,10 @@ from datetime import timedelta
 
 from flask import Blueprint
 
+from saturn_engine.core.api import Executor
 from saturn_engine.core.api import LockInput
 from saturn_engine.core.api import LockResponse
+from saturn_engine.core.api import ResourceItem
 from saturn_engine.database import session_scope
 from saturn_engine.models.queue import Queue
 from saturn_engine.stores import jobs_store
@@ -73,12 +77,13 @@ def post_lock() -> Json[LockResponse]:
                         )
                     assigned_items.remove(item)
 
-            # Collect resource for assigned work
             static_definitions = current_app.saturn.static_definitions
             resources = {}
+            executors: dict[str, Executor] = {}
             # Copy list since the iteration could drop items from assigned_items.
             for item in assigned_items.copy():
-                item_resources = {}
+                # Collect resource for assigned work
+                item_resources: t.Optional[dict[str, ResourceItem]] = {}
                 for resource_type in item.queue_item.pipeline.info.resources.values():
                     pipeline_resources = static_definitions.resources_by_type.get(
                         resource_type
@@ -92,12 +97,34 @@ def post_lock() -> Json[LockResponse]:
                         )
                         # Do not update assign the object in the database.
                         assigned_items.remove(item)
+                        item_resources = None
                         break
 
+                    # assert to make mypy happy.
+                    assert item_resources is not None  # noqa: S101
                     item_resources.update({r.name: r for r in pipeline_resources})
-                # Didn't break out due to resource missing.
-                else:
-                    resources.update(item_resources)
+
+                # A resource was missing, we can't schedule this item.
+                if item_resources is None:
+                    continue
+
+                resources.update(item_resources)
+
+                # Collect executor for assigned work
+                executor_name = item.queue_item.executor
+                executor = static_definitions.executors.get(executor_name)
+                if not executor:
+                    logger.error(
+                        "Skipping queue item, executor missing: item=%s, "
+                        "executor=%s",
+                        item.name,
+                        executor_name,
+                    )
+                    # Do not update assign the object in the database.
+                    assigned_items.remove(item)
+                    continue
+
+                executors.setdefault(executor.name, executor)
 
             # Refresh assignments
             new_assigned_at = datetime.now()
@@ -113,5 +140,6 @@ def post_lock() -> Json[LockResponse]:
             LockResponse(
                 items=queue_items,
                 resources=list(sorted(resources.values(), key=lambda r: r.name)),
+                executors=list(sorted(executors.values(), key=lambda e: e.name)),
             )
         )

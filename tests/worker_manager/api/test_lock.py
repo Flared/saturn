@@ -233,3 +233,41 @@ def test_ignore_bad_jobs(
     assert resp.json
     assert len(resp.json["items"]) == 1
     assert resp.json["items"][0]["name"] == "good"
+
+
+def test_executors(
+    client: FlaskClient,
+    session: Session,
+    frozen_time: FreezeTime,
+    queue_item_maker: Callable[..., api.QueueItem],
+    static_definitions: StaticDefinitions,
+    fake_job_definition: api.JobDefinition,
+) -> None:
+    fake_job_definition.template.executor = "ray-executor"
+    queues_store.create_queue(session=session, name="test")
+    jobs_store.create_job(
+        session=session,
+        name="test",
+        queue_name="test",
+        job_definition_name=fake_job_definition.name,
+    )
+    session.commit()
+
+    # Try to lock the queue_item, but executor is missing, so skipped.
+    resp = client.post("/api/lock", json={"worker_id": "worker-1"})
+    assert resp.status_code == 200
+    assert resp.json
+    assert not resp.json["items"]
+    assert not resp.json["executors"]
+
+    # Add executor to the static definitions.
+    static_definitions.executors["ray-executor"] = api.Executor(
+        name="ray-executor", type="RayExecutor"
+    )
+
+    # Now lock return the pipeline with its executor.
+    resp = client.post("/api/lock", json={"worker_id": "worker-1"})
+    assert resp.status_code == 200
+    assert resp.json
+    assert resp.json["items"][0]["name"] == "test"
+    assert resp.json["executors"][0]["name"] == "ray-executor"

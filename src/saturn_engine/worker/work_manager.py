@@ -10,6 +10,7 @@ from datetime import datetime
 from datetime import timedelta
 
 from saturn_engine.client.worker_manager import WorkerManagerClient
+from saturn_engine.core.api import Executor
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import ResourceItem
@@ -37,12 +38,14 @@ class ItemsSync(Generic[T]):
 class WorkSync:
     queues: ItemsSync[ExecutableQueue]
     resources: ItemsSync[ResourceData]
+    executors: ItemsSync[Executor]
 
     @classmethod
     def empty(cls: Type["WorkSync"]) -> "WorkSync":
         return cls(
             queues=ItemsSync.empty(),
             resources=ItemsSync.empty(),
+            executors=ItemsSync.empty(),
         )
 
 
@@ -61,6 +64,7 @@ class WorkManager:
         )
         self.worker_items: WorkerItems = {}
         self.worker_resources: dict[str, ResourceData] = {}
+        self.worker_executors: dict[str, Executor] = {}
         self.last_sync_at: Optional[datetime] = None
         self.sync_period = timedelta(seconds=60)
         self.services = services
@@ -77,10 +81,12 @@ class WorkManager:
 
         queues_sync = await self.load_queues(lock_response)
         resources_sync = await self.load_resources(lock_response)
+        executors_sync = await self.load_executors(lock_response)
 
         return WorkSync(
             queues=queues_sync,
             resources=resources_sync,
+            executors=executors_sync,
         )
 
     async def load_queues(
@@ -139,6 +145,20 @@ class WorkManager:
         self.worker_resources.update(added_items)
         add_items = list(added_items.values())
         drop_items = [self.worker_resources.pop(k) for k in drop]
+
+        return ItemsSync(add=add_items, drop=drop_items)
+
+    async def load_executors(self, lock_response: LockResponse) -> ItemsSync[Executor]:
+        current_items = set(self.worker_executors.keys())
+        sync_items = {item.name: item for item in lock_response.executors}
+        sync_items_ids = set(sync_items.keys())
+        add = sync_items_ids - current_items
+        drop = current_items - sync_items_ids
+
+        added_items = {i: sync_items[i] for i in add}
+        self.worker_executors.update(added_items)
+        add_items = list(added_items.values())
+        drop_items = [self.worker_executors.pop(k) for k in drop]
 
         return ItemsSync(add=add_items, drop=drop_items)
 

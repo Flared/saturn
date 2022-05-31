@@ -56,9 +56,17 @@ class JobDefinition:
 
 
 @dataclasses.dataclass
+class Executor:
+    name: str
+    type: str
+    options: dict[str, Any] = dataclasses.field(default_factory=dict)
+
+
+@dataclasses.dataclass
 class LockResponse:
     items: list[QueueItem]
     resources: list[ResourceItem]
+    executors: list[Executor]
 
 
 @dataclasses.dataclass
@@ -125,10 +133,3 @@ class UpdateResponse:
 @dataclasses.dataclass
 class JobsSyncResponse:
     pass
-
-
-@dataclasses.dataclass
-class Executor:
-    name: str
-    type: str
-    options: dict[str, Any] = dataclasses.field(default_factory=dict)
