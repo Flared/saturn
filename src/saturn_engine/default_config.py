@@ -34,6 +34,7 @@ class config(SaturnConfig):
 
     class rabbitmq(RabbitMQConfig):
         url = os.environ.get("SATURN_AMQP_URL", "amqp://127.0.0.1/")
+        reconnect_interval = 10
 
     class ray(RayConfig):
         local = os.environ.get("SATURN_RAY__LOCAL", "0") == "1"

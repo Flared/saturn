@@ -108,20 +108,19 @@ class TasksGroupRunner(TasksGroup):
     def start(self) -> asyncio.Task:
         if self.is_running:
             raise RuntimeError("task group is already running")
-        self.is_running = True
         self._runner_task = asyncio.create_task(self.run())
         return self._runner_task
 
-    async def stop(self) -> None:
+    def stop(self) -> None:
         self.is_running = False
         self.notify()
 
     async def close(self, timeout: t.Optional[float] = None) -> None:
-        if self.is_running is False:
+        if not self.is_running:
             return
 
         # Stop the runner.
-        await self.stop()
+        self.stop()
         # Wait for the running task to complete.
         if self._runner_task:
             await self._runner_task
@@ -129,6 +128,10 @@ class TasksGroupRunner(TasksGroup):
         await super().close(timeout=timeout)
 
     async def run(self) -> None:
+        if self.is_running:
+            raise RuntimeError("task group is already running")
+
+        self.is_running = True
         while self.is_running:
             done = await self.wait()
             for task in done:

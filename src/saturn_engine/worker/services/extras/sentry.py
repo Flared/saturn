@@ -19,9 +19,9 @@ from saturn_engine.utils.options import asdict
 from saturn_engine.utils.traceback_data import FrameData
 from saturn_engine.utils.traceback_data import TracebackData
 from saturn_engine.worker.executors.bootstrap import RemoteException
+from saturn_engine.worker.executors.executable import ExecutableQueue
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.services.hooks import MessagePublished
-from saturn_engine.worker.work_item import WorkItem
 
 from .. import BaseServices
 from .. import Service
@@ -73,7 +73,7 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
 
     async def on_work_queue_built(
         self, item: QueueItem
-    ) -> AsyncGenerator[None, WorkItem]:
+    ) -> AsyncGenerator[None, ExecutableQueue]:
         with Hub.current.push_scope() as scope:
 
             def _event_processor(event: Event, hint: Hint) -> Event:

@@ -68,6 +68,7 @@ spec:
                         },
                     },
                     "name": "test-job-definition",
+                    "executor": "default",
                     "output": {
                         "default": [
                             {

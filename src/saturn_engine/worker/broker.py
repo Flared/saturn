@@ -1,4 +1,3 @@
-from typing import Callable
 from typing import Optional
 from typing import Protocol
 
@@ -7,12 +6,8 @@ import asyncio
 from saturn_engine.config import Config
 from saturn_engine.utils.log import getLogger
 
-from .executable_message import ExecutableMessage
-from .executors import Executor
-from .executors import ExecutorManager
-from .executors import get_executor_class
+from .executors.manager import ExecutorsManager
 from .resources_manager import ResourcesManager
-from .scheduler import Scheduler
 from .services import Services
 from .services.manager import ServicesManager
 from .work_manager import WorkManager
@@ -23,12 +18,8 @@ class WorkManagerInit(Protocol):
         ...
 
 
-ExecutorInit = Callable[[Services], Executor]
-
-
 class Broker:
     running_task: Optional[asyncio.Future]
-    executor: ExecutorManager
     work_manager: WorkManager
 
     def __init__(
@@ -36,7 +27,6 @@ class Broker:
         config: Config,
         *,
         work_manager: WorkManagerInit = WorkManager,
-        executor: Optional[ExecutorInit] = None,
     ) -> None:
         self.logger = getLogger(__name__, self)
         self.is_running = False
@@ -45,16 +35,7 @@ class Broker:
 
         self.services_manager = ServicesManager(config=config)
         self.work_manager_init = work_manager
-
-        # Init subsystem
         self.resources_manager = ResourcesManager()
-        self.scheduler: Scheduler[ExecutableMessage] = Scheduler()
-
-        self.executor_init: ExecutorInit
-        if executor is None:
-            self.executor_init = get_executor_class(config.c.worker.executor_cls)
-        else:
-            self.executor_init = executor
 
     async def init(self) -> None:
         if self.is_init:
@@ -64,11 +45,12 @@ class Broker:
         self.work_manager = self.work_manager_init(
             services=self.services_manager.services
         )
-        self.executor = ExecutorManager(
+
+        self.executors_manager = ExecutorsManager(
             resources_manager=self.resources_manager,
-            executor=self.executor_init(self.services_manager.services),
             services=self.services_manager.services,
         )
+
         self.is_init = True
 
     async def run(self) -> None:
@@ -79,11 +61,8 @@ class Broker:
         self.logger.info("Initializing worker")
         await self.init()
         self.logger.info("Starting worker")
-        self.executor.start()
-        self.running_task = asyncio.gather(
-            asyncio.create_task(self.run_queue(), name="broker.run_queue"),
-            asyncio.create_task(self.run_sync(), name="broker.sync"),
-        )
+        self.executors_manager.start()
+        self.running_task = asyncio.create_task(self.run_sync(), name="broker.sync")
         try:
             await self.running_task
         except Exception:
@@ -93,18 +72,6 @@ class Broker:
         finally:
             self.logger.info("Broker shutting down")
             await self.close()
-
-    async def run_queue(self) -> None:
-        """
-        Coroutine that keep polling the queues in round-robin and execute their
-        pipeline through an executor.
-        """
-        # Go through all queue in the Ready state.
-        async for message in self.scheduler.run():
-            await self.services_manager.services.s.hooks.message_scheduled.emit(
-                message.message
-            )
-            await self.executor.submit(message)
 
     async def run_sync(self) -> None:
         """
@@ -116,18 +83,17 @@ class Broker:
             self.logger.info("Worker sync", extra={"data": {"work": str(work_sync)}})
 
             for queue in work_sync.queues.add:
-                self.scheduler.add(queue)
+                self.executors_manager.add_queue(queue)
             for resource in work_sync.resources.add:
                 await self.resources_manager.add(resource)
 
             for queue in work_sync.queues.drop:
-                await self.scheduler.remove(queue)
+                await self.executors_manager.remove_queue(queue)
             for resource in work_sync.resources.drop:
                 await self.resources_manager.remove(resource)
 
     async def close(self) -> None:
-        await self.executor.close()
-        await self.scheduler.close()
+        await self.executors_manager.close()
         await self.services_manager.close()
 
     def stop(self) -> None:

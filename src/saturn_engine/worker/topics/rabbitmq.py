@@ -96,6 +96,7 @@ class RabbitMQTopic(Topic):
                     )
                     return True
                 except aio_pika.exceptions.DeliveryError as e:
+
                     # Only handle Nack
                     if e.frame.name != "Basic.Nack":
                         raise

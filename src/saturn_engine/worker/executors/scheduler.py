@@ -13,11 +13,9 @@ from saturn_engine.utils.log import getLogger
 T = t.TypeVar("T")
 
 
-@dataclasses.dataclass(eq=False)
-class Schedulable(t.Generic[T]):
+class Schedulable(t.Protocol, t.Generic[T]):
     iterable: AsyncGenerator[T, None]
     name: str
-    # property for scheduling such as "weight" or priority would come here.
 
 
 @dataclasses.dataclass

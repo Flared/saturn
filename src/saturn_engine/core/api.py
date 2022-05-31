@@ -45,6 +45,7 @@ class QueueItem:
     input: Union[TopicItem, InventoryItem] = field(
         ObjectUnion(union={"topic": TopicItem, "inventory": InventoryItem})
     )
+    executor: str = "default"
 
 
 @dataclasses.dataclass
@@ -124,3 +125,10 @@ class UpdateResponse:
 @dataclasses.dataclass
 class JobsSyncResponse:
     pass
+
+
+@dataclasses.dataclass
+class ExecutorItem:
+    name: str
+    type: str
+    options: dict[str, Any] = dataclasses.field(default_factory=dict)
