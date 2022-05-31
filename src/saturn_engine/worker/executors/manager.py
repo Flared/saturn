@@ -1,6 +1,6 @@
 import asyncio
 
-from saturn_engine.core.api import ExecutorItem
+from saturn_engine.core import api
 from saturn_engine.utils.asyncutils import TasksGroupRunner
 from saturn_engine.worker.services import Services
 
@@ -28,7 +28,7 @@ class ExecutorsManager:
         # TODO: Executor should be loaded through definitions and
         # `add_executor`.
         self.add_executor(
-            ExecutorItem(
+            api.Executor(
                 name="default",
                 type=services.s.config.c.worker.executor_cls,
             ),
@@ -55,7 +55,7 @@ class ExecutorsManager:
             return
         await executor.remove_schedulable(queue)
 
-    def add_executor(self, executor_definition: ExecutorItem) -> None:
+    def add_executor(self, executor_definition: api.Executor) -> None:
         if executor_definition.name in self.executors:
             raise ValueError("Executor already defined")
 
@@ -90,7 +90,7 @@ class ExecutorWorker:
     @classmethod
     def from_item(
         cls,
-        executor_definition: ExecutorItem,
+        executor_definition: api.Executor,
         *,
         resources_manager: ResourcesManager,
         services: Services,

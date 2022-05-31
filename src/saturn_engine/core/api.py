@@ -128,7 +128,7 @@ class JobsSyncResponse:
 
 
 @dataclasses.dataclass
-class ExecutorItem:
+class Executor:
     name: str
     type: str
     options: dict[str, Any] = dataclasses.field(default_factory=dict)
