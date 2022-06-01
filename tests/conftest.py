@@ -83,52 +83,6 @@ def fake_pipeline_info(fake_pipeline: t.Callable) -> api.PipelineInfo:
     return api.PipelineInfo.from_pipeline(fake_pipeline)
 
 
-@pytest.fixture
-def queue_pipeline_maker(
-    fake_pipeline_info: api.PipelineInfo,
-) -> t.Callable[..., api.QueuePipeline]:
-    def maker() -> api.QueuePipeline:
-        return api.QueuePipeline(info=fake_pipeline_info, args={})
-
-    return maker
-
-
-@pytest.fixture
-def topic_item_maker() -> t.Callable[..., api.TopicItem]:
-    def maker() -> api.TopicItem:
-        return api.TopicItem(name="test", type="test", options={})
-
-    return maker
-
-
-@pytest.fixture
-def queue_item_maker(
-    queue_pipeline_maker: t.Callable[..., api.QueuePipeline],
-    topic_item_maker: t.Callable[..., api.TopicItem],
-) -> t.Callable[..., api.QueueItem]:
-    def maker() -> api.QueueItem:
-        return api.QueueItem(
-            name="test",
-            pipeline=queue_pipeline_maker(),
-            input=topic_item_maker(),
-            output={"default": [topic_item_maker()]},
-        )
-
-    return maker
-
-
-@pytest.fixture
-def job_definition_maker(
-    queue_item_maker: t.Callable[..., api.QueueItem]
-) -> t.Callable[..., api.JobDefinition]:
-    def maker() -> api.JobDefinition:
-        return api.JobDefinition(
-            name="test", template=queue_item_maker(), minimal_interval="@weekly"
-        )
-
-    return maker
-
-
 @pytest.fixture(scope="session")
 def config() -> Config:
     return Config().load_objects([default_config, test_config])

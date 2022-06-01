@@ -2,6 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from saturn_engine.core.api import Executor
 from saturn_engine.core.api import InventoryItem
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import PipelineInfo
@@ -21,7 +22,9 @@ async def test_sync(
     worker_manager_client: Mock,
 ) -> None:
     # Sync does nothing.
-    worker_manager_client.lock.return_value = LockResponse(items=[], resources=[])
+    worker_manager_client.lock.return_value = LockResponse(
+        items=[], resources=[], executors=[]
+    )
 
     work_sync = await work_manager.sync()
     assert work_sync == WorkSync.empty()
@@ -39,6 +42,7 @@ async def test_sync(
                     args={},
                 ),
                 output={},
+                executor="e1",
             ),
             QueueItem(
                 name="q2",
@@ -51,6 +55,7 @@ async def test_sync(
                     args={},
                 ),
                 output={},
+                executor="e1",
             ),
             QueueItem(
                 name="q3",
@@ -63,23 +68,31 @@ async def test_sync(
                     args={},
                 ),
                 output={},
+                executor="e2",
             ),
         ],
         resources=[
             ResourceItem(name="r1", type="FakeResource", data={"foo": "bar"}),
             ResourceItem(name="r2", type="FakeResource", data={"foo": "biz"}),
         ],
+        executors=[
+            Executor(name="e1", type="FakeExecutor", options={"foo": "bar"}),
+            Executor(name="e2", type="FakeExecutor", options={"foo": "bar"}),
+        ],
     )
 
     work_sync = await work_manager.sync()
     assert len(work_sync.queues.add) == 3
     assert len(work_sync.resources.add) == 2
+    assert len(work_sync.executors.add) == 2
     assert work_sync.queues.drop == []
     assert work_sync.resources.drop == []
+    assert work_sync.executors.drop == []
 
     q2_work = work_manager.work_queue_by_name("q1")
     q3_work = work_manager.work_queue_by_name("q3")
     r2_resource = work_manager.worker_resources["r2"]
+    e2_executor = work_manager.worker_executors["e2"]
 
     # New sync add 1 and drop 2 items.
     worker_manager_client.lock.return_value = LockResponse(
@@ -95,6 +108,7 @@ async def test_sync(
                     args={},
                 ),
                 output={},
+                executor="e1",
             ),
             QueueItem(
                 name="q4",
@@ -107,16 +121,22 @@ async def test_sync(
                     args={},
                 ),
                 output={},
+                executor="e1",
             ),
         ],
         resources=[
             ResourceItem(name="r1", type="FakeResource", data={"foo": "bar"}),
+        ],
+        executors=[
+            Executor(name="e1", type="FakeExecutor", options={"foo": "bar"}),
         ],
     )
 
     work_sync = await work_manager.sync()
     assert len(work_sync.queues.add) == 1
     assert len(work_sync.resources.add) == 0
+    assert len(work_sync.executors.add) == 0
     # Ensure the item dropped are the same queue object that were added.
     assert set(work_sync.queues.drop) == {q2_work, q3_work}
     assert set(work_sync.resources.drop) == {r2_resource}
+    assert set(e.name for e in work_sync.executors.drop) == {e2_executor.name}

@@ -7,6 +7,7 @@ import pytest
 
 from saturn_engine.config import Config
 from saturn_engine.core import PipelineResults
+from saturn_engine.core import api
 from saturn_engine.core.api import InventoryItem
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import PipelineInfo
@@ -70,6 +71,11 @@ async def test_broker_dummy(
                 name="r1",
                 type="FakeResource",
                 data={"data": "fake"},
+            ),
+        ],
+        executors=[
+            api.Executor(
+                name="e1", type=get_import_name(FakeExecutor), options={"assert": True}
             ),
         ],
     )

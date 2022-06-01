@@ -37,7 +37,9 @@ from tests.utils import TimeForwardLoop
 @pytest.fixture
 def worker_manager_client() -> Mock:
     _worker_manager_client = create_autospec(WorkerManagerClient, instance=True)
-    _worker_manager_client.lock.return_value = LockResponse(items=[], resources=[])
+    _worker_manager_client.lock.return_value = LockResponse(
+        items=[], resources=[], executors=[]
+    )
     return _worker_manager_client
 
 
