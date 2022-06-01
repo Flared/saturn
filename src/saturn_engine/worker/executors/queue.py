@@ -26,6 +26,7 @@ class ExecutorQueue:
         services: Services,
     ) -> None:
         self.logger = getLogger(__name__, self)
+        self.submit_lock = asyncio.Lock()
         self.queue: asyncio.Queue[ExecutableMessage] = asyncio.Queue(maxsize=1)
         self.submit_tasks = TasksGroupRunner(name="executor-submit")
         self.processing_tasks = TasksGroupRunner(name="executor-queue")
@@ -74,21 +75,24 @@ class ExecutorQueue:
                 self.logger.exception("Failed to process queue item")
 
     async def submit(self, processable: ExecutableMessage) -> None:
-        # Try first to check if we have the resources available so we can
-        # then check if the executor queue is ready. That way, the scheduler
-        # will pause until the executor is free again.
-        if await self.acquire_resources(processable, wait=False):
-            await self.queue_submit(processable)
-        else:
-            # Park the queue from which the processable comes from.
-            # The queue should be unparked once the resources are acquired.
-            processable.park()
-            # To avoid blocking the executor queue while we wait on resource,
-            # create a background task to wait on resources.
-            self.submit_tasks.create_task(
-                self.delayed_submit(processable),
-                name=f"delayed-submit({processable})",
-            )
+        # Get the lock to ensure we don't acquire resource if the submit queue
+        # is already full.
+        async with self.submit_lock:
+            # Try first to check if we have the resources available so we can
+            # then check if the executor queue is ready. That way, the scheduler
+            # will pause until the executor is free again.
+            if await self.acquire_resources(processable, wait=False):
+                await self.queue_submit(processable)
+            else:
+                # Park the queue from which the processable comes from.
+                # The queue should be unparked once the resources are acquired.
+                processable.park()
+                # To avoid blocking the executor queue while we wait on resource,
+                # create a background task to wait on resources.
+                self.submit_tasks.create_task(
+                    self.delayed_submit(processable),
+                    name=f"delayed-submit({processable})",
+                )
 
     async def acquire_resources(
         self, processable: ExecutableMessage, *, wait: bool
@@ -116,7 +120,8 @@ class ExecutorQueue:
         finally:
             await processable.unpark()
 
-        await self.queue_submit(processable)
+        async with self.submit_lock:
+            await self.queue_submit(processable)
 
     async def queue_submit(self, processable: ExecutableMessage) -> None:
         await self.services.s.hooks.message_submitted.emit(processable.message)
