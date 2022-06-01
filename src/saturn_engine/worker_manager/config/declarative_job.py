@@ -48,6 +48,7 @@ class JobSpec:
     input: JobInput
     pipeline: PipelineInfo
     output: dict[str, list[JobOutput]] = dataclasses.field(default_factory=dict)
+    executor: str = "default"
 
     def to_core_object(
         self,
@@ -65,6 +66,7 @@ class JobSpec:
                 info=self.pipeline.to_core_object(),
                 args=dict(),
             ),
+            executor=self.executor,
         )
 
 

@@ -6,7 +6,7 @@ from saturn_engine.worker.services import Services
 
 from ..resources_manager import ResourcesManager
 from . import Executor
-from . import get_executor_class
+from . import build_executor
 from .executable import ExecutableMessage
 from .executable import ExecutableQueue
 from .queue import ExecutorQueue
@@ -24,15 +24,6 @@ class ExecutorsManager:
         self.services = services
         self.executors: dict[str, ExecutorWorker] = {}
         self.executors_tasks_group = TasksGroupRunner(name="executors")
-
-        # TODO: Executor should be loaded through definitions and
-        # `add_executor`.
-        self.add_executor(
-            api.Executor(
-                name="default",
-                type=services.s.config.c.worker.executor_cls,
-            ),
-        )
 
     def start(self) -> None:
         self.executors_tasks_group.start()
@@ -70,6 +61,12 @@ class ExecutorsManager:
             asyncio.create_task(executor.run(), name=f"executor-worker({name})")
         )
 
+    async def remove_executor(self, executor_definition: api.Executor) -> None:
+        executor = self.executors.pop(executor_definition.name, None)
+        if not executor:
+            raise ValueError("Executor missing")
+        await executor.close()
+
 
 class ExecutorWorker:
     def __init__(
@@ -95,8 +92,7 @@ class ExecutorWorker:
         resources_manager: ResourcesManager,
         services: Services,
     ) -> "ExecutorWorker":
-        executor_cls = get_executor_class(executor_definition.type)
-        executor = executor_cls(services=services)
+        executor = build_executor(executor_definition, services=services)
         return cls(
             executor=executor,
             resources_manager=resources_manager,

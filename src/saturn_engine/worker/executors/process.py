@@ -1,5 +1,8 @@
+import typing as t
+
 import asyncio
 import concurrent.futures
+import dataclasses
 import os
 from functools import partial
 
@@ -30,10 +33,14 @@ def process_initializer(
 
 
 class ProcessExecutor(Executor):
-    def __init__(self, services: Services) -> None:
-        self.max_workers = os.cpu_count() or 1
+    @dataclasses.dataclass
+    class Options:
+        max_workers: t.Optional[int] = None
+
+    def __init__(self, options: Options, services: Services) -> None:
+        self.max_workers = options.max_workers or os.cpu_count() or 1
         self.pool_executor = concurrent.futures.ProcessPoolExecutor(
-            max_workers=self.concurrency,
+            max_workers=self.max_workers,
             initializer=partial(
                 process_initializer,
                 executor_initialized=services.hooks.executor_initialized,

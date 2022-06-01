@@ -1,6 +1,7 @@
 import typing as t
 
 import asyncio
+import dataclasses
 from unittest.mock import Mock
 
 import pytest
@@ -26,8 +27,12 @@ class FakeExecutor(Executor):
     concurrency = 5
     done_event: asyncio.Event
 
-    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
-        pass
+    @dataclasses.dataclass
+    class Options:
+        ok: bool
+
+    def __init__(self, options: Options, services: object) -> None:
+        assert options.ok is True
 
     async def process_message(self, message: PipelineMessage) -> PipelineResults:
         assert isinstance(message.message.args["resource"], dict)
@@ -64,6 +69,7 @@ async def test_broker_dummy(
                 ),
                 pipeline=QueuePipeline(args={}, info=pipeline_info),
                 output={},
+                executor="e1",
             )
         ],
         resources=[
@@ -75,7 +81,7 @@ async def test_broker_dummy(
         ],
         executors=[
             api.Executor(
-                name="e1", type=get_import_name(FakeExecutor), options={"assert": True}
+                name="e1", type=get_import_name(FakeExecutor), options={"ok": True}
             ),
         ],
     )

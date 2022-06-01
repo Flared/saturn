@@ -69,6 +69,8 @@ spec:
     pipeline:
       name: something.saturn.pipelines.aa.bb
       resources: {"api_key": "GithubApiKey"}
+
+    executor: default
 """
     static_definitions = load_definitions_from_str(job_definition_str)
 

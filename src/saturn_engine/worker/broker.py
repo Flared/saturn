@@ -82,15 +82,19 @@ class Broker:
             work_sync = await self.work_manager.sync()
             self.logger.info("Worker sync", extra={"data": {"work": str(work_sync)}})
 
+            for executor in work_sync.executors.add:
+                self.executors_manager.add_executor(executor)
             for queue in work_sync.queues.add:
                 self.executors_manager.add_queue(queue)
             for resource in work_sync.resources.add:
                 await self.resources_manager.add(resource)
 
-            for queue in work_sync.queues.drop:
-                await self.executors_manager.remove_queue(queue)
             for resource in work_sync.resources.drop:
                 await self.resources_manager.remove(resource)
+            for queue in work_sync.queues.drop:
+                await self.executors_manager.remove_queue(queue)
+            for executor in work_sync.executors.drop:
+                await self.executors_manager.remove_executor(executor)
 
     async def close(self) -> None:
         await self.executors_manager.close()

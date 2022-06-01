@@ -4,18 +4,19 @@ from abc import ABC
 from abc import abstractmethod
 
 from saturn_engine.core import PipelineResults
+from saturn_engine.core import api
 from saturn_engine.utils.inspect import import_name
+from saturn_engine.utils.options import OptionsSchema
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.services import Services
 
 
-class Executor(ABC):
-    def __init__(self, services: Services) -> None:
-        pass
+class Executor(ABC, OptionsSchema):
+    name: str
 
     @abstractmethod
     async def process_message(self, message: PipelineMessage) -> PipelineResults:
-        ...
+        pass
 
     @property
     @abstractmethod
@@ -26,12 +27,20 @@ class Executor(ABC):
         pass
 
 
-def get_executor_class(path: str) -> Type[Executor]:
-    klass = BUILTINS.get(path)
-    if klass:
-        return klass
-
-    return import_name(path)
+def build_executor(
+    executor_definition: api.Executor, *, services: Services
+) -> Executor:
+    klass = BUILTINS.get(executor_definition.type)
+    if klass is None:
+        klass = import_name(executor_definition.type)
+    if klass is None:
+        raise ValueError(f"Unknown topic type: {executor_definition.type}")
+    if not issubclass(klass, Executor):
+        raise ValueError(f"{klass} must be an Executor")
+    options = {"name": executor_definition.name} | executor_definition.options
+    executor = klass.from_options(options, services=services)
+    executor.name = executor_definition.name
+    return executor
 
 
 from .process import ProcessExecutor

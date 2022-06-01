@@ -78,6 +78,8 @@ class Scheduler(t.Generic[T]):
     async def run(self) -> AsyncIterator[T]:
         while True:
             done = await self.tasks_group.wait()
+            if not done:
+                continue
             self.logger.debug(
                 "task ready",
                 extra={"data": {"tasks": ",".join(t.get_name() for t in done)}},
