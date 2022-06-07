@@ -1,3 +1,4 @@
+import dataclasses
 from arq import create_pool
 from arq.connections import ArqRedis
 from arq.connections import RedisSettings
@@ -14,24 +15,32 @@ from . import RESULT_TIMEOUT
 
 
 class ARQExecutor(Executor):
-    def __init__(self, services: Services) -> None:
+    @dataclasses.dataclass
+    class Options:
+        redis_url: str
+        queue_name: str
+        concurrency: int
+        queue_timeout: int = QUEUE_TIMEOUT
+        result_timeout: int = RESULT_TIMEOUT
+
+    def __init__(self, options: Options, services: Services) -> None:
         self.logger = getLogger(__name__, self)
-        self.config = services.s.config.c
+        self.options = options
         if services.hooks.executor_initialized:
             self.logger.error("ARQExecutor does not support executor_initialized hooks")
 
     @cached_property
     async def redis_queue(self) -> ArqRedis:
-        return await create_pool(RedisSettings.from_dsn(self.config.redis.dsn))
+        return await create_pool(RedisSettings.from_dsn(self.options.redis_url))
 
     async def process_message(self, message: PipelineMessage) -> PipelineResults:
         job = await (await self.redis_queue).enqueue_job(
-            "remote_execute",
+            self.options.queue_name,
             message,
-            _expires=QUEUE_TIMEOUT,
+            _expires=self.options.queue_timeout,
         )
-        return await job.result(timeout=RESULT_TIMEOUT)
+        return await job.result(timeout=self.options.result_timeout)
 
     @property
     def concurrency(self) -> int:
-        return self.config.worker.executor_concurrency
+        return self.options.concurrency

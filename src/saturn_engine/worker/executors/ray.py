@@ -30,23 +30,21 @@ class SaturnExecutorActor:
 
 
 class ExecutorSession:
-    def __init__(self, services: Services) -> None:
-        config = services.config.c.ray
+    def __init__(self, options: "RayExecutor.Options", services: Services) -> None:
         options: dict[str, t.Any] = {
-            "local_mode": config.local,
-            "configure_logging": config.enable_logging,
-            "log_to_driver": config.enable_logging,
+            "local_mode": options.local,
+            "configure_logging": options.enable_logging,
+            "log_to_driver": options.enable_logging,
         }
-        if config.address:
-            options["address"] = config.address
+        options["address"] = options.address
 
         ray.init(ignore_reinit_error=True, **options)
         self.pool = ActorPool(
-            count=config.executor_actor_count,
+            count=options.actor_count,
             actor_cls=SaturnExecutorActor,
             actor_options={
-                "max_concurrency": config.executor_actor_concurrency,
-                "num_cpus": config.executor_actor_cpu_count,
+                "max_concurrency": options.actor_concurrency,
+                "num_cpus": options.actor_cpu_count,
             },
             actor_kwargs={
                 "executor_initialized": services.hooks.executor_initialized,
@@ -55,15 +53,23 @@ class ExecutorSession:
 
     @staticmethod
     def concurrency(services: Services) -> int:
-        config = services.config.c.ray
-        return config.executor_actor_concurrency * config.executor_actor_count
+        return options.actor_concurrency * options.actor_count
 
     def close(self) -> None:
         ray.shutdown()
 
 
 class RayExecutor(Executor):
-    def __init__(self, services: Services) -> None:
+    @dataclasses.dataclass
+    class Options:
+        local: bool = False
+        address: str = "auto"
+        enable_logging: bool = True
+        actor_count: int = 1
+        actor_concurrency: int = 2
+        actor_cpu_count: float = 1.0
+
+    def __init__(self, options: Options, services: Services) -> None:
         self.logger = getLogger(__name__, self)
         self.services = services
         self._session: t.Optional[ExecutorSession] = None
