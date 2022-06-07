@@ -13,8 +13,6 @@ class Env(Enum):
 @dataclasses.dataclass
 class WorkerConfig:
     job_store_cls: str
-    executor_cls: str
-    executor_concurrency: int
 
 
 @dataclasses.dataclass
@@ -32,16 +30,6 @@ class WorkerManagerConfig:
 class RabbitMQConfig:
     url: str
     reconnect_interval: int
-
-
-@dataclasses.dataclass
-class RayConfig:
-    local: bool
-    address: str
-    enable_logging: bool
-    executor_actor_count: int
-    executor_actor_concurrency: int
-    executor_actor_cpu_count: float
 
 
 @dataclasses.dataclass
@@ -67,5 +55,4 @@ class SaturnConfig:
     worker: WorkerConfig
     worker_manager: WorkerManagerConfig
     rabbitmq: RabbitMQConfig
-    ray: RayConfig
     redis: RedisConfig

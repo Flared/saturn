@@ -1,6 +1,5 @@
 from .config_definitions import Env
 from .config_definitions import RabbitMQConfig
-from .config_definitions import RayConfig
 from .config_definitions import RedisConfig
 from .config_definitions import SaturnConfig
 from .config_definitions import ServicesManagerConfig
@@ -35,7 +34,6 @@ __all__ = (
     "WorkerConfig",
     "WorkerManagerConfig",
     "RabbitMQConfig",
-    "RayConfig",
     "RedisConfig",
     "ServicesManagerConfig",
     "Env",

@@ -34,4 +34,4 @@ class ARQExecutor(Executor):
 
     @property
     def concurrency(self) -> int:
-        return self.config.worker.executor_concurrency
+        return 1
