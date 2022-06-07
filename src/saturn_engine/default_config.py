@@ -4,7 +4,6 @@ import os
 
 from .config import Env
 from .config import RabbitMQConfig
-from .config import RayConfig
 from .config import RedisConfig
 from .config import SaturnConfig
 from .config import ServicesManagerConfig
@@ -29,20 +28,10 @@ class config(SaturnConfig):
 
     class worker(WorkerConfig):
         job_store_cls = "ApiJobStore"
-        executor_cls = os.environ.get("SATURN_WORKER__EXECUTOR_CLS", "ProcessExecutor")
-        executor_concurrency = 16
 
     class rabbitmq(RabbitMQConfig):
         url = os.environ.get("SATURN_AMQP_URL", "amqp://127.0.0.1/")
         reconnect_interval = 10
-
-    class ray(RayConfig):
-        local = os.environ.get("SATURN_RAY__LOCAL", "0") == "1"
-        address = os.environ.get("SATURN_RAY__ADDRESS", "auto")
-        enable_logging = True
-        executor_actor_count = 4
-        executor_actor_concurrency = 2
-        executor_actor_cpu_count = 1.0
 
     class worker_manager(WorkerManagerConfig):
         flask_host = os.environ.get("SATURN_FLASK_HOST", "127.0.0.1")
