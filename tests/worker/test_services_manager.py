@@ -75,17 +75,17 @@ async def test_services_manager(config: Config) -> None:
         fake_with_config: FakeServiceWithConfig
 
     services = sm.services.cast(FakeServices)
-    assert services.fake_with_config.options.a == 1
-    assert services.fake.options.b == 2
-    assert services.fake.state is None
+    assert services.s.fake_with_config.options.a == 1
+    assert services.s.fake.options.b == 2
+    assert services.s.fake.state is None
 
     # Service Manager register service options to config.
-    assert sm.services.config.cast_namespace("fake", FakeService.Options).b == 2
+    assert sm.services.s.config.cast_namespace("fake", FakeService.Options).b == 2
 
     await sm.open()
-    assert services.fake.state == "opened"
+    assert services.s.fake.state == "opened"
     await sm.close()
-    assert services.fake.state == "closed"
+    assert services.s.fake.state == "closed"
 
 
 def test_services_manager_check_options(config: Config) -> None:

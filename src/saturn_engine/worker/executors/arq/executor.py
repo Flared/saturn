@@ -1,4 +1,5 @@
 import dataclasses
+
 from arq import create_pool
 from arq.connections import ArqRedis
 from arq.connections import RedisSettings
@@ -26,8 +27,10 @@ class ARQExecutor(Executor):
     def __init__(self, options: Options, services: Services) -> None:
         self.logger = getLogger(__name__, self)
         self.options = options
-        if services.hooks.executor_initialized:
-            self.logger.error("ARQExecutor does not support executor_initialized hooks")
+        if services.s.hooks.executor_initialized:
+            self.logger.warning(
+                "ARQExecutor does not support executor_initialized hooks"
+            )
 
     @cached_property
     async def redis_queue(self) -> ArqRedis:

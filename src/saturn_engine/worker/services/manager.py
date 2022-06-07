@@ -44,7 +44,7 @@ class ServicesManager:
         for service in reversed(self.loaded_services):
             await service.close()
 
-    def _load_service(self, service_cls: Type[TService]) -> None:
+    def _load_service(self, service_cls: Type[TService]) -> TService:
         if service_cls.name in self.services:
             raise ValueError(f"Cannot load '{service_cls.name}' twice")
 
@@ -66,6 +66,7 @@ class ServicesManager:
             raise ValueError(f"Failed to load service '{service_cls.name}'") from e
         self.loaded_services.append(service)
         self.services[service_cls.name] = service
+        return service
 
     def has_loaded(self, service_cls: Type[TService]) -> bool:
         return service_cls.name in self.services

@@ -55,7 +55,7 @@ class ExecutorQueue:
             try:
                 async with processable.context:
 
-                    @self.services.hooks.message_executed.emit
+                    @self.services.s.hooks.message_executed.emit
                     async def scope(message: PipelineMessage) -> PipelineResults:
                         return await self.executor.process_message(message)
 

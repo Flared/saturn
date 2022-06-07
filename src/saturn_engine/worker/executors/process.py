@@ -43,7 +43,7 @@ class ProcessExecutor(Executor):
             max_workers=self.max_workers,
             initializer=partial(
                 process_initializer,
-                executor_initialized=services.hooks.executor_initialized,
+                executor_initialized=services.s.hooks.executor_initialized,
             ),
         )
 

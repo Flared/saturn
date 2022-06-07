@@ -9,6 +9,7 @@ from .executors.executable import ExecutableQueue
 from .inventories import Inventory
 from .job import Job
 from .services import Services
+from .services.job_store import JobStoreService
 from .topics import Topic
 
 
@@ -53,7 +54,7 @@ def build_inventory_job(
     inventory_item: InventoryItem, *, queue_item: QueueItem, services: Services
 ) -> Job:
     inventory = build_inventory(inventory_item, services=services)
-    store = services.job_store.for_queue(queue_item)
+    store = services.cast_service(JobStoreService).for_queue(queue_item)
     return Job(inventory=inventory, store=store)
 
 

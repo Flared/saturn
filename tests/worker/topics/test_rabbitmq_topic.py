@@ -44,12 +44,12 @@ async def topic_maker(
         queue_name: str = "test",
         **kwargs: t.Any
     ) -> RabbitMQTopic:
-        await rabbitmq_service_loader(services_manager)
+        rabbitmq_service = await rabbitmq_service_loader(services_manager)
 
         if queue_name not in queue_names:
             await ensure_clean_queue(
                 queue_name,
-                connection=await services_manager.services.rabbitmq.connection,
+                connection=await rabbitmq_service.connection,
             )
 
         kwargs.setdefault("auto_delete", True)
@@ -129,11 +129,11 @@ async def test_bounded_rabbitmq_topic_max_length(
 
 @pytest.mark.asyncio
 async def test_rabbitmq_topic_channel_closed(
-    rabbitmq_url: str,
     services_manager_maker: t.Callable[[Config], t.Awaitable[ServicesManager]],
     config: Config,
     tcp_proxy: t.Callable[[int, int], Awaitable[TcpProxy]],
     topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]],
+    rabbitmq_service_loader: t.Callable[..., Awaitable[RabbitMQService]],
 ) -> None:
     proxy = await tcp_proxy(15672, 5672)
     config = config.load_object(
@@ -142,7 +142,8 @@ async def test_rabbitmq_topic_channel_closed(
     services_manager = await services_manager_maker(config)
 
     async def close_all_channels() -> None:
-        connection = await services_manager.services.rabbitmq.connection
+        rabbitmq_service = await rabbitmq_service_loader(services_manager)
+        connection = await rabbitmq_service.connection
         for channel in dict(connection.connection.channels).values():
             await channel.rpc(
                 pamqp.commands.Channel.Close(
