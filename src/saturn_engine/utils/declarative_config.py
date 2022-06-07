@@ -68,7 +68,7 @@ def load_uncompiled_objects_from_path(path: str) -> list[UncompiledObject]:
 def load_uncompiled_objects_from_directory(config_dir: str) -> list[UncompiledObject]:
     uncompiled_objects: list[UncompiledObject] = list()
 
-    for root, _, filenames in os.walk(config_dir):
+    for root, _, filenames in os.walk(config_dir, followlinks=True):
         for filename in filenames:
             if not filename.endswith(".yaml"):
                 continue
