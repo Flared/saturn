@@ -1,0 +1,45 @@
+#!/bin/bash
+set -eo pipefail
+
+fail() {
+  echo "$@" 1>&2;
+  exit 1
+}
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+ROOT_DIR="$( cd ${DIR}/.. && pwd )"
+
+current_version=$(poetry version -s)
+echo "Current version: ${current_version}"
+
+# Must run on main.
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+if [[ ${current_branch} != "main" ]]
+then
+  fail "error: Must be on main to release; git checkout main"
+fi
+
+# Must provide version.
+version=${1}
+if [[ -z "${version}" ]]
+then
+  fail "error: expected 1 argument 'version'"
+fi
+
+if ! [[ "${current_version}" < "${version}" ]]
+then
+  fail "error: version must be greater than ${current_version}"
+fi
+
+read -p "Release ${version}? [y/n]" -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+  poetry version "${version}"
+
+  git reset -- ${ROOT_DIR}
+  git add "${ROOT_DIR}/pyproject.toml"
+  git commit -m "version: release ${version}"
+  git push
+
+  echo "Release at https://github.com/Flared/saturn/releases/new?tag=v${version}&target=main&title=v${version}"
+fi
