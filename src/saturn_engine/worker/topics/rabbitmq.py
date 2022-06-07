@@ -145,7 +145,7 @@ class RabbitMQTopic(Topic):
 
     @cached_property
     async def channel(self) -> aio_pika.abc.AbstractChannel:
-        connection = await self.services.rabbitmq.connection
+        connection = await self.services.s.rabbitmq.connection
         channel = await self.exit_stack.enter_async_context(
             connection.channel(on_return_raises=True)
         )

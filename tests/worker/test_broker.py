@@ -1,5 +1,3 @@
-import typing as t
-
 import asyncio
 import dataclasses
 from unittest.mock import Mock
@@ -48,15 +46,11 @@ def pipeline(resource: FakeResource) -> None:
 
 @pytest.mark.asyncio
 async def test_broker_dummy(
-    broker_maker: t.Callable[..., Broker],
+    broker: Broker,
     config: Config,
     worker_manager_client: Mock,
 ) -> None:
     FakeExecutor.done_event = asyncio.Event()
-    config = config.load_object(
-        {"worker": {"executor_cls": get_import_name(FakeExecutor)}}
-    )
-    broker = broker_maker(config=config)
 
     hooks_handler = register_hooks_handler(broker.services_manager.services)
     pipeline_info = PipelineInfo.from_pipeline(pipeline)

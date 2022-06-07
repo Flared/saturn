@@ -175,7 +175,7 @@ def default_utc(date: datetime) -> datetime:
 
 
 class Namespace(collections.UserDict):
-    def __getattr__(self, name: str) -> Any:
+    def __getattr__(self, name: str) -> object:
         try:
             return self.data[name]
         except KeyError:
@@ -183,13 +183,13 @@ class Namespace(collections.UserDict):
 
 
 class CINamespace(collections.UserDict):
-    def __getattr__(self, name: str) -> Any:
+    def __getattr__(self, name: str) -> object:
         try:
             return self.data[name.lower()]
         except KeyError:
             raise AttributeError(name) from None
 
-    def __getitem__(self, name: str) -> Any:
+    def __getitem__(self, name: str) -> object:
         return self.data[name.lower()]
 
     def __setitem__(self, name: str, value: Any) -> None:

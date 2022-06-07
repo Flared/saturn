@@ -1,6 +1,4 @@
-from typing import Any
-from typing import Optional
-from typing import Union
+import typing as t
 
 import re
 
@@ -57,8 +55,8 @@ def test_config() -> None:
     assert config.c.c.x == "3"
 
     # Untyped, but item/attr and case insensitive access through `.r`
-    assert config.r.D.Z == "6"
-    assert config.r["d"]["Z"] == "6"
+    assert t.cast(t.Any, config).r.D.Z == "6"
+    assert t.cast(t.Any, config).r["d"]["Z"] == "6"
 
     d: ExtraInterface = config.cast_namespace("d", ExtraInterface)
     assert d.y == 2
@@ -66,7 +64,7 @@ def test_config() -> None:
 
 def test_any_config() -> None:
     class AnyConfig:
-        a: Any
+        a: t.Any
 
     config: Config[AnyConfig] = Config()
     config = config.load_object({"a": None}).register_interface("", AnyConfig)
@@ -76,7 +74,7 @@ def test_any_config() -> None:
 
 def test_optional_config() -> None:
     class OptionalConfig:
-        a: Optional["list[int]"]
+        a: t.Optional["list[int]"]
 
     config: Config[OptionalConfig] = Config()
     config = config.load_object({"a": None}).register_interface("", OptionalConfig)
@@ -87,7 +85,7 @@ def test_optional_config() -> None:
 
 def test_union_config() -> None:
     class UnionConfig:
-        a: Union["Optional[int]", str]
+        a: t.Union["t.Optional[int]", str]
 
     config: Config[UnionConfig] = Config()
     config = config.load_object({"a": None}).register_interface("", UnionConfig)

@@ -1,6 +1,7 @@
 import typing as t
 
 import contextlib
+import dataclasses
 from collections.abc import Iterator
 
 import ray
@@ -30,54 +31,60 @@ class SaturnExecutorActor:
 
 
 class ExecutorSession:
-    def __init__(self, services: Services) -> None:
-        config = services.config.c.ray
-        options: dict[str, t.Any] = {
-            "local_mode": config.local,
-            "configure_logging": config.enable_logging,
-            "log_to_driver": config.enable_logging,
+    def __init__(self, *, options: "RayExecutor.Options", services: Services) -> None:
+        self.options = options
+        init_options: dict[str, t.Any] = {
+            "local_mode": options.local,
+            "configure_logging": options.enable_logging,
+            "log_to_driver": options.enable_logging,
+            "address": options.address,
         }
-        if config.address:
-            options["address"] = config.address
 
-        ray.init(ignore_reinit_error=True, **options)
+        ray.init(ignore_reinit_error=True, **init_options)
         self.pool = ActorPool(
-            count=config.executor_actor_count,
+            count=options.actor_count,
             actor_cls=SaturnExecutorActor,
             actor_options={
-                "max_concurrency": config.executor_actor_concurrency,
-                "num_cpus": config.executor_actor_cpu_count,
+                "max_concurrency": options.actor_concurrency,
+                "num_cpus": options.actor_cpu_count,
             },
             actor_kwargs={
-                "executor_initialized": services.hooks.executor_initialized,
+                "executor_initialized": services.s.hooks.executor_initialized,
             },
         )
-
-    @staticmethod
-    def concurrency(services: Services) -> int:
-        config = services.config.c.ray
-        return config.executor_actor_concurrency * config.executor_actor_count
 
     def close(self) -> None:
         ray.shutdown()
 
 
 class RayExecutor(Executor):
-    def __init__(self, services: Services) -> None:
+    @dataclasses.dataclass
+    class Options:
+        local: bool = False
+        address: str = "auto"
+        enable_logging: bool = True
+        actor_count: int = 1
+        actor_concurrency: int = 2
+        actor_cpu_count: float = 1.0
+
+    def __init__(self, options: Options, services: Services) -> None:
         self.logger = getLogger(__name__, self)
         self.services = services
+        self.options = options
         self._session: t.Optional[ExecutorSession] = None
 
     @property
     def concurrency(self) -> int:
-        return ExecutorSession.concurrency(self.services)
+        return self.options.actor_concurrency * self.options.actor_count
 
     @contextlib.contextmanager
     def session(self) -> Iterator[ExecutorSession]:
         need_reconnect = False
         try:
             if not self._session:
-                self._session = ExecutorSession(self.services)
+                self._session = ExecutorSession(
+                    options=self.options, services=self.services
+                )
             yield self._session
         except ConnectionError:
             self.logger.error("Could not reconnect")
