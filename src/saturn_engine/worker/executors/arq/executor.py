@@ -11,6 +11,7 @@ from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.services import Services
 
 from .. import Executor
+from . import EXECUTE_FUNC_NAME
 from . import QUEUE_TIMEOUT
 from . import RESULT_TIMEOUT
 
@@ -19,8 +20,8 @@ class ARQExecutor(Executor):
     @dataclasses.dataclass
     class Options:
         redis_url: str
-        queue_name: str
         concurrency: int
+        queue_name: str = "arq:queue"
         queue_timeout: int = QUEUE_TIMEOUT
         result_timeout: int = RESULT_TIMEOUT
 
@@ -38,9 +39,10 @@ class ARQExecutor(Executor):
 
     async def process_message(self, message: PipelineMessage) -> PipelineResults:
         job = await (await self.redis_queue).enqueue_job(
-            self.options.queue_name,
+            EXECUTE_FUNC_NAME,
             message,
             _expires=self.options.queue_timeout,
+            _queue_name=self.options.queue_name,
         )
         return await job.result(timeout=self.options.result_timeout)
 

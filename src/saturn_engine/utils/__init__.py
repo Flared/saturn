@@ -1,8 +1,4 @@
-from typing import Any
-from typing import Callable
-from typing import Generic
-from typing import TypeVar
-from typing import Union
+import typing as t
 
 import collections
 import enum
@@ -13,7 +9,7 @@ from datetime import datetime
 from datetime import timezone
 from functools import wraps
 
-T = TypeVar("T")
+T = t.TypeVar("T")
 
 
 class Sentinel(enum.Enum):
@@ -29,15 +25,15 @@ MEDIUM_TIMEOUT = 10
 
 
 class Scope:
-    value: Any
+    value: t.Any
 
 
-class _Lazy(Generic[T]):
+class _Lazy(t.Generic[T]):
     def __init__(
         self,
         *,
-        scope: Union[Scope, threading.local],
-        init: Callable[[], T],
+        scope: t.Union[Scope, threading.local],
+        init: t.Callable[[], T],
     ) -> None:
         self.scope = scope
         self.init = init
@@ -55,7 +51,7 @@ class _Lazy(Generic[T]):
 def lazy(
     *,
     threadlocal: bool = False,
-) -> Callable[[Callable[[], T]], _Lazy[T]]:
+) -> t.Callable[[t.Callable[[], T]], _Lazy[T]]:
     """
     Ensure a function is called only once. Useful to lazilly setup some global.
 
@@ -77,13 +73,13 @@ def lazy(
     1
     """
 
-    scope: Union[Scope, threading.local]
+    scope: t.Union[Scope, threading.local]
     if threadlocal:
         scope = threading.local()
     else:
         scope = Scope()
 
-    def decorator(init: Callable[[], T]) -> _Lazy[T]:
+    def decorator(init: t.Callable[[], T]) -> _Lazy[T]:
         return wraps(init)(
             _Lazy[T](
                 init=init,
@@ -109,7 +105,7 @@ class StrEnum(str, enum.Enum):
         return self
 
 
-def get_own_attr(inst: object, attr: str, default: Union[T, Sentinel] = MISSING) -> T:
+def get_own_attr(inst: object, attr: str, default: t.Union[T, Sentinel] = MISSING) -> T:
     """
     Act like `getattr`, but only check the instance namespace.
 
@@ -192,5 +188,9 @@ class CINamespace(collections.UserDict):
     def __getitem__(self, name: str) -> object:
         return self.data[name.lower()]
 
-    def __setitem__(self, name: str, value: Any) -> None:
+    def __setitem__(self, name: str, value: t.Any) -> None:
         self.data[name.lower()] = value
+
+
+def assert_never(x: t.NoReturn) -> t.NoReturn:
+    raise AssertionError("Unhandled type: {}".format(type(x).__name__))
