@@ -21,7 +21,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.9"
-SQLAlchemy = {extras = ["mypy"], version = "1.4.29"}
+SQLAlchemy = {extras = ["mypy"], version = "^1.4.29"}
 aiosqlite = "^0.17.0"
 marshmallow = "^3.13.0"
 desert = "^2020.11.18"
