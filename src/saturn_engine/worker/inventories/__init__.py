@@ -4,6 +4,7 @@ from ..inventory import BlockingInventory
 from ..inventory import Inventory
 from ..inventory import Item
 from ..inventory import IteratorInventory
+from .batching import BatchingInventory
 from .chained import ChainedInventory
 from .dummy import DummyInventory
 from .joined import JoinedInventory
@@ -18,4 +19,5 @@ BUILTINS: dict[str, Type[Inventory]] = {
     "JoinedInventory": JoinedInventory,
     "ChainedInventory": ChainedInventory,
     "PeriodicInventory": PeriodicInventory,
+    "BatchingInventory": BatchingInventory,
 }
