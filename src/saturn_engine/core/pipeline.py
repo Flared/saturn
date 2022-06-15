@@ -1,6 +1,9 @@
 import typing
 from typing import Any
 from typing import Callable
+from typing import Hashable
+from typing import Type
+from typing import TypeVar
 from typing import Union
 from typing import cast
 
@@ -12,6 +15,8 @@ from saturn_engine.utils.options import schema_for
 
 from .resource import Resource
 from .topic import TopicMessage
+
+T = TypeVar("T", bound=Hashable)
 
 
 @dataclasses.dataclass
@@ -41,13 +46,23 @@ class PipelineInfo:
         return resources
 
     @staticmethod
-    def instancify_args(args: dict[str, object], pipeline: Callable) -> None:
+    def _instancify_dataclass(
+        data: dict[str, object],
+        target_type: Type[T],
+    ) -> Union[T, dict[str, object]]:
+        if dataclasses.is_dataclass(target_type):
+            schema = schema_for(target_type)
+            return schema.load(data)
+        return data
+
+    @classmethod
+    def instancify_args(cls, args: dict[str, object], pipeline: Callable) -> None:
         signature = extra_inspect.signature(pipeline)
         for parameter in signature.parameters.values():
             if parameter.name not in args:
                 continue
             data = args[parameter.name]
-            if not isinstance(data, dict):
+            if not isinstance(data, (dict, list)):
                 continue
 
             target_type = parameter.annotation
@@ -63,9 +78,21 @@ class PipelineInfo:
                 if len(target_args) == 1:
                     target_type = target_args[0]
 
-            if dataclasses.is_dataclass(target_type):
-                schema = schema_for(target_type)
-                args[parameter.name] = schema.load(data)
+            if isinstance(data, dict):
+                args[parameter.name] = cls._instancify_dataclass(
+                    data=data,
+                    target_type=target_type,
+                )
+            else:
+                target_args = list(typing.get_args(target_type))
+                if len(target_args) == 1:
+                    args[parameter.name] = [
+                        cls._instancify_dataclass(
+                            data=item,
+                            target_type=target_args[0],
+                        )
+                        for item in data
+                    ]
 
 
 @dataclasses.dataclass
