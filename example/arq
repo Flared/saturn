@@ -5,4 +5,4 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ROOT_DIR="$( cd ${DIR}/.. && pwd )"
 
 export PYTHONPATH="${PYTHONPATH}:$DIR/src"
-exec arq saturn_engine.worker.executors.arq.worker.WorkerSettings
+exec python -m example.arq_worker
