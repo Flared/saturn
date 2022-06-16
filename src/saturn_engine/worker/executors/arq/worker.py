@@ -1,16 +1,14 @@
 import typing as t
 
 import asyncio
-import enum
-import multiprocessing
 from concurrent import futures
 
 import arq.worker
 
 from saturn_engine.core import PipelineResults
-from saturn_engine.utils import assert_never
 from saturn_engine.utils.hooks import EventHook
 from saturn_engine.worker.pipeline_message import PipelineMessage
+from saturn_engine.worker.services.loggers import logger
 
 from ..bootstrap import PipelineBootstrap
 from ..bootstrap import wrap_remote_exception
@@ -19,15 +17,9 @@ from . import EXECUTE_TIMEOUT
 from . import RESULT_TTL
 
 
-class WorkerType(enum.Enum):
-    Thread = "thread"
-    Process = "process"
-
-
 class WorkerOptions(t.TypedDict, total=False):
-    worker_type: WorkerType
     worker_concurrency: int
-    worker_initializer: t.Optional[t.Callable[[], t.Any]]
+    worker_initializer: t.Optional[t.Callable[[PipelineBootstrap], t.Any]]
 
 
 class Context(WorkerOptions):
@@ -40,31 +32,23 @@ async def remote_execute(ctx: Context, message: PipelineMessage) -> PipelineResu
     bootstraper = ctx["bootstraper"]
     with wrap_remote_exception():
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(executor, bootstraper.run_pipeline, message)
+        return await loop.run_in_executor(
+            executor, bootstraper.bootstrap_pipeline, message
+        )
 
 
 async def startup(ctx: Context) -> None:
-    worker_type = ctx.get("worker_type", WorkerType.Thread)
     worker_concurrency = ctx.get("worker_concurrency", 4)
     worker_initializer = ctx.get("worker_initializer", None)
 
-    executor: futures.Executor
-    if worker_type is WorkerType.Thread:
-        executor = futures.ThreadPoolExecutor(
-            max_workers=worker_concurrency, initializer=worker_initializer
-        )
-    elif worker_type is WorkerType.Process:
-        context = multiprocessing.get_context("spawn")
-        executor = futures.ProcessPoolExecutor(
-            max_workers=worker_concurrency,
-            mp_context=context,
-            initializer=worker_initializer,
-        )
-    else:
-        assert_never(worker_type)
+    executor = futures.ThreadPoolExecutor(max_workers=worker_concurrency)
 
     ctx["executor"] = executor
-    ctx["bootstraper"] = PipelineBootstrap(initialized_hook=EventHook())
+    initialize_hook: EventHook[PipelineBootstrap] = EventHook()
+    if worker_initializer:
+        initialize_hook.register(worker_initializer)
+    initialize_hook.register(logger.on_executor_initialized)
+    ctx["bootstraper"] = PipelineBootstrap(initialized_hook=initialize_hook)
 
 
 async def shutdown(ctx: Context) -> None:
