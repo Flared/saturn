@@ -95,3 +95,6 @@ class BatchingTopic(Topic):
         self.force_done = True
         await self.topic.close()
         await self.task_group.close()
+
+    async def publish(self, message: TopicMessage, wait: bool) -> bool:
+        return await self.topic.publish(message, wait=wait)
