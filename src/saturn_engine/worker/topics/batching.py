@@ -12,7 +12,6 @@ from datetime import timedelta
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import TopicItem
 from saturn_engine.utils.asyncutils import TasksGroup
-from saturn_engine.utils.options import asdict
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.topic import TopicOutput
 
@@ -109,12 +108,15 @@ class BatchingTopic(Topic):
         self, batch: list[TopicOutput]
     ) -> AsyncIterator[TopicMessage]:
         context = contextlib.AsyncExitStack()
-        messages: list[dict] = []
+        message_args: list[dict] = []
 
-        for message in batch:
-            if isinstance(message, AsyncContextManager):
-                message = await context.enter_async_context(message)
-            messages.append(asdict(message))
+        for message_context in batch:
+            message: TopicMessage
+            if isinstance(message_context, AsyncContextManager):
+                message = await context.enter_async_context(message_context)
+            else:
+                message = message_context
+            message_args.append(message.args)
 
         async with context:
-            yield TopicMessage(args={"batch": messages})
+            yield TopicMessage(args={"batch": message_args})
