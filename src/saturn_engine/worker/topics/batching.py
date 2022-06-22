@@ -1,6 +1,11 @@
+from typing import AsyncContextManager
+from typing import AsyncIterator
+
 import asyncio
+import contextlib
 import dataclasses
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from datetime import datetime
 from datetime import timedelta
 
@@ -36,21 +41,21 @@ class BatchingTopic(Topic):
 
         self.task_group = TasksGroup(name=f"batching-topic({options.topic.name})")
         self.topic = build_topic(self.options.topic, services=services)
-        self.batch: list[dict] = []
+        self.batch: list[TopicOutput] = []
         self.start_time: datetime = datetime.utcnow()
 
     @property
     def _is_done(self) -> bool:
         return self.force_done and self.queue.empty()
 
-    async def _flush(self) -> AsyncGenerator[TopicMessage, None]:
+    async def _flush(self) -> AsyncGenerator[TopicOutput, None]:
         self.start_time = datetime.utcnow()
 
         if self.batch:
-            yield TopicMessage(args={"batch": self.batch[: self.options.batch_size]})
+            yield self.message_context(self.batch[: self.options.batch_size])
             self.batch = self.batch[self.options.batch_size :]
 
-    async def _run_topic_task(self) -> AsyncGenerator[TopicMessage, None]:
+    async def _run_topic_task(self) -> AsyncGenerator[TopicOutput, None]:
         self.start_time = datetime.utcnow()
         self.batch = []
 
@@ -63,7 +68,7 @@ class BatchingTopic(Topic):
                 ).total_seconds()
 
                 message = await asyncio.wait_for(self.queue.get(), timeout=time_left)
-                self.batch.append(asdict(message))
+                self.batch.append(message)
 
                 if len(self.batch) >= self.options.batch_size:
                     must_flush = True
@@ -84,7 +89,7 @@ class BatchingTopic(Topic):
         finally:
             self.force_done = True
 
-    async def run(self) -> AsyncGenerator[TopicMessage, None]:
+    async def run(self) -> AsyncGenerator[TopicOutput, None]:
         self.force_done = False
         self.task_group.create_task(self._read_topic())
 
@@ -98,3 +103,18 @@ class BatchingTopic(Topic):
 
     async def publish(self, message: TopicMessage, wait: bool) -> bool:
         return await self.topic.publish(message, wait=wait)
+
+    @asynccontextmanager
+    async def message_context(
+        self, batch: list[TopicOutput]
+    ) -> AsyncIterator[TopicMessage]:
+        context = contextlib.AsyncExitStack()
+        messages: list[dict] = []
+
+        for message in batch:
+            if isinstance(message, AsyncContextManager):
+                message = await context.enter_async_context(message)
+            messages.append(asdict(message))
+
+        async with context:
+            yield TopicMessage(args={"batch": messages})
