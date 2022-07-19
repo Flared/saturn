@@ -421,3 +421,22 @@ def test_load_executor() -> None:
 
     assert len(static_definitions.executors) == 1
     assert static_definitions.executors["test-executor"].options["pool_size"] == 2
+
+
+def test_resource_concurrency() -> None:
+    concurrency_definition_str = """
+    apiVersion: saturn.flared.io/v1alpha1
+    kind: SaturnResource
+    metadata:
+      name: test-resource
+    spec:
+      type: TestApiKey
+      data:
+        key: "qwe"
+      default_delay: 10
+      concurrency: 5
+    """
+    static_definitions = load_definitions_from_str(concurrency_definition_str)
+    assert len(static_definitions.resources) == 5
+    for i in range(1, 6):
+        assert f"test-resource-{i}" in static_definitions.resources

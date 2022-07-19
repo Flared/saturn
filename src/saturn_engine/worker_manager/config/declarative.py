@@ -77,9 +77,15 @@ def compile_static_definitions(
         dict(),
     ).values():
         resource: Resource = fromdict(uncompiled_resource.data, Resource)
-        resource_item = resource.to_core_object()
-        definitions.resources[resource.metadata.name] = resource_item
-        definitions.resources_by_type[resource_item.type].append(resource_item)
+        # If we have concurrency for our resource then
+        # we append an index at the end in order
+        # to differentiate the instances of said resource
+        for i in range(1, resource.spec.concurrency + 1):
+            resource_item = resource.to_core_object()
+            if resource.spec.concurrency > 1:
+                resource_item.name = f"{resource.metadata.name}-{i}"
+            definitions.resources[resource_item.name] = resource_item
+            definitions.resources_by_type[resource_item.type].append(resource_item)
 
     for object_kind in objects_by_kind.keys():
         raise Exception(f"Unsupported kind {object_kind}")
