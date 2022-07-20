@@ -11,6 +11,7 @@ class ResourceSpec:
     type: str
     data: dict[str, Any]
     default_delay: float = 0
+    concurrency: int = 1
 
 
 @dataclasses.dataclass
