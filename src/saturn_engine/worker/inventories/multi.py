@@ -17,6 +17,7 @@ from . import IteratorInventory
 
 class MultiItems(NamedTuple):
     ids: dict[str, str]
+    cursors: dict[str, str]
     args: dict[str, dict[str, Any]]
 
 
@@ -48,10 +49,10 @@ class MultiInventory(IteratorInventory, abc.ABC):
             )
 
     async def iterate(self, after: Optional[str] = None) -> AsyncIterator[Item]:
-        ids = json.loads(after) if after else {}
+        cursors = json.loads(after) if after else {}
 
         async for item in self.inventories_iterator(
-            inventories=self.inventories, after=ids
+            inventories=self.inventories, after=cursors
         ):
             args: dict[str, Any] = item.args
             if self.flatten:
@@ -62,7 +63,9 @@ class MultiInventory(IteratorInventory, abc.ABC):
                 args = {
                     self.alias: args,
                 }
-            yield Item(id=json.dumps(item.ids), args=args)
+            yield Item(
+                id=json.dumps(item.ids), cursor=json.dumps(item.cursors), args=args
+            )
 
     @abc.abstractmethod
     async def inventories_iterator(

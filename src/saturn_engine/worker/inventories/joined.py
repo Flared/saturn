@@ -10,19 +10,24 @@ class JoinedInventory(MultiInventory):
         self, *, inventories: list[tuple[str, Inventory]], after: dict[str, str]
     ) -> AsyncIterator[MultiItems]:
         name, inventory = inventories[0]
-        last_id = after.pop(name, None)
+        last_cursor = after.pop(name, None)
         joined_inventories = inventories[1:]
 
-        async for item in inventory.iterate(after=last_id):
+        async for item in inventory.iterate(after=last_cursor):
             if joined_inventories:
                 async for joined_item in self.inventories_iterator(
                     inventories=joined_inventories, after=after
                 ):
-                    if last_id is not None:
-                        joined_item.ids[name] = last_id
+                    if last_cursor is not None:
+                        joined_item.cursors[name] = last_cursor
                     joined_item.args[name] = item.args
+                    joined_item.ids[name] = item.id
                     yield joined_item
 
             else:
-                yield MultiItems(ids={name: item.id}, args={name: item.args})
-            last_id = item.id
+                yield MultiItems(
+                    ids={name: item.id},
+                    cursors={name: item.cursor},
+                    args={name: item.args},
+                )
+            last_cursor = item.cursor
