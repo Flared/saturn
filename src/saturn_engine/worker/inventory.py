@@ -4,6 +4,7 @@ import abc
 import asyncio
 import dataclasses
 import logging
+import uuid
 from collections.abc import AsyncIterator
 from datetime import timedelta
 from functools import cached_property
@@ -15,9 +16,14 @@ from saturn_engine.utils.options import OptionsSchema
 
 @dataclasses.dataclass
 class Item:
-    id: str
     args: dict[str, t.Any]
+    id: str = dataclasses.field(default_factory=lambda: str(uuid.uuid4()))
+    cursor: str = None  # type: ignore[assignment]
     tags: dict[str, str] = dataclasses.field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.cursor is None:
+            self.cursor = self.id
 
 
 class MaxRetriesError(Exception):
@@ -65,7 +71,7 @@ class Inventory(abc.ABC, OptionsSchema):
                 return
             for item in batch:
                 yield item
-            after = item.id
+            after = item.cursor
 
     @cached_property
     def logger(self) -> logging.Logger:

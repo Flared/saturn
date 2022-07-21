@@ -51,7 +51,7 @@ class Job(Topic):
                     try:
                         done = True
                         async for item in alib.islice(iterator, self.batch_size):
-                            after = item.id
+                            after = item.cursor
                             done = False
                             message = TopicMessage(
                                 id=str(item.id), args=item.args, tags=item.tags

@@ -27,24 +27,24 @@ async def test_joined_inventory() -> None:
         services=None,
     )
     batch = await alib.list(inventory.iterate())
-    assert [(json.loads(i.id), i.args) for i in batch] == [
-        ({"b": "0"}, {"a": {"n": 1}, "b": {"c": "A"}}),
-        ({"b": "1"}, {"a": {"n": 1}, "b": {"c": "B"}}),
-        ({"b": "2"}, {"a": {"n": 1}, "b": {"c": "C"}}),
-        ({"a": "0", "b": "0"}, {"a": {"n": 2}, "b": {"c": "A"}}),
-        ({"a": "0", "b": "1"}, {"a": {"n": 2}, "b": {"c": "B"}}),
-        ({"a": "0", "b": "2"}, {"a": {"n": 2}, "b": {"c": "C"}}),
-        ({"a": "1", "b": "0"}, {"a": {"n": 3}, "b": {"c": "A"}}),
-        ({"a": "1", "b": "1"}, {"a": {"n": 3}, "b": {"c": "B"}}),
-        ({"a": "1", "b": "2"}, {"a": {"n": 3}, "b": {"c": "C"}}),
+    assert [(json.loads(i.id), json.loads(i.cursor), i.args) for i in batch] == [
+        ({"a": "0", "b": "0"}, {"b": "0"}, {"a": {"n": 1}, "b": {"c": "A"}}),
+        ({"a": "0", "b": "1"}, {"b": "1"}, {"a": {"n": 1}, "b": {"c": "B"}}),
+        ({"a": "0", "b": "2"}, {"b": "2"}, {"a": {"n": 1}, "b": {"c": "C"}}),
+        ({"a": "1", "b": "0"}, {"a": "0", "b": "0"}, {"a": {"n": 2}, "b": {"c": "A"}}),
+        ({"a": "1", "b": "1"}, {"a": "0", "b": "1"}, {"a": {"n": 2}, "b": {"c": "B"}}),
+        ({"a": "1", "b": "2"}, {"a": "0", "b": "2"}, {"a": {"n": 2}, "b": {"c": "C"}}),
+        ({"a": "2", "b": "0"}, {"a": "1", "b": "0"}, {"a": {"n": 3}, "b": {"c": "A"}}),
+        ({"a": "2", "b": "1"}, {"a": "1", "b": "1"}, {"a": {"n": 3}, "b": {"c": "B"}}),
+        ({"a": "2", "b": "2"}, {"a": "1", "b": "2"}, {"a": {"n": 3}, "b": {"c": "C"}}),
     ]
 
     batch = await alib.list(inventory.iterate(after='{"a": "0", "b": "1"}'))
-    assert [(json.loads(i.id), i.args) for i in batch] == [
-        ({"a": "0", "b": "2"}, {"a": {"n": 2}, "b": {"c": "C"}}),
-        ({"a": "1", "b": "0"}, {"a": {"n": 3}, "b": {"c": "A"}}),
-        ({"a": "1", "b": "1"}, {"a": {"n": 3}, "b": {"c": "B"}}),
-        ({"a": "1", "b": "2"}, {"a": {"n": 3}, "b": {"c": "C"}}),
+    assert [(json.loads(i.id), json.loads(i.cursor), i.args) for i in batch] == [
+        ({"a": "1", "b": "2"}, {"a": "0", "b": "2"}, {"a": {"n": 2}, "b": {"c": "C"}}),
+        ({"a": "2", "b": "0"}, {"a": "1", "b": "0"}, {"a": {"n": 3}, "b": {"c": "A"}}),
+        ({"a": "2", "b": "1"}, {"a": "1", "b": "1"}, {"a": {"n": 3}, "b": {"c": "B"}}),
+        ({"a": "2", "b": "2"}, {"a": "1", "b": "2"}, {"a": {"n": 3}, "b": {"c": "C"}}),
     ]
     assert not await alib.list(inventory.iterate(after='{"a": "1", "b": "2"}'))
 
@@ -71,8 +71,8 @@ async def test_joined_inventory_flatten() -> None:
         services=None,
     )
     batch = await alib.list(inventory.iterate())
-    assert [(json.loads(i.id), i.args) for i in batch] == [
-        ({"b": "0"}, {"n": 1, "c": "A"})
+    assert [(json.loads(i.id), json.loads(i.cursor), i.args) for i in batch] == [
+        ({"a": "0", "b": "0"}, {"b": "0"}, {"n": 1, "c": "A"})
     ]
 
 
@@ -99,8 +99,9 @@ async def test_joined_inventory_alias() -> None:
         services=None,
     )
     batch = await alib.list(inventory.iterate())
-    assert [(json.loads(i.id), i.args) for i in batch] == [
+    assert [(json.loads(i.id), json.loads(i.cursor), i.args) for i in batch] == [
         (
+            {"fruits": "0", "veggies": "0"},
             {"veggies": "0"},
             {
                 "veggie_fruit": {
@@ -137,8 +138,9 @@ async def test_joined_inventory_alias() -> None:
         services=None,
     )
     batch = await alib.list(inventory.iterate())
-    assert [(json.loads(i.id), i.args) for i in batch] == [
+    assert [(json.loads(i.id), json.loads(i.cursor), i.args) for i in batch] == [
         (
+            {"fruits": "0", "veggies": "0"},
             {"veggies": "0"},
             {
                 "veggie_fruit": {

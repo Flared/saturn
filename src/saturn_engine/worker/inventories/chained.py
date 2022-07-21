@@ -18,4 +18,8 @@ class ChainedInventory(MultiInventory):
 
         for name, inventory in inventories[start_inventory:]:
             async for item in inventory.iterate(after.pop(name, None)):
-                yield MultiItems(ids={name: item.id}, args={name: item.args})
+                yield MultiItems(
+                    ids={name: item.id},
+                    cursors={name: item.cursor},
+                    args={name: item.args},
+                )
