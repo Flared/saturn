@@ -13,16 +13,18 @@ import asyncstdlib as alib
 
 from saturn_engine.utils.options import OptionsSchema
 
+MISSING = object()
+
 
 @dataclasses.dataclass
 class Item:
     args: dict[str, t.Any]
     id: str = dataclasses.field(default_factory=lambda: str(uuid.uuid4()))
-    cursor: str = None  # type: ignore[assignment]
+    cursor: t.Optional[str] = MISSING  # type: ignore[assignment]
     tags: dict[str, str] = dataclasses.field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if self.cursor is None:
+        if self.cursor is MISSING:
             self.cursor = self.id
 
 

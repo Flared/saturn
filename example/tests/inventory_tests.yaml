@@ -8,10 +8,13 @@ spec:
   limit: 3
   items:
     - id: "0"
+      cursor: "0"
       args: {message: hello-0}
     - id: "1"
+      cursor: "1"
       args: {message: hello-1}
     - id: "2"
+      cursor: "2"
       args: {message: hello-2}
 ---
 apiVersion: saturn.flared.io/v1alpha1
@@ -25,4 +28,5 @@ spec:
   after: "2"
   items:
     - id: "3"
+      cursor: "3"
       args: {message: hello-3}
