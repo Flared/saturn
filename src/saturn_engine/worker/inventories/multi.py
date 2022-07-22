@@ -17,7 +17,7 @@ from . import IteratorInventory
 
 class MultiItems(NamedTuple):
     ids: dict[str, str]
-    cursors: dict[str, str]
+    cursors: dict[str, Optional[str]]
     args: dict[str, dict[str, Any]]
 
 
