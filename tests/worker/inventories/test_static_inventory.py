@@ -17,3 +17,9 @@ async def test_static_inventory() -> None:
     assert len(list(await inventory.next_batch())) == 9
     assert len(list(await inventory.next_batch(after="4"))) == 4
     assert not list(await inventory.next_batch(after="8"))
+
+    inventory = StaticInventory.from_options({"items": [{"a": None}]})
+    batch = list(await inventory.next_batch())
+    assert batch == [
+        Item(id="0", args={"a": None}),
+    ]
