@@ -1,5 +1,4 @@
-from typing import Any
-from typing import Optional
+import typing as t
 
 import dataclasses
 
@@ -10,12 +9,12 @@ from . import Item
 class StaticInventory(Inventory):
     @dataclasses.dataclass
     class Options:
-        items: list[dict[str, Any]]
+        items: list[dict[str, t.Optional[t.Any]]]
 
     def __init__(self, options: Options, **kwargs: object) -> None:
         self.items = options.items
 
-    async def next_batch(self, after: Optional[str] = None) -> list[Item]:
+    async def next_batch(self, after: t.Optional[str] = None) -> list[Item]:
         begin = int(after) + 1 if after else 0
         return [
             Item(id=str(i), args=args)
