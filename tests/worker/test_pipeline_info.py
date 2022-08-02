@@ -88,7 +88,7 @@ def test_pipeline_info_resources() -> None:
         name="tests.worker.test_pipeline_info.pipeline_with_resources",
         resources={
             "a": "resource_a",
-            "b": "ResourceB",
+            "b": "tests.worker.test_pipeline_info.ResourceB",
         },
     )
 

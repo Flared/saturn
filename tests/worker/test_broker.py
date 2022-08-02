@@ -69,7 +69,7 @@ async def test_broker_dummy(
         resources=[
             ResourceItem(
                 name="r1",
-                type="FakeResource",
+                type=FakeResource._typename(),
                 data={"data": "fake"},
             ),
         ],
