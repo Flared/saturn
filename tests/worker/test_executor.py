@@ -79,10 +79,10 @@ async def test_executor_wait_resources_and_queue(
     executor = FakeExecutor()
     executor_manager = executor_queue_maker(executor=executor)
     await executor_manager.resources_manager.add(
-        ResourceData(name="r1", type="FakeResource", data={})
+        ResourceData(name="r1", type=FakeResource._typename(), data={})
     )
     await executor_manager.resources_manager.add(
-        ResourceData(name="r2", type="FakeResource", data={})
+        ResourceData(name="r2", type=FakeResource._typename(), data={})
     )
     parker = Parkers()
     executable_maker = partial(
@@ -135,10 +135,10 @@ async def test_executor_wait_pusblish_and_queue(
     executor = FakeExecutor()
     executor_manager = executor_queue_maker(executor=executor)
     await executor_manager.resources_manager.add(
-        ResourceData(name="r1", type="FakeResource", data={})
+        ResourceData(name="r1", type=FakeResource._typename(), data={})
     )
     await executor_manager.resources_manager.add(
-        ResourceData(name="r2", type="FakeResource", data={})
+        ResourceData(name="r2", type=FakeResource._typename(), data={})
     )
     output_queue = get_queue("q1", maxsize=1)
     output_topic = MemoryTopic(MemoryTopic.Options(name="q1"))

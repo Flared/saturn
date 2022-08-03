@@ -3,6 +3,8 @@ from typing import Optional
 
 import dataclasses
 
+from saturn_engine.utils import inspect
+
 
 @dataclasses.dataclass(eq=False)
 class Resource:
@@ -11,4 +13,4 @@ class Resource:
 
     @classmethod
     def _typename(cls) -> str:
-        return cls.typename or cls.__name__
+        return cls.typename or inspect.get_import_name(cls)
