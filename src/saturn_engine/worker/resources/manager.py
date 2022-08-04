@@ -8,12 +8,22 @@ from collections import defaultdict
 from collections.abc import Iterable
 
 
-@dataclasses.dataclass(eq=False)
+@dataclasses.dataclass(frozen=True)
+class ResourceKey:
+    name: str
+    type: str
+
+
+@dataclasses.dataclass(eq=False, frozen=True)
 class ResourceData:
     name: str
     type: str
     data: dict[str, object]
     default_delay: float = 0
+
+    @property
+    def key(self) -> ResourceKey:
+        return ResourceKey(name=self.name, type=self.type)
 
 
 class ResourceUnavailable(Exception):
@@ -85,6 +95,7 @@ class ExclusiveResources:
         self.availables: set[ResourceData] = set()
         self.used: set[ResourceData] = set()
         self.condition = asyncio.Condition(asyncio.Lock())
+        self.resources: dict[ResourceKey, ResourceData] = {}
 
     async def acquire(self, *, wait: bool = True) -> ResourceContext:
         async with self.condition:
@@ -100,16 +111,19 @@ class ExclusiveResources:
             return ResourceContext(resource, self)
 
     async def add(self, resource: ResourceData) -> None:
-        if resource in self.availables or resource in self.used:
+        if resource.key in self.resources:
             raise ValueError("Cannot add a resource twice")
 
         async with self.condition:
             self.availables.add(resource)
+            self.resources[resource.key] = resource
             self.condition.notify()
 
-    async def remove(self, resource: ResourceData) -> None:
-        self.availables.discard(resource)
-        self.used.discard(resource)
+    async def remove(self, resource_key: ResourceKey) -> None:
+        resource = self.resources.pop(resource_key, None)
+        if resource:
+            self.availables.discard(resource)
+            self.used.discard(resource)
 
     def try_acquire(self) -> Optional[ResourceData]:
         if self.availables:
@@ -127,6 +141,8 @@ class ExclusiveResources:
 
 
 class ResourcesManager:
+    name = "resources_manager"
+
     def __init__(self) -> None:
         self.resources: dict[str, ExclusiveResources] = defaultdict(ExclusiveResources)
 
@@ -156,5 +172,5 @@ class ResourcesManager:
     async def add(self, resource: ResourceData) -> None:
         await self.resources[resource.type].add(resource)
 
-    async def remove(self, resource: ResourceData) -> None:
+    async def remove(self, resource: ResourceKey) -> None:
         await self.resources[resource.type].remove(resource)

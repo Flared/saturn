@@ -4,7 +4,6 @@ from saturn_engine.core import api
 from saturn_engine.utils.asyncutils import TasksGroupRunner
 from saturn_engine.worker.services import Services
 
-from ..resources_manager import ResourcesManager
 from . import Executor
 from . import build_executor
 from .executable import ExecutableMessage
@@ -17,10 +16,8 @@ class ExecutorsManager:
     def __init__(
         self,
         *,
-        resources_manager: ResourcesManager,
         services: Services,
     ) -> None:
-        self.resources_manager = resources_manager
         self.services = services
         self.executors: dict[str, ExecutorWorker] = {}
         self.executors_tasks_group = TasksGroupRunner(name="executors")
@@ -53,7 +50,6 @@ class ExecutorsManager:
         executor = ExecutorWorker.from_item(
             executor_definition,
             services=self.services,
-            resources_manager=self.resources_manager,
         )
         name = executor_definition.name
         self.executors[name] = executor
@@ -73,12 +69,10 @@ class ExecutorWorker:
         self,
         *,
         executor: Executor,
-        resources_manager: ResourcesManager,
         services: Services,
     ) -> None:
         self.services = services
         self.executor_queue = ExecutorQueue(
-            resources_manager=resources_manager,
             executor=executor,
             services=services,
         )
@@ -89,13 +83,11 @@ class ExecutorWorker:
         cls,
         executor_definition: api.Executor,
         *,
-        resources_manager: ResourcesManager,
         services: Services,
     ) -> "ExecutorWorker":
         executor = build_executor(executor_definition, services=services)
         return cls(
             executor=executor,
-            resources_manager=resources_manager,
             services=services,
         )
 

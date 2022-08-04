@@ -2,6 +2,7 @@ from typing import Type
 
 from saturn_engine.utils import inspect as extra_inspect
 
+from ..resources.manager import ResourcesManager
 from . import BaseServices
 from . import Config
 from . import Hooks
@@ -16,6 +17,7 @@ class ServicesManager:
         self.services: Services = ServicesNamespace(
             config=config,
             hooks=Hooks(),
+            resources_manager=ResourcesManager(),
             strict=True,
         )
         self.loaded_services: list[Service] = []

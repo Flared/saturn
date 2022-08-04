@@ -24,7 +24,6 @@ from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.parkers import Parkers
 from saturn_engine.worker.executors.queue import ExecutorQueue
 from saturn_engine.worker.pipeline_message import PipelineMessage
-from saturn_engine.worker.resources_manager import ResourcesManager
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.services.rabbitmq import RabbitMQService
@@ -84,18 +83,12 @@ async def services_manager(
     yield await services_manager_maker()
 
 
-@pytest.fixture
-def resources_manager() -> ResourcesManager:
-    return ResourcesManager()
-
-
 def mock_executor_maker(services: Services) -> Executor:
     return create_autospec(Executor, instance=True)
 
 
 @pytest.fixture
 async def executor_queue_maker(
-    resources_manager: ResourcesManager,
     services_manager: ServicesManager,
 ) -> AsyncIterator[t.Callable[..., ExecutorQueue]]:
     async with contextlib.AsyncExitStack() as stack:
@@ -106,7 +99,6 @@ async def executor_queue_maker(
         ) -> ExecutorQueue:
             executor = executor or mock_executor_maker(services_manager.services)
             manager = ExecutorQueue(
-                resources_manager=resources_manager,
                 executor=executor,
                 services=services,
             )
