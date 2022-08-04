@@ -38,6 +38,14 @@ class ResourceItem:
 
 
 @dataclasses.dataclass
+class ResourcesProviderItem:
+    name: str
+    type: str
+    resource_type: str
+    options: dict[str, Any] = dataclasses.field(default_factory=dict)
+
+
+@dataclasses.dataclass
 class QueueItem:
     name: str
     pipeline: QueuePipeline

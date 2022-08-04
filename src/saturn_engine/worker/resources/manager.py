@@ -95,7 +95,7 @@ class ExclusiveResources:
         self.availables: set[ResourceData] = set()
         self.used: set[ResourceData] = set()
         self.condition = asyncio.Condition(asyncio.Lock())
-        self.resources: dict[ResourceKey, ResourceData] = {}
+        self.resources: dict[str, ResourceData] = {}
 
     async def acquire(self, *, wait: bool = True) -> ResourceContext:
         async with self.condition:
@@ -111,16 +111,16 @@ class ExclusiveResources:
             return ResourceContext(resource, self)
 
     async def add(self, resource: ResourceData) -> None:
-        if resource.key in self.resources:
+        if resource.name in self.resources:
             raise ValueError("Cannot add a resource twice")
 
         async with self.condition:
             self.availables.add(resource)
-            self.resources[resource.key] = resource
+            self.resources[resource.name] = resource
             self.condition.notify()
 
-    async def remove(self, resource_key: ResourceKey) -> None:
-        resource = self.resources.pop(resource_key, None)
+    async def remove(self, resource_name: str) -> None:
+        resource = self.resources.pop(resource_name, None)
         if resource:
             self.availables.discard(resource)
             self.used.discard(resource)
@@ -173,4 +173,4 @@ class ResourcesManager:
         await self.resources[resource.type].add(resource)
 
     async def remove(self, resource: ResourceKey) -> None:
-        await self.resources[resource.type].remove(resource)
+        await self.resources[resource.type].remove(resource.name)
