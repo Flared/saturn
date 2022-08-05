@@ -18,6 +18,7 @@ from saturn_engine.utils.log import getLogger
 from saturn_engine.worker import work_factory
 from saturn_engine.worker.executors.executable import ExecutableQueue
 from saturn_engine.worker.resources.manager import ResourceData
+from saturn_engine.worker.resources.provider import ResourcesProvider
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.http_client import HttpClient
 
@@ -38,6 +39,7 @@ class ItemsSync(Generic[T]):
 class WorkSync:
     queues: ItemsSync[ExecutableQueue]
     resources: ItemsSync[ResourceData]
+    resources_providers: ItemsSync[ResourcesProvider]
     executors: ItemsSync[Executor]
 
     @classmethod
@@ -45,6 +47,7 @@ class WorkSync:
         return cls(
             queues=ItemsSync.empty(),
             resources=ItemsSync.empty(),
+            resources_providers=ItemsSync.empty(),
             executors=ItemsSync.empty(),
         )
 
@@ -64,6 +67,7 @@ class WorkManager:
         )
         self.worker_items: WorkerItems = {}
         self.worker_resources: dict[str, ResourceData] = {}
+        self.worker_resources_providers: dict[str, ResourcesProvider] = {}
         self.worker_executors: dict[str, Executor] = {}
         self.last_sync_at: Optional[datetime] = None
         self.sync_period = timedelta(seconds=60)
@@ -81,11 +85,13 @@ class WorkManager:
 
         queues_sync = await self.load_queues(lock_response)
         resources_sync = await self.load_resources(lock_response)
+        resources_providers_sync = await self.load_resources_providers(lock_response)
         executors_sync = await self.load_executors(lock_response)
 
         return WorkSync(
             queues=queues_sync,
             resources=resources_sync,
+            resources_providers=resources_providers_sync,
             executors=executors_sync,
         )
 
@@ -145,6 +151,27 @@ class WorkManager:
         self.worker_resources.update(added_items)
         add_items = list(added_items.values())
         drop_items = [self.worker_resources.pop(k) for k in drop]
+
+        return ItemsSync(add=add_items, drop=drop_items)
+
+    async def load_resources_providers(
+        self, lock_response: LockResponse
+    ) -> ItemsSync[ResourcesProvider]:
+        current_items = set(self.worker_resources_providers.keys())
+        sync_items = {item.name: item for item in lock_response.resources_providers}
+        sync_items_ids = set(sync_items.keys())
+        add = sync_items_ids - current_items
+        drop = current_items - sync_items_ids
+
+        added_items = {
+            i: work_factory.build_resources_provider(
+                sync_items[i], services=self.services
+            )
+            for i in add
+        }
+        self.worker_resources_providers.update(added_items)
+        add_items = list(added_items.values())
+        drop_items = [self.worker_resources_providers.pop(k) for k in drop]
 
         return ItemsSync(add=add_items, drop=drop_items)
 

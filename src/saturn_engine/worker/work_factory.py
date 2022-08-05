@@ -1,7 +1,12 @@
 from saturn_engine.core.api import InventoryItem
 from saturn_engine.core.api import QueueItem
+from saturn_engine.core.api import ResourcesProviderItem
 from saturn_engine.core.api import TopicItem
 from saturn_engine.utils import inspect as extra_inspect
+from saturn_engine.worker.resources.provider import (
+    BUILTINS as resources_provider_builtins,
+)
+from saturn_engine.worker.resources.provider import ResourcesProvider
 
 from . import inventories
 from . import topics
@@ -68,3 +73,17 @@ def build_inventory(inventory_item: InventoryItem, *, services: Services) -> Inv
         raise ValueError(f"{klass} must be an Inventory")
     options = {"name": inventory_item.name} | inventory_item.options
     return klass.from_options(options, services=services)
+
+
+def build_resources_provider(
+    item: ResourcesProviderItem, *, services: Services
+) -> ResourcesProvider:
+    klass = resources_provider_builtins.get(item.type)
+    if klass is None:
+        klass = extra_inspect.import_name(item.type)
+    if klass is None:
+        raise ValueError(f"Unknown resources provider type: {item.type}")
+    if not issubclass(klass, ResourcesProvider):
+        raise ValueError(f"{klass} must be a ResourcesProvider")
+    options = {"name": item.name} | item.options
+    return klass.from_options(options, services=services, definition=item)

@@ -1,5 +1,3 @@
-import typing as t
-
 import logging
 import threading
 from datetime import datetime
@@ -11,6 +9,7 @@ from saturn_engine.core.api import Executor
 from saturn_engine.core.api import LockInput
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import ResourceItem
+from saturn_engine.core.api import ResourcesProviderItem
 from saturn_engine.database import session_scope
 from saturn_engine.models.queue import Queue
 from saturn_engine.stores import jobs_store
@@ -78,16 +77,20 @@ def post_lock() -> Json[LockResponse]:
                     assigned_items.remove(item)
 
             static_definitions = current_app.saturn.static_definitions
-            resources = {}
+            resources: dict[str, ResourceItem] = {}
+            resources_providers: dict[str, ResourcesProviderItem] = {}
             executors: dict[str, Executor] = {}
             # Copy list since the iteration could drop items from assigned_items.
             for item in assigned_items.copy():
                 # Collect resource for assigned work
-                item_resources: t.Optional[dict[str, ResourceItem]] = {}
+                item_resources: dict[str, ResourceItem] = {}
+                item_resources_providers: dict[str, ResourcesProviderItem] = {}
+                missing_resource = False
                 for resource_type in item.queue_item.pipeline.info.resources.values():
                     pipeline_resources = static_definitions.resources_by_type.get(
                         resource_type
                     )
+
                     if not pipeline_resources:
                         logger.error(
                             "Skipping queue item, resource missing: item=%s, "
@@ -97,18 +100,23 @@ def post_lock() -> Json[LockResponse]:
                         )
                         # Do not update assign the object in the database.
                         assigned_items.remove(item)
-                        item_resources = None
+                        missing_resource = True
                         break
 
                     # assert to make mypy happy.
                     assert item_resources is not None  # noqa: S101
-                    item_resources.update({r.name: r for r in pipeline_resources})
+                    for resource in pipeline_resources:
+                        if isinstance(resource, ResourceItem):
+                            item_resources[resource.name] = resource
+                        elif isinstance(resource, ResourcesProviderItem):
+                            item_resources_providers[resource.name] = resource
 
                 # A resource was missing, we can't schedule this item.
-                if item_resources is None:
+                if missing_resource:
                     continue
 
                 resources.update(item_resources)
+                resources_providers.update(item_resources_providers)
 
                 # Collect executor for assigned work
                 executor_name = item.queue_item.executor
@@ -140,6 +148,9 @@ def post_lock() -> Json[LockResponse]:
             LockResponse(
                 items=queue_items,
                 resources=list(sorted(resources.values(), key=lambda r: r.name)),
+                resources_providers=list(
+                    sorted(resources_providers.values(), key=lambda r: r.name)
+                ),
                 executors=list(sorted(executors.values(), key=lambda e: e.name)),
             )
         )

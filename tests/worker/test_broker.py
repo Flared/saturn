@@ -73,6 +73,7 @@ async def test_broker_dummy(
                 data={"data": "fake"},
             ),
         ],
+        resources_providers=[],
         executors=[
             api.Executor(
                 name="e1", type=get_import_name(FakeExecutor), options={"ok": True}

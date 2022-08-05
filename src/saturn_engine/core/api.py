@@ -74,6 +74,7 @@ class Executor:
 class LockResponse:
     items: list[QueueItem]
     resources: list[ResourceItem]
+    resources_providers: list[ResourcesProviderItem]
     executors: list[Executor]
 
 

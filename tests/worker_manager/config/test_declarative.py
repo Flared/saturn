@@ -440,3 +440,21 @@ def test_resource_concurrency() -> None:
     assert len(static_definitions.resources) == 5
     for i in range(1, 6):
         assert f"test-resource-{i}" in static_definitions.resources
+
+
+def test_resources_provider() -> None:
+
+    resources_provider_str = """
+    apiVersion: saturn.flared.io/v1alpha1
+    kind: SaturnResourcesProvider
+    metadata:
+      name: test-resource-provider
+    spec:
+      type: TestApiKeyProvider
+      resource_type: TestApiKey
+      options:
+        url: "http://qwe.com"
+    """
+    static_definitions = load_definitions_from_str(resources_provider_str)
+    assert len(static_definitions.resources_providers) == 1
+    assert len(static_definitions.resources_by_type["TestApiKey"]) == 1
