@@ -13,10 +13,13 @@ from saturn_engine.core.api import PipelineInfo
 from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import QueuePipeline
 from saturn_engine.core.api import ResourceItem
+from saturn_engine.core.api import ResourcesProviderItem
 from saturn_engine.utils.inspect import get_import_name
 from saturn_engine.worker.broker import Broker
 from saturn_engine.worker.executors import Executor
 from saturn_engine.worker.pipeline_message import PipelineMessage
+from saturn_engine.worker.resources.provider import ProvidedResource
+from saturn_engine.worker.resources.provider import ResourcesProvider
 from tests.utils import register_hooks_handler
 from tests.worker.conftest import FakeResource
 
@@ -38,6 +41,15 @@ class FakeExecutor(Executor):
         if message.message.args["n"] == 999:
             FakeExecutor.done_event.set()
         return PipelineResults(outputs=[], resources=[])
+
+
+class FakeResourcesProvider(ResourcesProvider["FakeResourcesProvider"]):
+    @dataclasses.dataclass
+    class Options:
+        pass
+
+    async def open(self) -> None:
+        await self.add(ProvidedResource(name="fake-resource", data={"foo": "bar"}))
 
 
 def pipeline(resource: FakeResource) -> None:
@@ -73,7 +85,14 @@ async def test_broker_dummy(
                 data={"data": "fake"},
             ),
         ],
-        resources_providers=[],
+        resources_providers=[
+            ResourcesProviderItem(
+                name="fake-resources-provider",
+                type=get_import_name(FakeResourcesProvider),
+                resource_type="FakeProvidedResource",
+                options={},
+            )
+        ],
         executors=[
             api.Executor(
                 name="e1", type=get_import_name(FakeExecutor), options={"ok": True}
@@ -98,6 +117,11 @@ async def test_broker_dummy(
     assert hooks_handler.message_published.before.await_count == 0
     assert hooks_handler.message_published.success.await_count == 0
     assert hooks_handler.message_published.errors.await_count == 0
+
+    # The provider was open.
+    assert (
+        len(broker.resources_manager.resources["FakeProvidedResource"].availables) == 1
+    )
 
     broker_task.cancel()
     await broker_task
