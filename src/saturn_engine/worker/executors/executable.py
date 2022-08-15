@@ -8,8 +8,8 @@ from saturn_engine.core import QueuePipeline
 from saturn_engine.core import ResourceUsed
 from saturn_engine.worker.executors.parkers import Parkers
 from saturn_engine.worker.pipeline_message import PipelineMessage
-from saturn_engine.worker.resources_manager import ResourceContext
-from saturn_engine.worker.resources_manager import ResourcesContext
+from saturn_engine.worker.resources.manager import ResourceContext
+from saturn_engine.worker.resources.manager import ResourcesContext
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.topic import Topic
 

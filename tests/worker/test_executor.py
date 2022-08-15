@@ -14,7 +14,7 @@ from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.parkers import Parkers
 from saturn_engine.worker.executors.queue import ExecutorQueue
 from saturn_engine.worker.pipeline_message import PipelineMessage
-from saturn_engine.worker.resources_manager import ResourceData
+from saturn_engine.worker.resources.manager import ResourceData
 from saturn_engine.worker.topics.memory import MemoryTopic
 from saturn_engine.worker.topics.memory import get_queue
 from tests.utils import TimeForwardLoop

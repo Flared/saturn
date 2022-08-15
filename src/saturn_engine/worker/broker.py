@@ -7,7 +7,6 @@ from saturn_engine.config import Config
 from saturn_engine.utils.log import getLogger
 
 from .executors.manager import ExecutorsManager
-from .resources_manager import ResourcesManager
 from .services import Services
 from .services.manager import ServicesManager
 from .work_manager import WorkManager
@@ -35,7 +34,7 @@ class Broker:
 
         self.services_manager = ServicesManager(config=config)
         self.work_manager_init = work_manager
-        self.resources_manager = ResourcesManager()
+        self.resources_manager = self.services_manager.services.s.resources_manager
 
     async def init(self) -> None:
         if self.is_init:
@@ -47,7 +46,6 @@ class Broker:
         )
 
         self.executors_manager = ExecutorsManager(
-            resources_manager=self.resources_manager,
             services=self.services_manager.services,
         )
 
@@ -90,7 +88,7 @@ class Broker:
                 await self.resources_manager.add(resource)
 
             for resource in work_sync.resources.drop:
-                await self.resources_manager.remove(resource)
+                await self.resources_manager.remove(resource.key)
             for queue in work_sync.queues.drop:
                 await self.executors_manager.remove_queue(queue)
             for executor in work_sync.executors.drop:

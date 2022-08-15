@@ -7,11 +7,10 @@ from saturn_engine.core import PipelineResults
 from saturn_engine.utils.asyncutils import TasksGroupRunner
 from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.pipeline_message import PipelineMessage
+from saturn_engine.worker.resources.manager import ResourceUnavailable
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.hooks import MessagePublished
 
-from ..resources_manager import ResourcesManager
-from ..resources_manager import ResourceUnavailable
 from . import Executor
 from .executable import ExecutableMessage
 
@@ -21,7 +20,6 @@ class ExecutorQueue:
 
     def __init__(
         self,
-        resources_manager: ResourcesManager,
         executor: Executor,
         services: Services,
     ) -> None:
@@ -32,7 +30,7 @@ class ExecutorQueue:
         self.processing_tasks = TasksGroupRunner(name="executor-queue")
         self.consuming_tasks = TasksGroupRunner(name="executor-consuming")
         self.message_executor = executor
-        self.resources_manager = resources_manager
+        self.resources_manager = services.s.resources_manager
         self.executor = executor
         self.services = services
         self.is_running = False

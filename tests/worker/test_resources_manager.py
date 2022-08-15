@@ -3,9 +3,9 @@ import time
 
 import pytest
 
-from saturn_engine.worker.resources_manager import ResourceData
-from saturn_engine.worker.resources_manager import ResourcesManager
-from saturn_engine.worker.resources_manager import ResourceUnavailable
+from saturn_engine.worker.resources.manager import ResourceData
+from saturn_engine.worker.resources.manager import ResourcesManager
+from saturn_engine.worker.resources.manager import ResourceUnavailable
 from tests.utils import TimeForwardLoop
 
 

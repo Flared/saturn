@@ -17,7 +17,7 @@ from saturn_engine.core.api import ResourceItem
 from saturn_engine.utils.log import getLogger
 from saturn_engine.worker import work_factory
 from saturn_engine.worker.executors.executable import ExecutableQueue
-from saturn_engine.worker.resources_manager import ResourceData
+from saturn_engine.worker.resources.manager import ResourceData
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.http_client import HttpClient
 
