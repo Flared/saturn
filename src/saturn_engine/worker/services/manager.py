@@ -76,8 +76,10 @@ class ServicesManager:
 
 from .http_client import HttpClient
 from .job_store import JobStoreService
+from .tasks_runner import TasksRunnerService
 
 BASE_SERVICES: list[Type[Service]] = [
     HttpClient,
     JobStoreService,
+    TasksRunnerService,
 ]
