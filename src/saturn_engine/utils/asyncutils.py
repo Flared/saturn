@@ -30,10 +30,10 @@ class TasksGroup:
         self.logger = getLogger(__name__, self)
         self.tasks = set(tasks)
         self.updated = asyncio.Event()
-        if name:
-            name = f"task-group-{name}.wait"
         self.name = name
-        self.updated_task = asyncio.create_task(self.updated.wait(), name=self.name)
+
+        name = f"task-group-{self.name}.wait" if self.name else None
+        self.updated_task = asyncio.create_task(self.updated.wait(), name=name)
 
     def add(self, task: asyncio.Task) -> None:
         self.tasks.add(task)
@@ -59,7 +59,8 @@ class TasksGroup:
 
         if self.updated_task in done:
             done.remove(self.updated_task)
-            self.updated_task = asyncio.create_task(self.updated.wait(), name=self.name)
+            name = f"task-group-{self.name}.wait" if self.name else None
+            self.updated_task = asyncio.create_task(self.updated.wait(), name=name)
 
         self.tasks.difference_update(done)
 
@@ -108,7 +109,9 @@ class TasksGroupRunner(TasksGroup):
     def start(self) -> asyncio.Task:
         if self.is_running:
             raise RuntimeError("task group is already running")
-        self._runner_task = asyncio.create_task(self.run())
+        self.is_running = True
+        name = f"task-group-{self.name}.run" if self.name else None
+        self._runner_task = asyncio.create_task(self.run(), name=name)
         return self._runner_task
 
     def stop(self) -> None:
@@ -116,22 +119,17 @@ class TasksGroupRunner(TasksGroup):
         self.notify()
 
     async def close(self, timeout: t.Optional[float] = None) -> None:
-        if not self.is_running:
-            return
+        if self.is_running:
+            # Stop the runner.
+            self.stop()
+            # Wait for the running task to complete.
+            if self._runner_task:
+                await self._runner_task
 
-        # Stop the runner.
-        self.stop()
-        # Wait for the running task to complete.
-        if self._runner_task:
-            await self._runner_task
         # Clean the tasks.
         await super().close(timeout=timeout)
 
     async def run(self) -> None:
-        if self.is_running:
-            raise RuntimeError("task group is already running")
-
-        self.is_running = True
         while self.is_running:
             done = await self.wait()
             for task in done:
