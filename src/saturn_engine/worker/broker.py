@@ -86,7 +86,11 @@ class Broker:
                 self.executors_manager.add_queue(queue)
             for resource in work_sync.resources.add:
                 await self.resources_manager.add(resource)
+            for resources_provider in work_sync.resources_providers.add:
+                await resources_provider.open()
 
+            for resources_provider in work_sync.resources_providers.drop:
+                await resources_provider.close()
             for resource in work_sync.resources.drop:
                 await self.resources_manager.remove(resource.key)
             for queue in work_sync.queues.drop:
