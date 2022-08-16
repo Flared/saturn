@@ -66,3 +66,8 @@ class StaticResourcesProvider(ResourcesProvider["StaticResourcesProvider.Options
     async def open(self) -> None:
         for resource in self.options.resources:
             await self.add(resource)
+
+
+BUILTINS: dict[str, t.Type[ResourcesProvider]] = {
+    "StaticResourcesProvider": StaticResourcesProvider,
+}

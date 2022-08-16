@@ -24,6 +24,7 @@ from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.parkers import Parkers
 from saturn_engine.worker.executors.queue import ExecutorQueue
 from saturn_engine.worker.pipeline_message import PipelineMessage
+from saturn_engine.worker.resources.provider import ResourcesProvider
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.services.rabbitmq import RabbitMQService
@@ -37,7 +38,10 @@ from tests.utils import TimeForwardLoop
 def worker_manager_client() -> Mock:
     _worker_manager_client = create_autospec(WorkerManagerClient, instance=True)
     _worker_manager_client.lock.return_value = LockResponse(
-        items=[], resources=[], executors=[]
+        items=[],
+        resources=[],
+        resources_providers=[],
+        executors=[],
     )
     return _worker_manager_client
 
@@ -170,6 +174,20 @@ class FakeResource(Resource):
 @pytest.fixture
 def fake_resource_class() -> str:
     return __name__ + "." + FakeResource.__name__
+
+
+class FakeResourcesProvider(ResourcesProvider["FakeResourcesProvider.Options"]):
+    @dataclasses.dataclass
+    class Options:
+        pass
+
+    async def open(self) -> None:
+        pass
+
+
+@pytest.fixture
+def fake_resources_provider_class() -> str:
+    return __name__ + "." + FakeResourcesProvider.__name__
 
 
 @pytest.fixture

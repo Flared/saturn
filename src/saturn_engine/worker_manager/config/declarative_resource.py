@@ -25,3 +25,23 @@ class Resource(BaseObject):
             data=self.spec.data,
             default_delay=self.spec.default_delay,
         )
+
+
+@dataclasses.dataclass
+class ResourcesProviderSpec:
+    type: str
+    resource_type: str
+    options: dict[str, Any]
+
+
+@dataclasses.dataclass
+class ResourcesProvider(BaseObject):
+    spec: ResourcesProviderSpec
+
+    def to_core_object(self) -> api.ResourcesProviderItem:
+        return api.ResourcesProviderItem(
+            name=self.metadata.name,
+            type=self.spec.type,
+            resource_type=self.spec.resource_type,
+            options=self.spec.options,
+        )

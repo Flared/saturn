@@ -14,6 +14,7 @@ from .declarative_inventory import Inventory
 from .declarative_job import Job
 from .declarative_job_definition import JobDefinition
 from .declarative_resource import Resource
+from .declarative_resource import ResourcesProvider
 from .declarative_topic_item import TopicItem
 from .static_definitions import StaticDefinitions
 
@@ -86,6 +87,21 @@ def compile_static_definitions(
                 resource_item.name = f"{resource.metadata.name}-{i}"
             definitions.resources[resource_item.name] = resource_item
             definitions.resources_by_type[resource_item.type].append(resource_item)
+
+    for uncompied_resources_provider in objects_by_kind.pop(
+        "SaturnResourcesProvider",
+        dict(),
+    ).values():
+        resources_provider = fromdict(
+            uncompied_resources_provider.data, ResourcesProvider
+        )
+        resources_provider_item = resources_provider.to_core_object()
+        definitions.resources_providers[
+            resources_provider_item.name
+        ] = resources_provider_item
+        definitions.resources_by_type[resources_provider_item.resource_type].append(
+            resources_provider_item
+        )
 
     for object_kind in objects_by_kind.keys():
         raise Exception(f"Unsupported kind {object_kind}")
