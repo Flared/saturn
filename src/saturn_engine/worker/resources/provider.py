@@ -25,7 +25,7 @@ TOptions = t.TypeVar("TOptions")
 
 @dataclasses.dataclass
 class PeriodicSyncOptions:
-    sync_interval: int = 60 * 10  # 10 minutes
+    sync_interval: int
 
 
 TPeriodicSyncOptions = t.TypeVar("TPeriodicSyncOptions", bound=PeriodicSyncOptions)

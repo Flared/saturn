@@ -68,7 +68,7 @@ class FakePeriodicResourcesProvider(
 @pytest.mark.asyncio
 async def test_periodic_sync_provider(services_manager: ServicesManager) -> None:
     start_date = utcnow()
-    options = FakePeriodicResourcesProvider.Options()
+    options = FakePeriodicResourcesProvider.Options(sync_interval=600)
     provider = FakePeriodicResourcesProvider(
         options=options,
         services=services_manager.services,
