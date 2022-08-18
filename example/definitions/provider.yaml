@@ -1,0 +1,37 @@
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnTopic
+metadata:
+  name: provider-topic
+spec:
+  type: PeriodicTopic
+  options:
+    interval: "* * * * * */1"
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnResourcesProvider
+metadata:
+  name: provider
+spec:
+  type: example.resources.ApiKeysProvider
+  resource_type: example.resources.ProviderApiKey
+  options:
+    sync_interval: 4
+    key: "42"
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJobDefinition
+metadata:
+  name: provider-job-definition
+spec:
+  minimalInterval: "@weekly"
+  template:
+    input:
+      topic: provider-topic
+    output:
+      default:
+        - topic: stdout
+
+    pipeline:
+      name: example.pipelines.echo
+      resources: {"api_key": "example.resources.ProviderApiKey"}
+
