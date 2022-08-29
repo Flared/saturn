@@ -31,6 +31,15 @@ FreezeTime = t.Union[FrozenDateTimeFactory, StepTickTimeFactory]
 
 @pytest.fixture
 def freezer() -> t.Any:
+    freezegun.configure(  # type: ignore[attr-defined]
+        default_ignore_list=[
+            "Queue",
+            "_pytest.terminal.",
+            "_pytest.runner.",
+            "gi",
+        ]
+    )
+
     return freezegun.freeze_time(
         "2018-01-02T00:00:00+00:00",
         ignore=["_pytest.runner"],
