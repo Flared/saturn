@@ -6,6 +6,7 @@ import dataclasses
 from collections.abc import Collection
 
 from saturn_engine.core.api import ResourcesProviderItem
+from saturn_engine.utils.log import getLogger
 from saturn_engine.utils.options import OptionsSchema
 from saturn_engine.worker.resources.manager import ResourceData
 from saturn_engine.worker.resources.manager import ResourceKey
@@ -41,6 +42,7 @@ class ResourcesProvider(abc.ABC, OptionsSchema, t.Generic[TOptions]):
         services: Services,
         definition: ResourcesProviderItem,
     ) -> None:
+        self.logger = getLogger(__name__, self)
         self.options = options
         self.services = services
         self.definition = definition
@@ -99,8 +101,11 @@ class PeriodicSyncProvider(ResourcesProvider[TPeriodicSyncOptions]):
 
     async def poller(self) -> None:
         while True:
-            resources = await self.sync()
-            await self.update(resources)
+            try:
+                resources = await self.sync()
+                await self.update(resources)
+            except Exception:
+                self.logger.exception("Failed to sync resources")
             await asyncio.sleep(self.options.sync_interval)
 
     async def update(self, resources: Collection[ProvidedResource]) -> None:
