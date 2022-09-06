@@ -1,5 +1,4 @@
-from typing import Optional
-from typing import Union
+import typing as t
 
 import dataclasses
 
@@ -8,11 +7,13 @@ from saturn_engine.utils.declarative_config import BaseObject
 from saturn_engine.worker_manager.config.declarative_pipeline import PipelineInfo
 from saturn_engine.worker_manager.config.static_definitions import StaticDefinitions
 
+DEFAULT_INPUT_NAME: t.Final[str] = "default"
+
 
 @dataclasses.dataclass
 class JobInput:
-    inventory: Optional[str]
-    topic: Optional[str]
+    inventory: t.Optional[str]
+    topic: t.Optional[str]
 
     def __post_init__(self) -> None:
         if not self.inventory and not self.topic:
@@ -23,7 +24,7 @@ class JobInput:
     def to_core_object(
         self,
         static_definitions: StaticDefinitions,
-    ) -> Union[api.InventoryItem, api.TopicItem]:
+    ) -> t.Union[api.InventoryItem, api.TopicItem]:
         if self.inventory:
             return static_definitions.inventories[self.inventory]
         elif self.topic:
@@ -45,37 +46,50 @@ class JobOutput:
 
 @dataclasses.dataclass
 class JobSpec:
-    input: JobInput
     pipeline: PipelineInfo
+    input: t.Optional[JobInput] = None
+    inputs: dict[str, JobInput] = dataclasses.field(default_factory=dict)
     output: dict[str, list[JobOutput]] = dataclasses.field(default_factory=dict)
     executor: str = "default"
 
-    def to_core_object(
+    def to_core_objects(
         self,
         name: str,
         static_definitions: StaticDefinitions,
-    ) -> api.QueueItem:
-        return api.QueueItem(
-            name=name,
-            input=self.input.to_core_object(static_definitions),
-            output={
-                key: [t.to_core_object(static_definitions) for t in topics]
-                for key, topics in self.output.items()
-            },
-            pipeline=api.QueuePipeline(
-                info=self.pipeline.to_core_object(),
-                args=dict(),
-            ),
-            executor=self.executor,
-        )
+    ) -> t.Iterator[api.QueueItem]:
+        inputs = {k: v for k, v in self.inputs.items()}
+        if self.input:
+            inputs[DEFAULT_INPUT_NAME] = self.input
+
+        if not inputs:
+            raise Exception("JobSpec has no input")
+
+        for job_input_name, job_input in inputs.items():
+            queue_item_name = name
+            if job_input_name != DEFAULT_INPUT_NAME:
+                queue_item_name = f"{name}-{job_input_name}"
+
+            yield api.QueueItem(
+                name=queue_item_name,
+                input=job_input.to_core_object(static_definitions),
+                output={
+                    key: [t.to_core_object(static_definitions) for t in topics]
+                    for key, topics in self.output.items()
+                },
+                pipeline=api.QueuePipeline(
+                    info=self.pipeline.to_core_object(),
+                    args=dict(),
+                ),
+                executor=self.executor,
+            )
 
 
 @dataclasses.dataclass
 class Job(BaseObject):
     spec: JobSpec
 
-    def to_core_object(
+    def to_core_objects(
         self,
         static_definitions: StaticDefinitions,
-    ) -> api.QueueItem:
-        return self.spec.to_core_object(self.metadata.name, static_definitions)
+    ) -> t.Iterator[api.QueueItem]:
+        yield from self.spec.to_core_objects(self.metadata.name, static_definitions)

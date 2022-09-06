@@ -171,6 +171,57 @@ spec:
     assert len(static_definitions.inventories) == 1
 
 
+def test_load_job_definition_multiple_inputs() -> None:
+    job_definition_str: str = """
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnInventory
+metadata:
+  name: test-inventory
+spec:
+  type: testtype
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnTopic
+metadata:
+  name: test-topic
+spec:
+  type: RabbitMQTopic
+  options: {}
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJobDefinition
+metadata:
+  name: test-job-definition
+spec:
+  minimalInterval: "@weekly"
+  template:
+      inputs:
+        default:
+            inventory: test-inventory
+        with-topic-input:
+            topic: test-topic
+      pipeline:
+        name: something.saturn.pipelines.aa.bb
+        resources: {}
+"""
+    static_definitions = load_definitions_from_str(job_definition_str)
+
+    assert len(static_definitions.jobs) == 0
+    assert len(static_definitions.inventories) == 1
+    assert len(static_definitions.job_definitions) == 2
+    assert len(static_definitions.topics) == 1
+    assert (
+        static_definitions.job_definitions["test-job-definition"].template.input.name
+        == "test-inventory"
+    )
+    assert (
+        static_definitions.job_definitions[
+            "test-job-definition-with-topic-input"
+        ].template.input.name
+        == "test-topic"
+    )
+
+
 def test_load_job() -> None:
     job_definition_str: str = """
 apiVersion: saturn.flared.io/v1alpha1
@@ -250,6 +301,49 @@ spec:
     assert (
         static_definitions.jobs["test-job-2"].pipeline.info.name
         == "something.saturn.pipelines.aa.bb.cc"
+    )
+
+
+def test_load_jobs_multiple_inputs() -> None:
+    job_definition_str: str = """
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnInventory
+metadata:
+  name: test-inventory
+spec:
+  type: testtype
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnTopic
+metadata:
+  name: test-topic
+spec:
+  type: RabbitMQTopic
+  options: {}
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJob
+metadata:
+  name: test-job
+spec:
+  inputs:
+    default:
+        inventory: test-inventory
+    with-topic-input:
+        topic: test-topic
+  pipeline:
+    name: something.saturn.pipelines.aa.bb
+    resources: {}
+"""
+    static_definitions = load_definitions_from_str(job_definition_str)
+
+    assert len(static_definitions.jobs) == 2
+    assert len(static_definitions.inventories) == 1
+    assert len(static_definitions.job_definitions) == 0
+    assert len(static_definitions.topics) == 1
+    assert static_definitions.jobs["test-job"].input.name == "test-inventory"
+    assert (
+        static_definitions.jobs["test-job-with-topic-input"].input.name == "test-topic"
     )
 
 

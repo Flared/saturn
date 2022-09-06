@@ -1,3 +1,5 @@
+import typing as t
+
 import dataclasses
 
 from saturn_engine.core import api
@@ -17,14 +19,15 @@ class JobDefinitionSpec:
 class JobDefinition(BaseObject):
     spec: JobDefinitionSpec
 
-    def to_core_object(
+    def to_core_objects(
         self,
         static_definitions: StaticDefinitions,
-    ) -> api.JobDefinition:
-        return api.JobDefinition(
-            name=self.metadata.name,
-            template=self.spec.template.to_core_object(
-                self.metadata.name, static_definitions
-            ),
-            minimal_interval=self.spec.minimalInterval,
-        )
+    ) -> t.Iterator[api.JobDefinition]:
+        for template in self.spec.template.to_core_objects(
+            self.metadata.name, static_definitions
+        ):
+            yield api.JobDefinition(
+                name=template.name,
+                template=template,
+                minimal_interval=self.spec.minimalInterval,
+            )
