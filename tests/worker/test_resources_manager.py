@@ -4,6 +4,7 @@ import time
 import pytest
 
 from saturn_engine.worker.resources.manager import ResourceData
+from saturn_engine.worker.resources.manager import ResourceRateLimit
 from saturn_engine.worker.resources.manager import ResourcesManager
 from saturn_engine.worker.resources.manager import ResourceUnavailable
 from tests.utils import TimeForwardLoop
@@ -133,3 +134,143 @@ async def test_resources_manager_default_delay(event_loop: TimeForwardLoop) -> N
 
     await asyncio.sleep(1)
     await resources_manager.acquire("R", wait=False)
+
+
+@pytest.mark.asyncio
+async def test_resources_manager_with_hourly_rate_limiter(
+    event_loop: TimeForwardLoop,
+) -> None:
+    r1 = ResourceData(
+        name="r1",
+        type="R",
+        data={},
+        rate_limit=ResourceRateLimit(
+            rate_limits=["3 per hour"], strategy="moving-window"
+        ),
+    )
+    resources_manager = ResourcesManager()
+    await resources_manager.add(r1)
+
+    resource = await resources_manager.acquire("R", wait=False)
+    async with resource:
+        pass
+
+    resource = await resources_manager.acquire("R", wait=False)
+    async with resource:
+        pass
+
+    resource = await resources_manager.acquire("R", wait=False)
+    async with resource:
+        pass
+
+    await asyncio.sleep(1)
+
+    # this one should fail
+    with pytest.raises(ResourceUnavailable):
+        resource = await resources_manager.acquire("R", wait=False)
+        async with resource:
+            pass
+
+    # after one hour, should be able to acquire resource
+    await asyncio.sleep(3600)
+
+    resource = await resources_manager.acquire("R", wait=False)
+    async with resource:
+        pass
+
+
+@pytest.mark.asyncio
+async def test_resources_manager_with_daily_rate_limiter(
+    event_loop: TimeForwardLoop,
+) -> None:
+    r1 = ResourceData(
+        name="r1",
+        type="R",
+        data={},
+        rate_limit=ResourceRateLimit(
+            rate_limits=["2 per day"], strategy="moving-window"
+        ),
+    )
+    resources_manager = ResourcesManager()
+    await resources_manager.add(r1)
+
+    resource = await resources_manager.acquire("R", wait=False)
+    async with resource:
+        pass
+
+    resource = await resources_manager.acquire("R", wait=False)
+    async with resource:
+        pass
+
+    # this one should fail
+    with pytest.raises(ResourceUnavailable):
+        await resources_manager.acquire("R", wait=False)
+
+    # after one hour, it should be still unavailable
+    await asyncio.sleep(3600)
+
+    with pytest.raises(ResourceUnavailable):
+        await resources_manager.acquire("R", wait=False)
+
+    # wait 23 hours, should be availabe
+    await asyncio.sleep((23 * 3600))
+
+    resource = await resources_manager.acquire("R", wait=False)
+    async with resource:
+        pass
+
+    await asyncio.sleep(2 * 3600)
+
+    resource = await resources_manager.acquire("R", wait=False)
+    async with resource:
+        pass
+
+    # after 22 hours, we should be able to do one request
+    await asyncio.sleep((22 * 3600) + 1)
+
+    resource = await resources_manager.acquire("R", wait=False)
+    async with resource:
+        pass
+
+    with pytest.raises(ResourceUnavailable):
+        await resources_manager.acquire("R", wait=False)
+
+    # one request should be available after 2 hours
+    await asyncio.sleep(2 * 3600)
+
+    resource = await resources_manager.acquire("R", wait=False)
+    async with resource:
+        pass
+
+    await asyncio.sleep(24 * 3600)
+
+
+@pytest.mark.asyncio
+async def test_resources_manager_with_hourly_rate_limit_and_wait(
+    event_loop: TimeForwardLoop,
+) -> None:
+    r1 = ResourceData(
+        name="r1",
+        type="R",
+        data={},
+        rate_limit=ResourceRateLimit(
+            rate_limits=["1 per hour"], strategy="moving-window"
+        ),
+    )
+    resources_manager = ResourcesManager()
+    await resources_manager.add(r1)
+
+    resource = await resources_manager.acquire("R", wait=False)
+    async with resource:
+        pass
+
+    with pytest.raises(ResourceUnavailable):
+        resource = await resources_manager.acquire("R", wait=False)
+
+    time_start = int(time.time())
+
+    resource = await resources_manager.acquire("R", wait=True)
+    async with resource:
+        pass
+
+    assert (int(time.time()) - time_start) == 3600
