@@ -267,8 +267,10 @@ async def test_resources_manager_with_hourly_rate_limit_and_wait(
     with pytest.raises(ResourceUnavailable):
         resource = await resources_manager.acquire("R", wait=False)
 
+    time_start = int(time.time())
+
     resource = await resources_manager.acquire("R", wait=True)
     async with resource:
         pass
 
-    await asyncio.sleep(3600)
+    assert (int(time.time()) - time_start) == 3600
