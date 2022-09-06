@@ -1,7 +1,9 @@
 # Resources Provider
 
 Author: @isra17 Summary: Resources Provider aims to dynamically provision
-resource to be used for pipelines. Status: in-review
+resource to be used for pipelines. 
+
+Status: implemented
 
 ## Background
 
