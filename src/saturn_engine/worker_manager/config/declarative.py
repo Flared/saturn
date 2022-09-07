@@ -62,16 +62,16 @@ def compile_static_definitions(
         job_definition: JobDefinition = fromdict(
             uncompiled_job_definition.data, JobDefinition
         )
-        definitions.job_definitions[
-            job_definition.metadata.name
-        ] = job_definition.to_core_object(definitions)
+        for core_job_definition in job_definition.to_core_objects(definitions):
+            definitions.job_definitions[core_job_definition.name] = core_job_definition
 
     for uncompiled_job in objects_by_kind.pop(
         "SaturnJob",
         dict(),
     ).values():
         job_data: Job = fromdict(uncompiled_job.data, Job)
-        definitions.jobs[job_data.metadata.name] = job_data.to_core_object(definitions)
+        for queue_item in job_data.to_core_objects(definitions):
+            definitions.jobs[queue_item.name] = queue_item
 
     for uncompiled_resource in objects_by_kind.pop(
         "SaturnResource",
