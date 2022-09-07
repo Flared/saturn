@@ -18,6 +18,7 @@ from saturn_engine.utils.log import getLogger
 from saturn_engine.worker import work_factory
 from saturn_engine.worker.executors.executable import ExecutableQueue
 from saturn_engine.worker.resources.manager import ResourceData
+from saturn_engine.worker.resources.manager import ResourceRateLimit
 from saturn_engine.worker.resources.provider import ResourcesProvider
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.http_client import HttpClient
@@ -195,4 +196,10 @@ class WorkManager:
             type=item.type,
             data=item.data,
             default_delay=item.default_delay,
+            rate_limit=ResourceRateLimit(
+                rate_limits=item.rate_limit.rate_limits,
+                strategy=item.rate_limit.strategy,
+            )
+            if item.rate_limit
+            else None,
         )
