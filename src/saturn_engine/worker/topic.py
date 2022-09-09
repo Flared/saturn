@@ -71,8 +71,10 @@ class BlockingTopic(Topic, abc.ABC):
                 wait,
             )
 
+    @abc.abstractmethod
     def run_once_blocking(self) -> Optional[list[TopicOutput]]:
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def publish_blocking(self, message: TopicMessage, wait: bool) -> bool:
         raise NotImplementedError()

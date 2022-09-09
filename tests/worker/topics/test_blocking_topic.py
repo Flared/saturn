@@ -91,6 +91,9 @@ async def test_blocking_topic_error(event_loop: TimeForwardLoop) -> None:
                 raise item
             return [TopicMessage(id=str(item), args={})]
 
+        def publish_blocking(self, message: TopicMessage, wait: bool) -> bool:
+            raise NotImplementedError()
+
     topic = FakeTopic()
     assert await alib.list(topic.run()) == [
         TopicMessage(id="1", args={}),

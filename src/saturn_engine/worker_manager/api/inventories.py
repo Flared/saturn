@@ -8,7 +8,7 @@ from saturn_engine.worker_manager.app import current_app
 bp = Blueprint("inventories", __name__, url_prefix="/api/inventories")
 
 
-@bp.route("", methods=("GET",))
+@bp.route("", methods=("GET",))  # type: ignore[type-var]
 def get_inventories() -> Json[InventoriesResponse]:
     inventories = list(current_app.saturn.static_definitions.inventories.values())
     return jsonify(InventoriesResponse(items=inventories))

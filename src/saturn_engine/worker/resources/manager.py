@@ -207,8 +207,10 @@ class ExclusiveResources:
 class ResourcesManager:
     name = "resources_manager"
 
-    def __init__(self) -> None:
-        self.limiters_storage: storage.Storage = storage.MemoryStorage()
+    def __init__(self, redis_dsn: Optional[str] = None) -> None:
+        self.limiters_storage: storage.Storage = (
+            storage.RedisStorage(redis_dsn) if redis_dsn else storage.MemoryStorage()
+        )
         self.resources: dict[str, ExclusiveResources] = defaultdict(
             lambda: ExclusiveResources(self.limiters_storage)
         )

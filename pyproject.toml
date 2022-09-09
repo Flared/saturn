@@ -43,7 +43,9 @@ aiodogstatsd = {version = "^0.16.0", optional = true}
 structlog = "^21.5.0"
 sentry-sdk = "^1.5.3"
 arq = {version = "^0.22", optional = true}
-limits = {version = "^2.7.0"}
+limits = "^2.7.0"
+coredis = "^4.5.6"
+typing-extensions = "^4.3.0"
 
 [tool.poetry.extras]
 worker-manager = [

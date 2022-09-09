@@ -18,7 +18,7 @@ from saturn_engine.worker_manager.services.sync import sync_jobs
 bp = Blueprint("jobs", __name__, url_prefix="/api/jobs")
 
 
-@bp.route("", methods=("GET",))
+@bp.route("", methods=("GET",))  # type: ignore[type-var]
 def get_jobs() -> Json[JobsResponse]:
     with session_scope() as session:
         return jsonify(
@@ -30,14 +30,14 @@ def get_jobs() -> Json[JobsResponse]:
         )
 
 
-@bp.route("/<string:job_name>", methods=("GET",))
+@bp.route("/<string:job_name>", methods=("GET",))  # type: ignore[type-var]
 def get_job(job_name: str) -> Json[JobResponse]:
     with session_scope() as session:
         job = check_found(jobs_store.get_job(job_name, session=session))
         return jsonify(JobResponse(data=job.as_core_item()))
 
 
-@bp.route("/<string:job_name>", methods=("PUT",))
+@bp.route("/<string:job_name>", methods=("PUT",))  # type: ignore[type-var]
 def update_job(job_name: str) -> Json[UpdateResponse]:
     update_input = marshall_request(JobInput)
     if update_input.error and not update_input.completed_at:
@@ -56,7 +56,7 @@ def update_job(job_name: str) -> Json[UpdateResponse]:
         return jsonify(UpdateResponse())
 
 
-@bp.route("/sync", methods=("POST",))
+@bp.route("/sync", methods=("POST",))  # type: ignore[type-var]
 def post_sync() -> Json[JobsSyncResponse]:
     """Create jobs that are due to be scheduled."""
     sync_jobs(

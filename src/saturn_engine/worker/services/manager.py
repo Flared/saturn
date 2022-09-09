@@ -17,7 +17,7 @@ class ServicesManager:
         self.services: Services = ServicesNamespace(
             config=config,
             hooks=Hooks(),
-            resources_manager=ResourcesManager(),
+            resources_manager=ResourcesManager(redis_dsn=config.c.redis.dsn),
             strict=True,
         )
         self.loaded_services: list[Service] = []

@@ -2,6 +2,7 @@ import asyncio
 import time
 
 import pytest
+from limits.aio import storage
 
 from saturn_engine.worker.resources.manager import ResourceData
 from saturn_engine.worker.resources.manager import ResourceRateLimit
@@ -274,3 +275,17 @@ async def test_resources_manager_with_hourly_rate_limit_and_wait(
         pass
 
     assert (int(time.time()) - time_start) == 3600
+
+
+def test_resource_manager_with_redis_dsn_create_redis_storage(
+    event_loop: TimeForwardLoop,
+) -> None:
+    resources_manager = ResourcesManager(redis_dsn="redis://localhost:6379")
+    assert isinstance(resources_manager.limiters_storage, storage.RedisStorage)
+
+
+def test_resource_manager_without_redis_dsn_create_memory_storage(
+    event_loop: TimeForwardLoop,
+) -> None:
+    resources_manager = ResourcesManager()
+    assert isinstance(resources_manager.limiters_storage, storage.MemoryStorage)

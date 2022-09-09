@@ -24,7 +24,7 @@ bp = Blueprint("lock", __name__, url_prefix="/api/lock")
 _LOCK_LOCK = threading.Lock()
 
 
-@bp.route("", methods=("POST",))
+@bp.route("", methods=("POST",))  # type: ignore[type-var]
 def post_lock() -> Json[LockResponse]:
     with _LOCK_LOCK:
         logger = logging.getLogger(f"{__name__}.post_lock")
