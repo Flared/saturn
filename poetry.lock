@@ -106,7 +106,7 @@ optional = false
 python-versions = ">=3.6"
 
 [package.dependencies]
-typing_extensions = ">=3.7.2"
+typing_extensions = ">=4.3.0"
 
 [[package]]
 name = "argcomplete"
