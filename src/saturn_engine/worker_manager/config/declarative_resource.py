@@ -1,4 +1,5 @@
 from typing import Any
+from typing import Optional
 
 import dataclasses
 
@@ -7,10 +8,17 @@ from saturn_engine.utils.declarative_config import BaseObject
 
 
 @dataclasses.dataclass
+class ResourceRateLimitSpec:
+    rate_limits: list[str]
+    strategy: str = "fixed-window"
+
+
+@dataclasses.dataclass
 class ResourceSpec:
     type: str
     data: dict[str, Any]
     default_delay: float = 0
+    rate_limit: Optional[ResourceRateLimitSpec] = None
     concurrency: int = 1
 
 
@@ -24,6 +32,12 @@ class Resource(BaseObject):
             type=self.spec.type,
             data=self.spec.data,
             default_delay=self.spec.default_delay,
+            rate_limit=api.ResourceRateLimitItem(
+                rate_limits=self.spec.rate_limit.rate_limits,
+                strategy=self.spec.rate_limit.strategy,
+            )
+            if self.spec.rate_limit
+            else None,
         )
 
 

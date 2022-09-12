@@ -93,3 +93,8 @@ spec:
   data:
     key: example-api-key-1
   default_delay: 1
+  rate_limit:
+    strategy: moving-window
+    rate_limits:
+    - 50 per hour
+    - 1000 per day

@@ -30,11 +30,18 @@ class InventoryItem:
 
 
 @dataclasses.dataclass
+class ResourceRateLimitItem:
+    rate_limits: list[str]
+    strategy: str = "fixed-window"
+
+
+@dataclasses.dataclass
 class ResourceItem:
     name: str
     type: str
     data: dict[str, Any]
     default_delay: float = 0
+    rate_limit: Optional[ResourceRateLimitItem] = None
 
 
 @dataclasses.dataclass

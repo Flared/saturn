@@ -36,6 +36,10 @@ spec:
   data:
     key: "qwe"
   default_delay: 10
+  rate_limit:
+    rate_limits:
+    - 10 per hour
+    strategy: moving-window
 ---
 apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnTopic
@@ -90,6 +94,14 @@ spec:
     )
     assert isinstance(static_definitions.resources["test-resource"], ResourceItem)
     assert len(static_definitions.resources_by_type["TestApiKey"]) == 1
+    assert static_definitions.resources["test-resource"].rate_limit
+    assert (
+        static_definitions.resources["test-resource"].rate_limit.strategy
+        == "moving-window"
+    )
+    assert (
+        len(static_definitions.resources["test-resource"].rate_limit.rate_limits) == 1
+    )
 
 
 def test_load_job_definition_unordered() -> None:

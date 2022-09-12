@@ -10,8 +10,15 @@ from saturn_engine.utils.log import getLogger
 from saturn_engine.utils.options import OptionsSchema
 from saturn_engine.worker.resources.manager import ResourceData
 from saturn_engine.worker.resources.manager import ResourceKey
+from saturn_engine.worker.resources.manager import ResourceRateLimit
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.tasks_runner import TasksRunnerService
+
+
+@dataclasses.dataclass
+class ProvidedResourceRateLimit:
+    rate_limits: list[str]
+    strategy: str = "fixed-window"
 
 
 @dataclasses.dataclass
@@ -19,6 +26,7 @@ class ProvidedResource:
     name: str
     data: dict[str, object]
     default_delay: float = 0
+    rate_limit: t.Optional[ProvidedResourceRateLimit] = None
 
 
 TOptions = t.TypeVar("TOptions")
@@ -72,6 +80,12 @@ class ResourcesProvider(abc.ABC, OptionsSchema, t.Generic[TOptions]):
             type=self.definition.resource_type,
             data=item.data,
             default_delay=item.default_delay,
+            rate_limit=ResourceRateLimit(
+                rate_limits=item.rate_limit.rate_limits,
+                strategy=item.rate_limit.strategy,
+            )
+            if item.rate_limit
+            else None,
         )
 
         self._managed_resources.add(resource.name)
