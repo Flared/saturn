@@ -1,19 +1,10 @@
-import logging
 import threading
-from datetime import datetime
-from datetime import timedelta
 
 from flask import Blueprint
 
-from saturn_engine.core.api import Executor
 from saturn_engine.core.api import LockInput
 from saturn_engine.core.api import LockResponse
-from saturn_engine.core.api import ResourceItem
-from saturn_engine.core.api import ResourcesProviderItem
 from saturn_engine.database import session_scope
-from saturn_engine.models.queue import Queue
-from saturn_engine.stores import jobs_store
-from saturn_engine.stores import queues_store
 from saturn_engine.utils.flask import Json
 from saturn_engine.utils.flask import jsonify
 from saturn_engine.utils.flask import marshall_request
