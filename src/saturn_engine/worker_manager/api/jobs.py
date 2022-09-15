@@ -59,7 +59,9 @@ def update_job(job_name: str) -> Json[UpdateResponse]:
 @bp.route("/sync", methods=("POST",))
 def post_sync() -> Json[JobsSyncResponse]:
     """Create jobs that are due to be scheduled."""
-    sync_jobs(
-        static_definitions=current_app.saturn.static_definitions,
-    )
+    with session_scope() as session:
+        sync_jobs(
+            static_definitions=current_app.saturn.static_definitions,
+            session=session,
+        )
     return jsonify(JobsSyncResponse())

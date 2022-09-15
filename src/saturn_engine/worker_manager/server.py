@@ -3,6 +3,7 @@ from typing import Optional
 from saturn_engine.config import default_config_with_env
 from saturn_engine.database import create_all
 from saturn_engine.database import scoped_session
+from saturn_engine.database import session_scope
 from saturn_engine.utils.flask import register_http_exception_error_handler
 from saturn_engine.worker_manager.app import SaturnApp
 from saturn_engine.worker_manager.app import current_app
@@ -54,9 +55,11 @@ def init_all(app: Optional[SaturnApp] = None) -> None:
 
     with app.app_context():
         create_all()
-        sync_jobs(
-            static_definitions=current_app.saturn.static_definitions,
-        )
+        with session_scope() as session:
+            sync_jobs(
+                static_definitions=current_app.saturn.static_definitions,
+                session=session,
+            )
 
 
 def main() -> None:
