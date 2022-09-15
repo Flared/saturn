@@ -13,8 +13,6 @@ from saturn_engine.worker.services.loggers import logger
 from ..bootstrap import PipelineBootstrap
 from ..bootstrap import wrap_remote_exception
 from . import EXECUTE_FUNC_NAME
-from . import EXECUTE_TIMEOUT
-from . import RESULT_TTL
 
 
 class WorkerOptions(t.TypedDict, total=False):
@@ -60,8 +58,6 @@ class WorkerSettings:
         arq.worker.func(
             remote_execute,  # type: ignore[arg-type]
             name=EXECUTE_FUNC_NAME,
-            keep_result=RESULT_TTL,
-            timeout=EXECUTE_TIMEOUT,
             max_tries=1,
         )
     ]
