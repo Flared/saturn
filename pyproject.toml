@@ -82,6 +82,7 @@ pytest-icdiff = "*"
 pytest-mock = "*"
 freezegun = "*"
 types-freezegun = "*"
+autoflake8 = "*"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

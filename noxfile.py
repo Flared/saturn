@@ -96,9 +96,18 @@ def format(session: Session) -> None:
         ".",
         "black",
         "isort",
+        "autoflake8",
     )
     session.run("black", *args)
     session.run("isort", *args)
+    session.run(
+        "autoflake8",
+        "--in-place",
+        "--recursive",
+        "--remove-unused-variables",
+        "--exit-zero-even-if-changed",
+        *args,
+    )
 
 
 @nox_session(python=python_tool_version)
