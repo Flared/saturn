@@ -7,18 +7,18 @@ from saturn_engine.core.api import JobDefinition
 from saturn_engine.core.api import ResourceItem
 from saturn_engine.core.api import TopicItem
 from saturn_engine.worker_manager.config.declarative import filter_with_jobs_selector
-from saturn_engine.worker_manager.config.declarative import load_definitions_from_path
+from saturn_engine.worker_manager.config.declarative import load_definitions_from_paths
 from saturn_engine.worker_manager.config.declarative import load_definitions_from_str
 from saturn_engine.worker_manager.config.static_definitions import StaticDefinitions
 
 
-def test_load_definitions_from_path_simple() -> None:
+def test_load_definitions_from_paths_simple() -> None:
     test_dir = os.path.join(
         os.path.dirname(__file__),
         "testdata",
         "test_declarative_simple",
     )
-    static_definitions = load_definitions_from_path(test_dir)
+    static_definitions = load_definitions_from_paths([test_dir])
     assert (
         static_definitions.inventories["github-identifiers"].name
         == "github-identifiers"

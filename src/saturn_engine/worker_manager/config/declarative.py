@@ -113,8 +113,12 @@ def load_definitions_from_str(definitions: str) -> StaticDefinitions:
     return compile_static_definitions(load_uncompiled_objects_from_str(definitions))
 
 
-def load_definitions_from_path(config_dir: str) -> StaticDefinitions:
-    return compile_static_definitions(load_uncompiled_objects_from_path(config_dir))
+def load_definitions_from_paths(config_dirs: list[str]) -> StaticDefinitions:
+    uncompiled_objects = []
+    for config_dir in config_dirs:
+        uncompiled_objects.extend(load_uncompiled_objects_from_path(config_dir))
+
+    return compile_static_definitions(uncompiled_objects)
 
 
 def filter_with_jobs_selector(
