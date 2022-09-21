@@ -2,7 +2,7 @@ from functools import cached_property
 
 from saturn_engine.config import WorkerManagerConfig
 from saturn_engine.worker_manager.config.declarative import filter_with_jobs_selector
-from saturn_engine.worker_manager.config.declarative import load_definitions_from_path
+from saturn_engine.worker_manager.config.declarative import load_definitions_from_paths
 
 from .config.static_definitions import StaticDefinitions
 
@@ -25,8 +25,8 @@ class WorkerManagerContext:
         - Jobs
         - JobDefinitions
         """
-        definitions = load_definitions_from_path(
-            self.config.static_definitions_directory
+        definitions = load_definitions_from_paths(
+            self.config.static_definitions_directories
         )
         if self.config.static_definitions_jobs_selector:
             definitions = filter_with_jobs_selector(

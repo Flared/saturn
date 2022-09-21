@@ -42,9 +42,9 @@ class config(SaturnConfig):
             .replace("sqlite:/", "sqlite+aiosqlite:/")
             .replace("postgresql:/", "postgresql+asyncpg:/")
         )
-        static_definitions_directory: str = os.environ.get(
-            "SATURN_STATIC_DEFINITIONS_DIR", "/opt/saturn/definitions"
-        )
+        static_definitions_directories: list[str] = os.environ.get(
+            "SATURN_STATIC_DEFINITIONS_DIRS", "/opt/saturn/definitions"
+        ).split(":")
         static_definitions_jobs_selector: t.Optional[str] = os.environ.get(
             "SATURN_STATIC_DEFINITIONS_JOBS_SELECTOR"
         )
