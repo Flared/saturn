@@ -150,6 +150,58 @@ def test_api_update_job(
     }
 
 
+def test_api_reset_jobs(
+    client: FlaskClient,
+    session: Session,
+    fake_job_definition: api.JobDefinition,
+    frozen_time: FreezeTime,
+) -> None:
+    # Empty
+    resp = client.put("/api/job/1")
+    assert resp.status_code == 404
+
+    # Add a job
+    queue = queues_store.create_queue(session=session, name="test")
+    session.flush()
+    job = jobs_store.create_job(
+        name=queue.name,
+        session=session,
+        queue_name=queue.name,
+        job_definition_name=fake_job_definition.name,
+    )
+    session.commit()
+
+    # Complete the job
+    resp = client.put(
+        f"/api/jobs/{job.name}",
+        json={"cursor": "2", "completed_at": "2018-01-02T00:00:00+00:00"},
+    )
+    assert resp.status_code == 200
+
+    # Reset all jobs
+    resp = client.post("/api/jobs/reset")
+    assert resp.status_code == 200
+
+    # Get the job
+    resp = client.get(f"/api/jobs/{job.name}")
+    assert resp.status_code == 200
+    assert resp.json == {
+        "data": {
+            "name": job.name,
+            "completed_at": None,
+            "cursor": None,
+            "error": None,
+            "started_at": "2018-01-02T00:00:00+00:00",
+        }
+    }
+
+    updated_queue = queues_store.get_queue("test", session=session)
+    assert updated_queue is not None
+    assert updated_queue.enabled
+    assert updated_queue.assigned_to is None
+    assert updated_queue.assigned_at is None
+
+
 def test_jobs_sync(
     client: FlaskClient,
     static_definitions: StaticDefinitions,

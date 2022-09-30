@@ -4,8 +4,10 @@ from saturn_engine.core.api import JobInput
 from saturn_engine.core.api import JobResponse
 from saturn_engine.core.api import JobsResponse
 from saturn_engine.core.api import JobsSyncResponse
+from saturn_engine.core.api import ResetResponse
 from saturn_engine.core.api import UpdateResponse
 from saturn_engine.database import session_scope
+from saturn_engine.models.job import Job
 from saturn_engine.stores import jobs_store
 from saturn_engine.utils.flask import Json
 from saturn_engine.utils.flask import abort
@@ -54,6 +56,16 @@ def update_job(job_name: str) -> Json[UpdateResponse]:
             session=session,
         )
         return jsonify(UpdateResponse())
+
+
+@bp.route("/reset", methods=("POST",))
+def reset_job() -> Json[ResetResponse]:
+    with session_scope() as session:
+        jobs: list[Job] = jobs_store.get_jobs(session=session)
+        for job in jobs:
+            jobs_store.reset_job(job.name, session=session)
+
+        return jsonify(ResetResponse())
 
 
 @bp.route("/sync", methods=("POST",))

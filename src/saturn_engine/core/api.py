@@ -147,5 +147,10 @@ class UpdateResponse:
 
 
 @dataclasses.dataclass
+class ResetResponse:
+    pass
+
+
+@dataclasses.dataclass
 class JobsSyncResponse:
     pass

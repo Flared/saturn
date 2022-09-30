@@ -1,3 +1,5 @@
+from typing import Optional
+
 import datetime
 
 from sqlalchemy import or_
@@ -68,9 +70,33 @@ def get_unassigned_queues(
     return unassigned_queues
 
 
+def get_queue(
+    name: str,
+    *,
+    session: AnySyncSession,
+) -> Optional[Queue]:
+    return session.get(Queue, name)
+
+
 def disable_queue(
     *,
     name: str,
     session: AnySyncSession,
 ) -> None:
     session.execute(update(Queue).where(Queue.name == name).values(enabled=False))
+
+
+def reset_queue(
+    *,
+    name: str,
+    session: AnySyncSession,
+) -> None:
+    session.execute(
+        update(Queue)
+        .where(Queue.name == name)
+        .values(
+            enabled=True,
+            assigned_to=None,
+            assigned_at=None,
+        )
+    )

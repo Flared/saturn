@@ -84,6 +84,30 @@ def update_job(
     session.execute(stmt)
 
 
+def reset_job(
+    name: str,
+    *,
+    session: AnySyncSession,
+) -> None:
+    stmt = (
+        update(Job)
+        .where(Job.name == name)
+        .values(
+            cursor=None,
+            completed_at=None,
+        )
+    )
+
+    job = get_job(session=session, name=name)
+
+    if not job:
+        raise Exception("Updating unknown job")
+
+    queues_store.reset_queue(name=job.queue_name, session=session)
+
+    session.execute(stmt)
+
+
 def set_failed(
     name: str,
     *,
