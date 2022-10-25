@@ -11,7 +11,6 @@ from unittest.mock import create_autospec
 import aio_pika
 import pytest
 
-from saturn_engine.client.worker_manager import WorkerManagerClient
 from saturn_engine.config import Config
 from saturn_engine.core import PipelineInfo
 from saturn_engine.core import Resource
@@ -28,6 +27,7 @@ from saturn_engine.worker.resources.provider import ResourcesProvider
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.services.rabbitmq import RabbitMQService
+from saturn_engine.worker.services.worker_manager import WorkerManagerClient
 from saturn_engine.worker.topics import Topic
 from saturn_engine.worker.topics.memory import reset as reset_memory_queues
 from saturn_engine.worker.work_manager import WorkManager
@@ -57,8 +57,11 @@ def work_manager(
 def work_manager_maker(
     worker_manager_client: WorkerManagerClient, services_manager: ServicesManager
 ) -> WorkManagerInit:
+    services_manager._add_service(
+        name=WorkerManagerClient.name, service=worker_manager_client
+    )
     def maker(services: Services = services_manager.services) -> WorkManager:
-        return WorkManager(services=services, client=worker_manager_client)
+        return WorkManager(services=services)
 
     return maker
 

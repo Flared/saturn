@@ -70,6 +70,10 @@ class ServicesManager:
         self.services[service_cls.name] = service
         return service
 
+    def _add_service(self, *, name: str, service: Service) -> None:
+        self.loaded_services.append(service)
+        self.services[name] = service
+
     def has_loaded(self, service_cls: Type[TService]) -> bool:
         return service_cls.name in self.services
 

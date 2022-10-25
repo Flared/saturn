@@ -9,7 +9,6 @@ import dataclasses
 from datetime import datetime
 from datetime import timedelta
 
-from saturn_engine.client.worker_manager import WorkerManagerClient
 from saturn_engine.core.api import Executor
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import QueueItem
@@ -22,6 +21,7 @@ from saturn_engine.worker.resources.manager import ResourceRateLimit
 from saturn_engine.worker.resources.provider import ResourcesProvider
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.http_client import HttpClient
+from saturn_engine.worker.services.worker_manager import WorkerManagerClient
 
 T = TypeVar("T")
 
@@ -57,15 +57,10 @@ WorkerItems = dict[str, ExecutableQueue]
 
 
 class WorkManager:
-    def __init__(
-        self, *, services: Services, client: Optional[WorkerManagerClient] = None
-    ) -> None:
+    def __init__(self, *, services: Services) -> None:
         self.logger = getLogger(__name__, self)
-        http_client = services.cast_service(HttpClient)
-        self.client: WorkerManagerClient = client or WorkerManagerClient(
-            http_client=http_client.session,
-            base_url=services.s.config.c.worker_manager_url,
-        )
+        services.cast_service(HttpClient)
+        self.client = services.cast_service(WorkerManagerClient)
         self.worker_items: WorkerItems = {}
         self.worker_resources: dict[str, ResourceData] = {}
         self.worker_resources_providers: dict[str, ResourcesProvider] = {}

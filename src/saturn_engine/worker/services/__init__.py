@@ -78,6 +78,7 @@ class ServicesNamespace(Namespace, Generic[T]):
         typ_import_name = extra_inspect.get_import_name(service_cls)
         service = self.get(name)
         if not service:
+            breakpoint()
             raise ValueError(f"Namespace missing '{typ_import_name}' service")
 
         if self.strict and service_cls is not service.__class__:
