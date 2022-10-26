@@ -22,6 +22,7 @@ class Item:
     id: str = dataclasses.field(default_factory=lambda: str(uuid.uuid4()))
     cursor: t.Optional[str] = MISSING  # type: ignore[assignment]
     tags: dict[str, str] = dataclasses.field(default_factory=dict)
+    metadata: dict[str, t.Any] = dataclasses.field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.cursor is MISSING:

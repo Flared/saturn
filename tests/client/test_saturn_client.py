@@ -41,7 +41,7 @@ def test_saturn_client_publish_sync(
     http_client_mock: HttpClientMock,
     static_definitions: StaticDefinitions,
 ) -> None:
-    http_client_mock.get("http://localhost:5000/api/topics").return_value = {
+    http_client_mock.get("http://127.0.0.1:5000/api/topics").return_value = {
         "items": [
             {
                 "name": "test-topic",
@@ -85,7 +85,7 @@ async def test_saturn_client_publish_async(
     http_client_mock: HttpClientMock,
     static_definitions: StaticDefinitions,
 ) -> None:
-    http_client_mock.get("http://localhost:5000/api/topics").return_value = {
+    http_client_mock.get("http://127.0.0.1:5000/api/topics").return_value = {
         "items": [{"name": "test-topic", "options": {}, "type": "MemoryTopic"}]
     }
     static_definitions.topics = load_definitions_from_str(

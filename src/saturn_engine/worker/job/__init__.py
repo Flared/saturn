@@ -54,7 +54,10 @@ class Job(Topic):
                             after = item.cursor
                             done = False
                             message = TopicMessage(
-                                id=str(item.id), args=item.args, tags=item.tags
+                                id=str(item.id),
+                                args=item.args,
+                                tags=item.tags,
+                                metadata=item.metadata,
                             )
                             yield message
                     finally:
