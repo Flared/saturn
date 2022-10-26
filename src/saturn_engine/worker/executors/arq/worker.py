@@ -8,6 +8,7 @@ import arq.worker
 from saturn_engine.core import PipelineResults
 from saturn_engine.utils.hooks import EventHook
 from saturn_engine.worker.pipeline_message import PipelineMessage
+from saturn_engine.worker.services import tracing
 from saturn_engine.worker.services.loggers import logger
 
 from ..bootstrap import PipelineBootstrap
@@ -45,7 +46,12 @@ async def startup(ctx: Context) -> None:
     initialize_hook: EventHook[PipelineBootstrap] = EventHook()
     if worker_initializer:
         initialize_hook.register(worker_initializer)
+
+    # Arq doesn't support passing hook, so we hard code service hooks here.
+    # Would be nice to find a way around that eventually.
     initialize_hook.register(logger.on_executor_initialized)
+    initialize_hook.register(tracing.on_executor_initialized)
+
     ctx["bootstraper"] = PipelineBootstrap(initialized_hook=initialize_hook)
 
 
