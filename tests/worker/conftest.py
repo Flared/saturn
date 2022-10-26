@@ -26,6 +26,8 @@ from saturn_engine.worker.broker import WorkManagerInit
 from saturn_engine.worker.executors import Executor
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.parkers import Parkers
+from saturn_engine.worker.executors.process import PoolType
+from saturn_engine.worker.executors.process import ProcessExecutor
 from saturn_engine.worker.executors.queue import ExecutorQueue
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources.provider import ResourcesProvider
@@ -144,6 +146,21 @@ async def broker(broker_maker: t.Callable[..., Broker]) -> AsyncIterator[Broker]
 
 
 @pytest.fixture
+def message_maker(fake_pipeline_info: PipelineInfo) -> t.Callable[..., PipelineMessage]:
+    def maker(
+        pipeline_info: PipelineInfo = fake_pipeline_info,
+        args: t.Optional[dict[str, object]] = None,
+        tags: t.Optional[dict[str, str]] = None,
+    ) -> PipelineMessage:
+        return PipelineMessage(
+            info=pipeline_info or fake_pipeline_info,
+            message=TopicMessage(args=args or {}, tags=tags or {}),
+        )
+
+    return maker
+
+
+@pytest.fixture
 def executable_maker(
     fake_pipeline_info: PipelineInfo,
 ) -> t.Callable[..., ExecutableMessage]:
@@ -245,3 +262,13 @@ def _tracer() -> InMemorySpanExporter:
 def span_exporter(_tracer: InMemorySpanExporter) -> InMemorySpanExporter:
     _tracer.clear()
     return _tracer
+
+
+@pytest.fixture
+async def executor(services_manager: ServicesManager) -> AsyncIterator[Executor]:
+    executor = ProcessExecutor(
+        ProcessExecutor.Options(max_workers=1, pool_type=PoolType.THREAD),
+        services=services_manager.services,
+    )
+    yield executor
+    await executor.close()
