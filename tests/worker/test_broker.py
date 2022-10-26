@@ -21,6 +21,7 @@ from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources.provider import ProvidedResource
 from saturn_engine.worker.resources.provider import ResourcesProvider
 from tests.utils import register_hooks_handler
+from tests.utils.span_exporter import InMemorySpanExporter
 from tests.worker.conftest import FakeResource
 
 
@@ -56,11 +57,25 @@ def pipeline(resource: FakeResource) -> None:
     ...
 
 
+@pytest.fixture
+def config(config: Config) -> Config:
+    return config.load_object(
+        {
+            "services_manager": {
+                "services": [
+                    "saturn_engine.worker.services.tracing.Tracer",
+                ]
+            }
+        }
+    )
+
+
 @pytest.mark.asyncio
 async def test_broker_dummy(
     broker: Broker,
     config: Config,
     worker_manager_client: Mock,
+    span_exporter: InMemorySpanExporter,
 ) -> None:
     FakeExecutor.done_event = asyncio.Event()
 
@@ -122,6 +137,13 @@ async def test_broker_dummy(
     assert (
         len(broker.resources_manager.resources["FakeProvidedResource"].availables) == 1
     )
+
+    # Test tracing
+    exported_traces = span_exporter.get_finished_traces()
+    assert len(exported_traces) == 1000
+    assert exported_traces[0].otel_span.name == "worker executing"
+    assert exported_traces[0].otel_span.attributes
+    assert exported_traces[0].otel_span.attributes["saturn.message.id"] == "0"
 
     broker_task.cancel()
     await broker_task

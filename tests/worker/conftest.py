@@ -10,6 +10,10 @@ from unittest.mock import create_autospec
 
 import aio_pika
 import pytest
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace import sampling
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
 from saturn_engine.client.worker_manager import WorkerManagerClient
 from saturn_engine.config import Config
@@ -32,6 +36,7 @@ from saturn_engine.worker.topics import Topic
 from saturn_engine.worker.topics.memory import reset as reset_memory_queues
 from saturn_engine.worker.work_manager import WorkManager
 from tests.utils import TimeForwardLoop
+from tests.utils.span_exporter import InMemorySpanExporter
 
 
 @pytest.fixture
@@ -224,3 +229,19 @@ async def rabbitmq_service(
     rabbitmq_service_loader: t.Callable[..., Awaitable[RabbitMQService]]
 ) -> RabbitMQService:
     return await rabbitmq_service_loader()
+
+
+@pytest.fixture(scope="session")
+def _tracer() -> InMemorySpanExporter:
+    provider = TracerProvider(sampler=sampling.ALWAYS_ON)
+    exporter = InMemorySpanExporter()
+    processor = SimpleSpanProcessor(exporter)
+    provider.add_span_processor(processor)
+    trace.set_tracer_provider(provider)
+    return exporter
+
+
+@pytest.fixture
+def span_exporter(_tracer: InMemorySpanExporter) -> InMemorySpanExporter:
+    _tracer.clear()
+    return _tracer

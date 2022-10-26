@@ -21,6 +21,7 @@ tests_packages = [
     "pytest-icdiff",
     "pytest-mock",
     "freezegun",
+    "opentelemetry-sdk",
 ]
 mypy_packages = [
     "pytest",
