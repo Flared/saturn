@@ -23,7 +23,7 @@ class Tracer(MinimalService):
     async def on_message_executed(
         self, message: PipelineMessage
     ) -> AsyncGenerator[None, PipelineResults]:
-        operation_name = f"worker_executing/{message.info.name}"
+        operation_name = "worker executing"
         with self.tracer.start_as_current_span(
             operation_name,
             kind=trace.SpanKind.PRODUCER,
@@ -55,7 +55,7 @@ class PipelineTracer:
             message.message.metadata.get("tracing", {})
         )
 
-        operation_name = f"executor_executing/{message.info.name}"
+        operation_name = "executor executing"
         with self.tracer.start_as_current_span(
             operation_name,
             context=tracectx,

@@ -100,6 +100,7 @@ filterwarnings = [
   "ignore:distutils Version classes are deprecated.:DeprecationWarning",
   "ignore::marshmallow.warnings.RemovedInMarshmallow4Warning",
   "ignore:.*/tmp/ray/.*:ResourceWarning",
+  "ignore:.*You should use InstrumentationScope.*:DeprecationWarning",
 ]
 
 [tool.isort]
