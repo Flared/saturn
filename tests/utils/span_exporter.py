@@ -17,10 +17,10 @@ class Span:
 
 class InMemorySpanExporter(_InMemorySpanExporter):
     def __init__(self) -> None:
-        return super().__init__()  # type: ignore[no-untyped-call]
+        super().__init__()  # type: ignore[no-untyped-call]
 
     def clear(self) -> None:
-        return super().clear()  # type: ignore[no-untyped-call]
+        super().clear()  # type: ignore[no-untyped-call]
 
     def get_finished_traces(self) -> list[Span]:
         span_by_id: dict[int, Span] = {}

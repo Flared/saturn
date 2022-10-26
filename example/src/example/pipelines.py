@@ -45,7 +45,6 @@ def trace_pipeline(pipeline: str, data: t.Any) -> None:
 def echo(api_key: TestApiKey, **kwargs: t.Any) -> TopicMessage:
     trace_pipeline("echo", {"api_key": api_key.key} | kwargs)
     logging.info("api_key: %s, data: %s", api_key.key, kwargs)
-    time.sleep(5)
     return TopicMessage(args=kwargs)
 
 

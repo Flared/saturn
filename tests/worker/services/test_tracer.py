@@ -25,7 +25,7 @@ def config(config: Config) -> Config:
 
 
 @pytest.mark.asyncio
-async def test_logger_message_executed(
+async def test_trace_message_executed(
     services_manager: ServicesManager,
     executor: Executor,
     message_maker: t.Callable[..., PipelineMessage],
