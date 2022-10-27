@@ -60,6 +60,7 @@ class QueueItem:
     input: Union[TopicItem, InventoryItem] = field(
         ObjectUnion(union={"topic": TopicItem, "inventory": InventoryItem})
     )
+    config: dict[str, Any] = dataclasses.field(default_factory=dict)
     executor: str = "default"
 
 

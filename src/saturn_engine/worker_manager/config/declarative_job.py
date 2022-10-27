@@ -50,6 +50,7 @@ class JobSpec:
     input: t.Optional[JobInput] = None
     inputs: dict[str, JobInput] = dataclasses.field(default_factory=dict)
     output: dict[str, list[JobOutput]] = dataclasses.field(default_factory=dict)
+    config: dict[str, t.Any] = dataclasses.field(default_factory=dict)
     executor: str = "default"
 
     def to_core_objects(
@@ -80,6 +81,7 @@ class JobSpec:
                     info=self.pipeline.to_core_object(),
                     args=dict(),
                 ),
+                config=self.config,
                 executor=self.executor,
             )
 

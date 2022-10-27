@@ -49,6 +49,12 @@ spec:
     pipeline:
       name: something.saturn.pipelines.aa.bb
       resources: {"api_key": "GithubApiKey"}
+
+    config:
+      tracer:
+        sampler:
+          type: TraceIdRatioBased
+          options: {ratio: 0.1}
 """
     )
     static_definitions.job_definitions = new_definitions.job_definitions
@@ -84,6 +90,14 @@ spec:
                             "name": "something.saturn.pipelines.aa.bb",
                             "resources": {"api_key": "GithubApiKey"},
                         },
+                    },
+                    "config": {
+                        "tracer": {
+                            "sampler": {
+                                "type": "TraceIdRatioBased",
+                                "options": {"ratio": 0.1},
+                            }
+                        }
                     },
                 },
             }
