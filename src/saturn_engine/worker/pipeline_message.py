@@ -12,6 +12,10 @@ class PipelineMessage:
     message: TopicMessage
 
     @property
+    def id(self) -> str:
+        return self.message.id
+
+    @property
     def missing_resources(self) -> set[str]:
         return {
             typ

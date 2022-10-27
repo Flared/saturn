@@ -11,7 +11,7 @@ from saturn_engine.core import PipelineResults
 from saturn_engine.core import Resource
 from saturn_engine.core import ResourceUsed
 from saturn_engine.core import TopicMessage
-from saturn_engine.worker.pipeline_message import PipelineMessage
+from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.services.loggers.logger import Logger
 from saturn_engine.worker.services.manager import ServicesManager
 
@@ -27,17 +27,17 @@ def fake_pipeline(x: int, r: FakeResource) -> None:
 
 @pytest.mark.asyncio
 async def test_logger_message_executed(
-    services_manager: ServicesManager, caplog: t.Any
+    services_manager: ServicesManager,
+    caplog: t.Any,
+    executable_maker: t.Callable[..., ExecutableMessage],
 ) -> None:
     logger = services_manager._load_service(Logger)
     await logger.open()
 
     pipeline_info = PipelineInfo.from_pipeline(fake_pipeline)
-    message = PipelineMessage(
-        info=pipeline_info,
-        message=TopicMessage(id="m1", args={"x": 42}),
-    )
-    message.update_with_resources(
+    xmsg = executable_maker(pipeline_info=pipeline_info)
+    xmsg.message.message = TopicMessage(id="m1", args={"x": 42})
+    xmsg.message.update_with_resources(
         {FakeResource._typename(): {"name": "r1", "data": "foobar"}}
     )
 
@@ -51,11 +51,13 @@ async def test_logger_message_executed(
     )
 
     with caplog.at_level(logging.DEBUG):
-        hook_generator = logger.on_message_executed(message)
+        hook_generator = logger.on_message_executed(xmsg)
         await hook_generator.__anext__()
         r = caplog.records[-1]
         assert r.message == "Executing message"
         assert r.data == {
+            "input": "fake-topic",
+            "job": "fake-queue",
             "message": {
                 "id": "m1",
                 "tags": {},
@@ -70,6 +72,8 @@ async def test_logger_message_executed(
         r = caplog.records[-1]
         assert r.message == "Executed message"
         assert r.data == {
+            "input": "fake-topic",
+            "job": "fake-queue",
             "message": {
                 "id": "m1",
                 "tags": {},

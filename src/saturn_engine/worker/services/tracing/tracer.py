@@ -1,12 +1,14 @@
 from collections.abc import AsyncGenerator
 from collections.abc import Generator
+from collections.abc import Mapping
 
 import opentelemetry.propagate
 from opentelemetry import trace
-from opentelemetry.util import types as otel_types
+from opentelemetry.util.types import AttributeValue
 
 from saturn_engine.core import PipelineResults
 from saturn_engine.worker.executors.bootstrap import PipelineBootstrap
+from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.pipeline_message import PipelineMessage
 
 from .. import MinimalService
@@ -21,17 +23,17 @@ class Tracer(MinimalService):
         self.services.hooks.executor_initialized.register(on_executor_initialized)
 
     async def on_message_executed(
-        self, message: PipelineMessage
+        self, xmsg: ExecutableMessage
     ) -> AsyncGenerator[None, PipelineResults]:
         operation_name = "worker executing"
         with self.tracer.start_as_current_span(
             operation_name,
             kind=trace.SpanKind.PRODUCER,
-            attributes=message_attributes(message),
+            attributes=executable_message_attributes(xmsg),
         ) as span:
 
             opentelemetry.propagate.inject(
-                message.message.metadata.setdefault("tracing", {})
+                xmsg.message.message.metadata.setdefault("tracing", {})
             )
 
             results = yield
@@ -60,13 +62,26 @@ class PipelineTracer:
             operation_name,
             context=tracectx,
             kind=trace.SpanKind.CONSUMER,
-            attributes=message_attributes(message),
+            attributes=pipeline_message_attributes(message),
         ):
             yield
 
 
-def message_attributes(message: PipelineMessage) -> otel_types.Attributes:
+def executable_message_attributes(
+    xmsg: ExecutableMessage,
+) -> Mapping[str, AttributeValue]:
+    xmsg.message
     return {
-        "saturn.message.id": message.message.id,
+        "saturn.job.name": xmsg.queue.name,
+        "saturn.input.name": xmsg.queue.definition.input.name,
+    } | pipeline_message_attributes(xmsg.message)
+
+
+def pipeline_message_attributes(
+    message: PipelineMessage,
+) -> Mapping[str, AttributeValue]:
+    return {
+        "saturn.message.id": message.id,
+        "saturn.resources.names": [n for n in message.resource_names if n],
         "saturn.pipeline.name": message.info.name,
     } | {f"saturn.message.tags.{k}": v for k, v in message.message.tags.items()}

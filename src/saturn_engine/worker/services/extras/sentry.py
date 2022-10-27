@@ -19,8 +19,8 @@ from saturn_engine.utils.options import asdict
 from saturn_engine.utils.traceback_data import FrameData
 from saturn_engine.utils.traceback_data import TracebackData
 from saturn_engine.worker.executors.bootstrap import RemoteException
+from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.executable import ExecutableQueue
-from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.services.hooks import MessagePublished
 
 from .. import BaseServices
@@ -91,14 +91,15 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
                 self._capture_exception(e)
 
     async def on_message_executed(
-        self, message: PipelineMessage
+        self, xmsg: ExecutableMessage
     ) -> AsyncGenerator[None, PipelineResults]:
+        message = xmsg.message
         with Hub.current.push_scope() as scope:
 
             def _event_processor(event: Event, hint: Hint) -> Event:
                 with capture_internal_exceptions():
                     tags = event.setdefault("tags", {})
-                    tags["saturn_message"] = message.message.id
+                    tags["saturn_message"] = xmsg.id
                     tags["saturn_pipeline"] = message.info.name
                     extra = event.setdefault("extra", {})
                     extra["saturn-pipeline-message"] = asdict(message)
@@ -111,19 +112,19 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
                 self._capture_exception(e)
 
     async def on_message_published(
-        self, message: MessagePublished
+        self, publish: MessagePublished
     ) -> AsyncGenerator[None, None]:
         with Hub.current.push_scope() as scope:
 
             def _event_processor(event: Event, hint: Hint) -> Event:
                 with capture_internal_exceptions():
                     tags = event.setdefault("tags", {})
-                    tags["saturn_message"] = message.output.message.id
-                    tags["saturn_channel"] = message.output.channel
-                    tags["saturn_pipeline"] = message.message.info.name
+                    tags["saturn_message"] = publish.output.message.id
+                    tags["saturn_channel"] = publish.output.channel
+                    tags["saturn_pipeline"] = publish.xmsg.message.info.name
                     extra = event.setdefault("extra", {})
-                    extra["saturn-message"] = asdict(message.output.message)
-                    extra["saturn-pipeline-message"] = asdict(message.message)
+                    extra["saturn-message"] = asdict(publish.output.message)
+                    extra["saturn-pipeline-message"] = asdict(publish.xmsg.message)
                 return event
 
             scope.add_event_processor(_event_processor)

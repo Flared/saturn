@@ -18,13 +18,17 @@ from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from saturn_engine.client.worker_manager import WorkerManagerClient
 from saturn_engine.config import Config
 from saturn_engine.core import PipelineInfo
+from saturn_engine.core import QueuePipeline
 from saturn_engine.core import Resource
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import LockResponse
+from saturn_engine.core.api import QueueItem
+from saturn_engine.core.api import TopicItem
 from saturn_engine.worker.broker import Broker
 from saturn_engine.worker.broker import WorkManagerInit
 from saturn_engine.worker.executors import Executor
 from saturn_engine.worker.executors.executable import ExecutableMessage
+from saturn_engine.worker.executors.executable import ExecutableQueue
 from saturn_engine.worker.executors.parkers import Parkers
 from saturn_engine.worker.executors.process import PoolType
 from saturn_engine.worker.executors.process import ProcessExecutor
@@ -34,6 +38,7 @@ from saturn_engine.worker.resources.provider import ResourcesProvider
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.services.rabbitmq import RabbitMQService
+from saturn_engine.worker.topics import MemoryTopic
 from saturn_engine.worker.topics import Topic
 from saturn_engine.worker.topics.memory import reset as reset_memory_queues
 from saturn_engine.worker.work_manager import WorkManager
@@ -161,8 +166,43 @@ def message_maker(fake_pipeline_info: PipelineInfo) -> t.Callable[..., PipelineM
 
 
 @pytest.fixture
+def fake_queue_item(
+    fake_pipeline_info: PipelineInfo,
+) -> QueueItem:
+    return QueueItem(
+        name="fake-queue",
+        pipeline=QueuePipeline(info=fake_pipeline_info, args={}),
+        output={},
+        input=TopicItem(
+            name="fake-topic",
+            type="MemoryTopic",
+        ),
+    )
+
+
+@pytest.fixture
+def fake_topic() -> MemoryTopic:
+    return MemoryTopic(MemoryTopic.Options(name="fake_topic"))
+
+
+@pytest.fixture
+def fake_executable_queue(
+    fake_queue_item: QueueItem, fake_topic: Topic, services_manager: ServicesManager
+) -> Iterator[ExecutableQueue]:
+    xmsg = ExecutableQueue(
+        definition=fake_queue_item,
+        topic=fake_topic,
+        output={},
+        services=services_manager.services,
+    )
+
+    yield xmsg
+
+
+@pytest.fixture
 def executable_maker(
     fake_pipeline_info: PipelineInfo,
+    fake_executable_queue: ExecutableQueue,
 ) -> t.Callable[..., ExecutableMessage]:
     def maker(
         args: t.Optional[dict[str, object]] = None,
@@ -171,6 +211,7 @@ def executable_maker(
         output: t.Optional[dict[str, list[Topic]]] = None,
     ) -> ExecutableMessage:
         return ExecutableMessage(
+            queue=fake_executable_queue,
             message=PipelineMessage(
                 info=pipeline_info or fake_pipeline_info,
                 message=TopicMessage(args=args or {}),

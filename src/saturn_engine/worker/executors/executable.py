@@ -4,8 +4,8 @@ from typing import Optional
 import contextlib
 from collections.abc import AsyncGenerator
 
-from saturn_engine.core import QueuePipeline
 from saturn_engine.core import ResourceUsed
+from saturn_engine.core.api import QueueItem
 from saturn_engine.worker.executors.parkers import Parkers
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources.manager import ResourceContext
@@ -18,29 +18,35 @@ class ExecutableMessage:
     def __init__(
         self,
         *,
+        queue: "ExecutableQueue",
         message: PipelineMessage,
         parker: Parkers,
         output: dict[str, list[Topic]],
         message_context: Optional[AsyncContextManager] = None,
     ):
         self.message = message
-        self.context = contextlib.AsyncExitStack()
+        self._context = contextlib.AsyncExitStack()
         if message_context:
-            self.context.push_async_exit(message_context)
-        self.parker = parker
+            self._context.push_async_exit(message_context)
+        self._parker = parker
         self.output = output
         self.resources: dict[str, ResourceContext] = {}
+        self.queue = queue
+
+    @property
+    def id(self) -> str:
+        return self.message.id
 
     def park(self) -> None:
-        self.parker.park(id(self))
+        self._parker.park(id(self))
 
     async def unpark(self) -> None:
-        await self.parker.unpark(id(self))
+        await self._parker.unpark(id(self))
 
     async def attach_resources(
         self, resources_context: ResourcesContext
     ) -> dict[str, dict[str, object]]:
-        self.resources = await self.context.enter_async_context(resources_context)
+        self.resources = await self._context.enter_async_context(resources_context)
         resources_data = {
             k: ({"name": r.resource.name} | r.resource.data)
             for k, r in self.resources.items()
@@ -64,20 +70,21 @@ class ExecutableQueue:
     def __init__(
         self,
         *,
+        definition: QueueItem,
         topic: Topic,
-        pipeline: QueuePipeline,
         output: dict[str, list[Topic]],
         services: Services,
-        name: str,
-        executor: str,
     ):
+        self.definition = definition
+        self.name = definition.name
+        self.pipeline = definition.pipeline
+        self.executor = definition.executor
+
         self.topic = topic
-        self.parkers = Parkers()
-        self.pipeline = pipeline
         self.output = output
         self.services = services
-        self.name = name
-        self.executor = executor
+
+        self.parkers = Parkers()
         self.iterable = self.run()
 
     async def run(self) -> AsyncGenerator[ExecutableMessage, None]:
@@ -92,15 +99,16 @@ class ExecutableQueue:
                     info=self.pipeline.info,
                     message=message.extend(self.pipeline.args),
                 )
-                await self.services.s.hooks.message_polled.emit(pipeline_message)
-
-                await self.parkers.wait()
-                yield ExecutableMessage(
+                executable_message = ExecutableMessage(
+                    queue=self,
                     parker=self.parkers,
                     message=pipeline_message,
                     message_context=context,
                     output=self.output,
                 )
+                await self.services.s.hooks.message_polled.emit(executable_message)
+                await self.parkers.wait()
+                yield executable_message
         finally:
             await self.close()
 

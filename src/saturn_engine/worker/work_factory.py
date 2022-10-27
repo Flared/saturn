@@ -32,10 +32,8 @@ def build(queue_item: QueueItem, *, services: Services) -> ExecutableQueue:
     }
 
     return ExecutableQueue(
-        name=queue_item.name,
-        executor=queue_item.executor,
+        definition=queue_item,
         topic=topic,
-        pipeline=queue_item.pipeline,
         output=output,
         services=services,
     )

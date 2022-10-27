@@ -12,6 +12,7 @@ from saturn_engine.core import ResourceUsed
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import QueueItem
 from saturn_engine.worker.executors.bootstrap import PipelineBootstrap
+from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.executable import ExecutableQueue
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.services.hooks import MessagePublished
@@ -20,13 +21,22 @@ from .. import BaseServices
 from .. import Service
 
 
-def message_data(
-    message: PipelineMessage, *, verbose: bool = False
+def executable_message_data(
+    xmsg: ExecutableMessage, *, verbose: bool = False
+) -> dict[str, t.Any]:
+    return pipeline_message_data(xmsg.message, verbose=verbose) | {
+        "job": xmsg.queue.name,
+        "input": xmsg.queue.definition.input.name,
+    }
+
+
+def pipeline_message_data(
+    pmsg: PipelineMessage, *, verbose: bool = False
 ) -> dict[str, t.Any]:
     return {
-        "message": topic_message_data(message.message, verbose=verbose),
-        "resources": message.resource_names,
-        "pipeline": message.info.name,
+        "message": topic_message_data(pmsg.message, verbose=verbose),
+        "resources": pmsg.resource_names,
+        "pipeline": pmsg.info.name,
     }
 
 
@@ -77,37 +87,37 @@ class Logger(Service[BaseServices, "Logger.Options"]):
                 "Failed to build item", extra={"data": self.queue_item_data(item)}
             )
 
-    async def on_message_polled(self, message: PipelineMessage) -> None:
+    async def on_message_polled(self, xmsg: ExecutableMessage) -> None:
         self.message_logger.debug(
             "Polled message",
-            extra={"data": message_data(message, verbose=self.verbose)},
+            extra={"data": executable_message_data(xmsg, verbose=self.verbose)},
         )
 
-    async def on_message_scheduled(self, message: PipelineMessage) -> None:
+    async def on_message_scheduled(self, xmsg: ExecutableMessage) -> None:
         self.message_logger.debug(
             "Scheduled message",
-            extra={"data": message_data(message, verbose=self.verbose)},
+            extra={"data": executable_message_data(xmsg, verbose=self.verbose)},
         )
 
-    async def on_message_submitted(self, message: PipelineMessage) -> None:
+    async def on_message_submitted(self, xmsg: ExecutableMessage) -> None:
         self.message_logger.debug(
             "Submitted message",
-            extra={"data": message_data(message, verbose=self.verbose)},
+            extra={"data": executable_message_data(xmsg, verbose=self.verbose)},
         )
 
     async def on_message_executed(
-        self, message: PipelineMessage
+        self, xmsg: ExecutableMessage
     ) -> AsyncGenerator[None, PipelineResults]:
         self.message_logger.debug(
             "Executing message",
-            extra={"data": message_data(message, verbose=self.verbose)},
+            extra={"data": executable_message_data(xmsg, verbose=self.verbose)},
         )
         try:
             result = yield
             self.message_logger.debug(
                 "Executed message",
                 extra={
-                    "data": message_data(message, verbose=self.verbose)
+                    "data": executable_message_data(xmsg, verbose=self.verbose)
                     | {
                         "result": self.result_data(result),
                     }
@@ -116,7 +126,7 @@ class Logger(Service[BaseServices, "Logger.Options"]):
         except Exception:
             self.message_logger.exception(
                 "Failed to execute message",
-                extra={"data": message_data(message, verbose=self.verbose)},
+                extra={"data": executable_message_data(xmsg, verbose=self.verbose)},
             )
 
     async def on_message_published(
@@ -137,7 +147,7 @@ class Logger(Service[BaseServices, "Logger.Options"]):
 
     def published_data(self, event: MessagePublished) -> dict[str, t.Any]:
         return {
-            "from": message_data(event.message, verbose=self.verbose)
+            "from": pipeline_message_data(event.xmsg.message, verbose=self.verbose)
         } | self.output_data(event.output)
 
     def result_data(self, results: PipelineResults) -> dict[str, t.Any]:
@@ -181,7 +191,7 @@ class PipelineLogger:
     def on_pipeline_executed(
         self, message: PipelineMessage
     ) -> Generator[None, PipelineResults, None]:
-        extra = {"data": message_data(message, verbose=self.verbose)}
+        extra = {"data": pipeline_message_data(message, verbose=self.verbose)}
         with self.log_context(extra["data"]):
             self.logger.debug("Executing pipeline", extra=extra)
             try:
