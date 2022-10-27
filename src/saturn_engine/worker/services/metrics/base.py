@@ -9,7 +9,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from saturn_engine.core import PipelineResults
-from saturn_engine.worker.pipeline_message import PipelineMessage
+from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.services.hooks import MessagePublished
 from saturn_engine.worker.topic import Topic
 
@@ -29,21 +29,22 @@ class BaseMetricsService(
         self.services.hooks.message_published.register(self.on_message_published)
         self.services.hooks.output_blocked.register(self.on_output_blocked)
 
-    async def on_message_polled(self, message: PipelineMessage) -> None:
-        params = {"pipeline": message.info.name}
+    async def on_message_polled(self, xmsg: ExecutableMessage) -> None:
+        params = {"pipeline": xmsg.message.info.name}
         await self.incr("message.polled", params=params)
 
-    async def on_message_scheduled(self, message: PipelineMessage) -> None:
-        params = {"pipeline": message.info.name}
+    async def on_message_scheduled(self, xmsg: ExecutableMessage) -> None:
+        params = {"pipeline": xmsg.message.info.name}
         await self.incr("message.scheduled", params=params)
 
-    async def on_message_submitted(self, message: PipelineMessage) -> None:
-        params = {"pipeline": message.info.name}
+    async def on_message_submitted(self, xmsg: ExecutableMessage) -> None:
+        params = {"pipeline": xmsg.message.info.name}
         await self.incr("message.submitted", params=params)
 
     async def on_message_executed(
-        self, message: PipelineMessage
+        self, xmsg: ExecutableMessage
     ) -> AsyncGenerator[None, PipelineResults]:
+        message = xmsg.message
         params = {"pipeline": message.info.name}
         await self.incr("message.executed.before", params=params)
         try:
@@ -71,7 +72,7 @@ class BaseMetricsService(
     async def on_message_published(
         self, event: MessagePublished
     ) -> AsyncGenerator[None, None]:
-        params = {"pipeline": event.message.info.name, "topic": event.topic.name}
+        params = {"pipeline": event.xmsg.message.info.name, "topic": event.topic.name}
         await self.incr("message.published.before", params=params)
         try:
             yield

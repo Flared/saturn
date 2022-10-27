@@ -6,7 +6,6 @@ from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResults
 from saturn_engine.utils.asyncutils import TasksGroupRunner
 from saturn_engine.utils.log import getLogger
-from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources.manager import ResourceUnavailable
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.hooks import MessagePublished
@@ -49,16 +48,16 @@ class ExecutorQueue:
     async def run_queue(self) -> None:
         while self.is_running:
             processable = await self.queue.get()
-            processable.context.callback(self.queue.task_done)
+            processable._context.callback(self.queue.task_done)
             try:
-                async with processable.context:
+                async with processable._context:
 
                     @self.services.s.hooks.message_executed.emit
-                    async def scope(message: PipelineMessage) -> PipelineResults:
-                        return await self.executor.process_message(message)
+                    async def scope(xmsg: ExecutableMessage) -> PipelineResults:
+                        return await self.executor.process_message(xmsg.message)
 
                     try:
-                        output = await scope(processable.message)
+                        output = await scope(processable)
                     except Exception:  # noqa: S110
                         pass
                     else:
@@ -122,7 +121,7 @@ class ExecutorQueue:
             await self.queue_submit(processable)
 
     async def queue_submit(self, processable: ExecutableMessage) -> None:
-        await self.services.s.hooks.message_submitted.emit(processable.message)
+        await self.services.s.hooks.message_submitted.emit(processable)
         await self.queue.put(processable)
 
     async def consume_output(
@@ -146,9 +145,7 @@ class ExecutorQueue:
 
                     with contextlib.suppress(Exception):
                         await scope(
-                            MessagePublished(
-                                message=processable.message, topic=topic, output=item
-                            )
+                            MessagePublished(xmsg=processable, topic=topic, output=item)
                         )
         finally:
             await processable.unpark()

@@ -5,7 +5,7 @@ import pytest
 from saturn_engine.config import Config
 from saturn_engine.core import PipelineResults
 from saturn_engine.worker.executors import Executor
-from saturn_engine.worker.pipeline_message import PipelineMessage
+from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.services.tracing import Tracer
 from tests.utils.span_exporter import InMemorySpanExporter
@@ -28,29 +28,33 @@ def config(config: Config) -> Config:
 async def test_trace_message_executed(
     services_manager: ServicesManager,
     executor: Executor,
-    message_maker: t.Callable[..., PipelineMessage],
+    executable_maker: t.Callable[..., ExecutableMessage],
     span_exporter: InMemorySpanExporter,
 ) -> None:
     services_manager.services.cast_service(Tracer)
-    message = message_maker()
+    xmsg = executable_maker()
 
     @services_manager.services.s.hooks.message_executed.emit
-    async def scope(message: PipelineMessage) -> PipelineResults:
-        return await executor.process_message(message)
+    async def scope(xmsg: ExecutableMessage) -> PipelineResults:
+        return await executor.process_message(xmsg.message)
 
-    await scope(message)
+    await scope(xmsg)
 
     traces = span_exporter.get_finished_traces()
     assert len(traces) == 1
     assert traces[0].otel_span.name == "worker executing"
     assert traces[0].otel_span.attributes == {
-        "saturn.message.id": message.message.id,
+        "saturn.job.name": "fake-queue",
+        "saturn.input.name": "fake-topic",
+        "saturn.resources.names": (),
+        "saturn.message.id": xmsg.id,
         "saturn.pipeline.name": "tests.conftest.pipeline",
         "saturn.outputs.count": 0,
     }
 
     assert traces[0].children[0].otel_span.name == "executor executing"
     assert traces[0].children[0].otel_span.attributes == {
-        "saturn.message.id": message.message.id,
+        "saturn.resources.names": (),
+        "saturn.message.id": xmsg.id,
         "saturn.pipeline.name": "tests.conftest.pipeline",
     }

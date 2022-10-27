@@ -33,7 +33,7 @@ class MockMetricsService(BaseMetricsService):
 @pytest.mark.asyncio
 async def test_metrics(services_manager: ServicesManager) -> None:
     data = Mock()
-    pipeline_params = {"pipeline": data.info.name}
+    pipeline_params = {"pipeline": data.message.info.name}
     metric = MockMetricsService(services_manager.services)
     await metric.on_message_polled(data)
     metric.mock.incr.assert_awaited_once_with(
@@ -63,7 +63,7 @@ async def test_metrics(services_manager: ServicesManager) -> None:
 @pytest.mark.asyncio
 async def test_metrics_message_executed(services_manager: ServicesManager) -> None:
     data = Mock()
-    pipeline_params = {"pipeline": data.info.name}
+    pipeline_params = {"pipeline": data.message.info.name}
     metric = MockMetricsService(services_manager.services)
 
     results = PipelineResults(
@@ -110,7 +110,7 @@ async def test_metrics_message_executed(services_manager: ServicesManager) -> No
 @pytest.mark.asyncio
 async def test_metrics_message_published(services_manager: ServicesManager) -> None:
     data = Mock()
-    params = {"pipeline": data.message.info.name, "topic": data.topic.name}
+    params = {"pipeline": data.xmsg.message.info.name, "topic": data.topic.name}
     metric = MockMetricsService(services_manager.services)
 
     hook_generator = metric.on_message_published(data)

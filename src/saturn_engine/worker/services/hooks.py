@@ -11,13 +11,13 @@ if t.TYPE_CHECKING:
     from saturn_engine.core import PipelineResults
     from saturn_engine.core.api import QueueItem
     from saturn_engine.worker.executors.bootstrap import PipelineBootstrap
+    from saturn_engine.worker.executors.executable import ExecutableMessage
     from saturn_engine.worker.executors.executable import ExecutableQueue
-    from saturn_engine.worker.pipeline_message import PipelineMessage
     from saturn_engine.worker.topic import Topic
 
 
 class MessagePublished(t.NamedTuple):
-    message: "PipelineMessage"
+    xmsg: "ExecutableMessage"
     topic: "Topic"
     output: "PipelineOutput"
 
@@ -27,10 +27,10 @@ class Hooks:
 
     hook_failed: AsyncEventHook[Exception]
 
-    message_polled: AsyncEventHook["PipelineMessage"]
-    message_scheduled: AsyncEventHook["PipelineMessage"]
-    message_submitted: AsyncEventHook["PipelineMessage"]
-    message_executed: AsyncContextHook["PipelineMessage", "PipelineResults"]
+    message_polled: AsyncEventHook["ExecutableMessage"]
+    message_scheduled: AsyncEventHook["ExecutableMessage"]
+    message_submitted: AsyncEventHook["ExecutableMessage"]
+    message_executed: AsyncContextHook["ExecutableMessage", "PipelineResults"]
     message_published: AsyncContextHook["MessagePublished", None]
     output_blocked: AsyncEventHook["Topic"]
 
