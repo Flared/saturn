@@ -80,6 +80,7 @@ flake8-breakpoint = "*"
 flake8-isort = "*"
 isort = "*"
 mypy = "*"
+mypy-typing-asserts = "*"
 pytest = "*"
 nox-poetry = "*"
 pytest-asyncio = "*"
@@ -130,7 +131,7 @@ disallow_incomplete_defs = true
 disallow_untyped_defs = true
 disallow_untyped_calls = true
 namespace_packages = true
-plugins = "sqlalchemy.ext.mypy.plugin"
+plugins = ["sqlalchemy.ext.mypy.plugin", "mypy_typing_asserts.mypy_plugin"]
 
 [[tool.mypy.overrides]]
 module = [

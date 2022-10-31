@@ -27,6 +27,7 @@ mypy_packages = [
     "pytest",
     "pytest-mock",
     "types-freezegun",
+    "mypy-typing-asserts",
 ]
 
 

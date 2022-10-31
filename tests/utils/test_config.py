@@ -8,6 +8,10 @@ from saturn_engine.config import Config as SaturnConfig
 from saturn_engine.config import default_client_config
 from saturn_engine.config import default_config
 from saturn_engine.utils.config import Config
+from saturn_engine.utils.config import LazyConfig
+
+if t.TYPE_CHECKING:
+    from mypy_typing_asserts import assert_type
 
 
 class Interface:
@@ -60,6 +64,9 @@ def test_config() -> None:
 
     d: ExtraInterface = config.cast_namespace("d", ExtraInterface)
     assert d.y == 2
+
+    if t.TYPE_CHECKING:
+        assert_type[Interface](config.c)
 
 
 def test_any_config() -> None:
@@ -116,6 +123,22 @@ def test_config_error() -> None:
         ),
     ):
         config.load_object({"c": {"y": {"1": ["a"]}}})
+
+
+def test_lazy_config() -> None:
+    config = LazyConfig()
+
+    with pytest.raises(ValueError, match="Missing config key .*"):
+        config.cast_namespace("c", Interface.c)
+
+    config = config.load_object(ObjectConfig)
+    assert config.cast_namespace("c", Interface.c).x == "3"
+    extended_config = config.load_object({"c": {"x": "4"}})
+    assert config.cast_namespace("c", Interface.c).x == "3"
+    assert extended_config.cast_namespace("c", Interface.c).x == "4"
+
+    if t.TYPE_CHECKING:
+        assert_type[Interface.c](config.cast_namespace("c", Interface.c))
 
 
 def test_default_config() -> None:
