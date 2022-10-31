@@ -99,6 +99,37 @@ class Config(Generic[T]):
         return new_config
 
 
+class LazyConfig:
+    def __init__(self, objects: Iterable[Any] = ()) -> None:
+        self._layers: list[Any] = list(objects)
+        self._interfaces: dict[tuple[str, Type], Any] = {}
+
+    def load_object(self, obj: Any) -> "LazyConfig":
+        return self.load_objects([obj])
+
+    def load_objects(self, obj: Iterable[Any]) -> "LazyConfig":
+        new_config = self.copy()
+        new_config._layers.extend(obj)
+        return new_config
+
+    def cast_namespace(self, namespace: str, interface: Type[U]) -> U:
+        config = self._interfaces.get((namespace, interface))
+        if config:
+            return config
+
+        config = CINamespace()
+        load_config(
+            layers=self._layers, interfaces={namespace: interface}, config=config
+        )
+        self._interfaces[(namespace, interface)] = config[namespace]
+        return cast(U, config[namespace])
+
+    def copy(self) -> "LazyConfig":
+        new_config = type(self)()
+        new_config._layers.extend(self._layers)
+        return new_config
+
+
 def load_config_interface(
     *, interface: Type, layers: list, config: CINamespace, path: str = ""
 ) -> None:
