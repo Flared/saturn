@@ -3,9 +3,11 @@ from typing import Optional
 
 import contextlib
 from collections.abc import AsyncGenerator
+from functools import cached_property
 
 from saturn_engine.core import ResourceUsed
 from saturn_engine.core.api import QueueItem
+from saturn_engine.utils.config import LazyConfig
 from saturn_engine.worker.executors.parkers import Parkers
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources.manager import ResourceContext
@@ -61,6 +63,10 @@ class ExecutableMessage:
 
         for resource_used in resources_used:
             self.resources[resource_used.type].release_later(resource_used.release_at)
+
+    @cached_property
+    def config(self) -> LazyConfig:
+        return self.queue.config.load_object(self.message.message.config)
 
     def __str__(self) -> str:
         return str(self.message.message.id)
@@ -118,3 +124,12 @@ class ExecutableQueue:
         for topics in self.output.values():
             for topic in topics:
                 await topic.close()
+
+    @cached_property
+    def config(self) -> LazyConfig:
+        return LazyConfig(
+            [
+                self.services.s.config.r,
+                self.definition.config,
+            ]
+        )
