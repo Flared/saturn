@@ -156,10 +156,11 @@ def message_maker(fake_pipeline_info: PipelineInfo) -> t.Callable[..., PipelineM
         pipeline_info: PipelineInfo = fake_pipeline_info,
         args: t.Optional[dict[str, object]] = None,
         tags: t.Optional[dict[str, str]] = None,
+        config: t.Optional[dict[str, dict[str, t.Any]]] = None,
     ) -> PipelineMessage:
         return PipelineMessage(
             info=pipeline_info or fake_pipeline_info,
-            message=TopicMessage(args=args or {}, tags=tags or {}),
+            message=TopicMessage(args=args or {}, tags=tags or {}, config=config or {}),
         )
 
     return maker
@@ -186,17 +187,30 @@ def fake_topic() -> MemoryTopic:
 
 
 @pytest.fixture
-def fake_executable_queue(
+def executable_queue_maker(
     fake_queue_item: QueueItem, fake_topic: Topic, services_manager: ServicesManager
-) -> Iterator[ExecutableQueue]:
-    xmsg = ExecutableQueue(
-        definition=fake_queue_item,
-        topic=fake_topic,
-        output={},
-        services=services_manager.services,
-    )
+) -> t.Callable[..., ExecutableQueue]:
+    def maker(
+        *,
+        definition: QueueItem = fake_queue_item,
+        topic: Topic = fake_topic,
+        output: t.Union[dict, None] = None,
+    ) -> ExecutableQueue:
+        return ExecutableQueue(
+            definition=definition,
+            topic=topic,
+            output=output or {},
+            services=services_manager.services,
+        )
 
-    yield xmsg
+    return maker
+
+
+@pytest.fixture
+def fake_executable_queue(
+    executable_queue_maker: t.Callable[..., ExecutableQueue],
+) -> ExecutableQueue:
+    return executable_queue_maker()
 
 
 @pytest.fixture
@@ -205,16 +219,18 @@ def executable_maker(
     fake_executable_queue: ExecutableQueue,
 ) -> t.Callable[..., ExecutableMessage]:
     def maker(
-        args: t.Optional[dict[str, object]] = None,
+        *,
+        message: t.Optional[TopicMessage] = None,
         parker: t.Optional[Parkers] = None,
         pipeline_info: PipelineInfo = fake_pipeline_info,
         output: t.Optional[dict[str, list[Topic]]] = None,
+        executable_queue: ExecutableQueue = fake_executable_queue,
     ) -> ExecutableMessage:
         return ExecutableMessage(
-            queue=fake_executable_queue,
+            queue=executable_queue,
             message=PipelineMessage(
                 info=pipeline_info or fake_pipeline_info,
-                message=TopicMessage(args=args or {}),
+                message=message or TopicMessage(args={}),
             ),
             parker=parker or Parkers(),
             output=output or {},

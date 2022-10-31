@@ -196,8 +196,8 @@ def sublayers(layers: list, name: str) -> list:
 
 
 def get_attr(obj: Any, name: str) -> Any:
-    if isinstance(obj, dict):
-        ikey_map = {k.lower(): k for k in obj}
+    if isinstance(obj, Mapping):
+        ikey_map = {k.lower(): k for k in obj.keys()}
         k = ikey_map.get(name, _MISSING)
         return obj.get(k, _MISSING)
 
