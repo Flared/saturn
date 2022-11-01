@@ -19,13 +19,10 @@ class config(SaturnConfig):
 
     class services_manager(ServicesManagerConfig):
         services = [
-            "saturn_engine.worker.services.loggers.ConsoleLogging",
             "saturn_engine.worker.services.loggers.Logger",
             "saturn_engine.worker.services.tracing.Tracer",
             "saturn_engine.worker.services.metrics.MemoryMetrics",
             "saturn_engine.worker.services.rabbitmq.RabbitMQService",
-            # Use this service to quickly setup a tracer.
-            # "saturn_engine.worker.services.tracing.TracerConfig",
         ]
         strict_services = True
 
