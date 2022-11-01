@@ -63,7 +63,7 @@ class Inventory(abc.ABC, OptionsSchema):
             except RetryBatch as e:
                 e.check_max_retries(retries_count)
                 if e.__cause__:
-                    self.logger.error("Retrying to get batch", exc_info=e)
+                    self.logger.warning("Retrying to get batch", exc_info=e)
                 await e.wait_delay()
                 retries_count += 1
                 continue
