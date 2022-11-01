@@ -4,6 +4,7 @@ import pytest
 
 from saturn_engine.config import Config
 from saturn_engine.core import PipelineResults
+from saturn_engine.core import TopicMessage
 from saturn_engine.worker.executors import Executor
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.services.manager import ServicesManager
@@ -32,7 +33,9 @@ async def test_trace_message_executed(
     span_exporter: InMemorySpanExporter,
 ) -> None:
     services_manager.services.cast_service(Tracer)
-    xmsg = executable_maker()
+    xmsg = executable_maker(
+        message=TopicMessage(args={}, config={"tracing": {"rate": 0.5}})
+    )
 
     @services_manager.services.s.hooks.message_executed.emit
     async def scope(xmsg: ExecutableMessage) -> PipelineResults:
@@ -50,6 +53,7 @@ async def test_trace_message_executed(
         "saturn.message.id": xmsg.id,
         "saturn.pipeline.name": "tests.conftest.pipeline",
         "saturn.outputs.count": 0,
+        "saturn.sampling.rate": 0.5,
     }
 
     assert traces[0].children[0].otel_span.name == "executor executing"

@@ -11,11 +11,15 @@ from saturn_engine.worker.executors.bootstrap import PipelineBootstrap
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.pipeline_message import PipelineMessage
 
-from .. import MinimalService
+from .. import BaseServices
+from .. import Service
 
 
-class Tracer(MinimalService):
+class Tracer(Service[BaseServices, "Tracer.Options"]):
     name = "tracing"
+
+    class Options:
+        rate: float = 0.0
 
     async def open(self) -> None:
         self.tracer = trace.get_tracer(__name__)
@@ -26,10 +30,16 @@ class Tracer(MinimalService):
         self, xmsg: ExecutableMessage
     ) -> AsyncGenerator[None, PipelineResults]:
         operation_name = "worker executing"
+
+        sampling_attributes = {"saturn.sampling.rate": self.options_from(xmsg).rate}
+
         with self.tracer.start_as_current_span(
             operation_name,
             kind=trace.SpanKind.PRODUCER,
-            attributes=executable_message_attributes(xmsg),
+            attributes={
+                **sampling_attributes,
+                **executable_message_attributes(xmsg),
+            },
         ) as span:
 
             opentelemetry.propagate.inject(
@@ -70,7 +80,7 @@ class PipelineTracer:
 def executable_message_attributes(
     xmsg: ExecutableMessage,
 ) -> Mapping[str, AttributeValue]:
-    xmsg.message
+
     return {
         "saturn.job.name": xmsg.queue.name,
         "saturn.input.name": xmsg.queue.definition.input.name,
