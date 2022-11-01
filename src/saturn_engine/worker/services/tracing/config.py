@@ -22,7 +22,7 @@ class TracerConfig(Service[BaseServices, "TracerConfig.Options"]):
         exporters: list[str] = ["opentelemetry.sdk.trace.export.ConsoleSpanExporter"]
 
     async def open(self) -> None:
-        from opentelemetry.sdk.trace import sampling
+        from .sampler import ParentBasedSaturnSampler
 
         self.services.hooks.executor_initialized.register(
             functools.partial(
@@ -31,7 +31,7 @@ class TracerConfig(Service[BaseServices, "TracerConfig.Options"]):
         )
         self.setup_tracer(
             exporter_names=self.options.exporters,
-            sampler=sampling.ParentBased(root=sampling.DEFAULT_ON),
+            sampler=ParentBasedSaturnSampler(),
             service_name="saturn_worker",
         )
 

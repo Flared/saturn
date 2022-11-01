@@ -1,4 +1,4 @@
-import typing
+import typing as t
 from typing import Any
 from typing import ClassVar
 from typing import Generic
@@ -11,6 +11,7 @@ from saturn_engine.config import Config
 from saturn_engine.utils import Namespace
 from saturn_engine.utils import inspect as extra_inspect
 from saturn_engine.utils.config import Config as BaseConfig
+from saturn_engine.utils.config import LazyConfig
 from saturn_engine.worker.resources.manager import ResourcesManager
 
 from .hooks import Hooks
@@ -27,6 +28,13 @@ class BaseServices:
 TServices = TypeVar("TServices", bound=BaseServices)
 TOptions = TypeVar("TOptions")
 
+
+class ConfigContainer(t.Protocol):
+    @property
+    def config(self) -> t.Union[LazyConfig, BaseConfig]:
+        ...
+
+
 T = TypeVar("T")
 U = TypeVar("U")
 
@@ -41,9 +49,12 @@ class Service(Generic[TServices, TOptions]):
 
     @property
     def options(self) -> TOptions:
+        return self.options_from(self.services)
+
+    def options_from(self, obj: ConfigContainer) -> TOptions:
         if self.Options is None:
             raise ValueError("No options defined.")
-        return self.services.config.cast_namespace(self.name, self.Options)
+        return obj.config.cast_namespace(self.name, self.Options)
 
     async def open(self) -> None:
         return None
@@ -64,7 +75,7 @@ class ServicesNamespace(Namespace, Generic[T]):
         self.s: T = cast(T, self)
 
     def cast(self, interface: Type[U]) -> "ServicesNamespace[U]":
-        services_annotations = typing.get_type_hints(interface)
+        services_annotations = t.get_type_hints(interface)
         for service in services_annotations.values():
             self.cast_service(service)
         return cast(ServicesNamespace[U], self)
