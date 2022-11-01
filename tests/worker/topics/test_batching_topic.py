@@ -149,3 +149,42 @@ async def test_batching_topic_context_manager(
 
     assert batch_number == 2
     await topic.close()
+
+
+@pytest.mark.asyncio
+async def test_batching_topic_tags() -> None:
+    BATCH_SIZE = 5
+
+    topic = BatchingTopic(
+        options=BatchingTopic.Options(
+            topic=TopicItem(
+                name="static-topic-with-tags",
+                type="StaticTopic",
+                options={
+                    "messages": [
+                        {"id": "1", "args": {}, "tags": {"hello": "1"}},
+                        {"id": "2", "args": {}, "tags": {"hello": "2", "hi": "a"}},
+                        {"id": "3", "args": {}, "tags": {"hello": "3"}},
+                        {"id": "4", "args": {}, "tags": {"hello": "4"}},
+                        {"id": "5", "args": {}, "tags": {"hello": "5", "hi": "b"}},
+                    ],
+                },
+            ),
+            batch_size=BATCH_SIZE,
+        ),
+        services=ServicesNamespace(strict=False),
+    )
+
+    async with alib.scoped_iter(topic.run()) as scoped_topic_iter:
+        context = await scoped_topic_iter.__anext__()
+        assert isinstance(context, AsyncContextManager)
+        async with context as message:
+            ...
+
+    await topic.close()
+
+    assert message.tags == {
+        "batched_ids": "1, 2, 3, 4, 5",
+        "hello": "1, 2, 3, 4, 5",
+        "hi": "a, b",
+    }

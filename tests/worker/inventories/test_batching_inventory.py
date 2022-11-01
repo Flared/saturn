@@ -32,10 +32,21 @@ async def test_batching_inventory() -> None:
             },
         ),
     ]
+    assert [i.tags for i in items] == [
+        {"batched_ids": "0, 1, 2"},
+        {"batched_ids": "3, 4, 5"},
+        {"batched_ids": "6, 7, 8"},
+        {"batched_ids": "9"},
+    ]
 
     items = await alib.list(inventory.iterate(after="4"))
 
     assert [(i.id, i.args) for i in items] == [
         ("7", {"batch": [{"a": "5"}, {"a": "6"}, {"a": "7"}]}),
         ("9", {"batch": [{"a": "8"}, {"a": "9"}]}),
+    ]
+
+    assert [i.tags for i in items] == [
+        {"batched_ids": "5, 6, 7"},
+        {"batched_ids": "8, 9"},
     ]
