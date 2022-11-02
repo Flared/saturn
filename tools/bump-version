@@ -25,7 +25,7 @@ then
   fail "error: expected 1 argument 'version'"
 fi
 
-if ! [[ "${current_version}" < "${version}" ]]
+if ! (python -c "from packaging import version; assert version.parse('${version}') > version.parse('${current_version}')" 2> /dev/null)
 then
   fail "error: version must be greater than ${current_version}"
 fi
