@@ -13,9 +13,11 @@ import pytest
 
 from saturn_engine.config import Config
 from saturn_engine.core import TopicMessage
+from saturn_engine.utils import utcnow
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.services.rabbitmq import RabbitMQService
 from saturn_engine.worker.topics import RabbitMQTopic
+from saturn_engine.worker.topics.rabbitmq import RabbitMQSerializer
 from tests.utils.tcp_proxy import TcpProxy
 
 
@@ -75,6 +77,30 @@ async def test_rabbitmq_topic(
     messages = [
         TopicMessage(id="0", args={"n": 1}),
         TopicMessage(id="1", args={"n": 2}),
+    ]
+
+    for message in messages:
+        await topic.publish(message, wait=True)
+
+    async with alib.scoped_iter(topic.run()) as topic_iter:
+        items = []
+        async for context in alib.islice(topic_iter, 2):
+            async with context as message:
+                items.append(message)
+        assert items == messages
+
+    await topic.close()
+
+
+@pytest.mark.asyncio
+async def test_rabbitmq_topic_pickle(
+    topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]]
+) -> None:
+    topic = await topic_maker(serializer=RabbitMQSerializer.PICKLE)
+
+    messages = [
+        TopicMessage(id="0", args={"n": b"1", "time": utcnow()}),
+        TopicMessage(id="1", args={"n": b"2", "time": utcnow()}),
     ]
 
     for message in messages:
