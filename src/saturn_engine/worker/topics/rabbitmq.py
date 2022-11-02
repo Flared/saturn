@@ -3,7 +3,9 @@ import typing as t
 import asyncio
 import contextlib
 import dataclasses
+import enum
 import json
+import pickle  # noqa: S403
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -25,6 +27,11 @@ from saturn_engine.worker.services.rabbitmq import RabbitMQService
 from . import Topic
 
 
+class RabbitMQSerializer(enum.Enum):
+    JSON = "json"
+    PICKLE = "pickle"
+
+
 class RabbitMQTopic(Topic):
     """A queue that consume message from RabbitMQ"""
 
@@ -38,6 +45,7 @@ class RabbitMQTopic(Topic):
         durable: bool = True
         max_length: t.Optional[int] = None
         prefetch_count: t.Optional[int] = None
+        serializer: RabbitMQSerializer = RabbitMQSerializer.JSON
 
     class TopicServices:
         rabbitmq: RabbitMQService
@@ -89,7 +97,7 @@ class RabbitMQTopic(Topic):
                         raise ValueError("Channel has no exchange")
                     await exchange.publish(
                         aio_pika.Message(
-                            body=json.dumps(asdict(message)).encode(),
+                            body=self._serialize(message),
                             delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
                         ),
                         routing_key=self.options.queue_name,
@@ -141,7 +149,7 @@ class RabbitMQTopic(Topic):
         self, message: aio_pika.abc.AbstractIncomingMessage
     ) -> AsyncIterator[TopicMessage]:
         async with message.process():
-            yield fromdict(json.loads(message.body.decode()), TopicMessage)
+            yield self._deserialize(message)
 
     @cached_property
     async def channel(self) -> aio_pika.abc.AbstractChannel:
@@ -185,3 +193,20 @@ class RabbitMQTopic(Topic):
 
     async def close(self) -> None:
         await self.exit_stack.aclose()
+
+    def _serialize(self, message: TopicMessage) -> bytes:
+        if self.options.serializer == RabbitMQSerializer.PICKLE:
+            return pickle.dumps(message)
+
+        return json.dumps(asdict(message)).encode()
+
+    def _deserialize(
+        self, message: aio_pika.abc.AbstractIncomingMessage
+    ) -> TopicMessage:
+        if self.options.serializer == RabbitMQSerializer.PICKLE:
+            deserialized = pickle.loads(message.body)  # noqa: S301
+            if not isinstance(deserialized, TopicMessage):
+                raise Exception("Deserialized RabbitMQ message is not a TopicMessage.")
+            return deserialized
+
+        return fromdict(json.loads(message.body.decode()), TopicMessage)
