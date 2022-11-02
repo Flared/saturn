@@ -16,6 +16,7 @@ from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.executable import ExecutableQueue
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.services.hooks import MessagePublished
+from saturn_engine.worker.services.tracing import get_trace_id
 
 from .. import BaseServices
 from .. import Service
@@ -47,6 +48,13 @@ def topic_message_data(
         "id": message.id,
         "tags": message.tags,
     } | ({"args": message.args} if verbose else {})
+
+
+def trace_data() -> dict[str, t.Any]:
+    trace_id = get_trace_id()
+    if trace_id is None:
+        return {}
+    return {"trace_id": trace_id}
 
 
 class Logger(Service[BaseServices, "Logger.Options"]):
@@ -108,25 +116,32 @@ class Logger(Service[BaseServices, "Logger.Options"]):
     async def on_message_executed(
         self, xmsg: ExecutableMessage
     ) -> AsyncGenerator[None, PipelineResults]:
+        trace_info = trace_data()
         self.message_logger.debug(
             "Executing message",
-            extra={"data": executable_message_data(xmsg, verbose=self.verbose)},
+            extra={
+                "data": trace_info | executable_message_data(xmsg, verbose=self.verbose)
+            },
         )
         try:
             result = yield
             self.message_logger.debug(
                 "Executed message",
                 extra={
-                    "data": executable_message_data(xmsg, verbose=self.verbose)
-                    | {
+                    "data": {
                         "result": self.result_data(result),
                     }
+                    | trace_info
+                    | executable_message_data(xmsg, verbose=self.verbose)
                 },
             )
         except Exception:
             self.message_logger.exception(
                 "Failed to execute message",
-                extra={"data": executable_message_data(xmsg, verbose=self.verbose)},
+                extra={
+                    "data": trace_info
+                    | executable_message_data(xmsg, verbose=self.verbose)
+                },
             )
 
     async def on_message_published(
@@ -191,7 +206,9 @@ class PipelineLogger:
     def on_pipeline_executed(
         self, message: PipelineMessage
     ) -> Generator[None, PipelineResults, None]:
-        extra = {"data": pipeline_message_data(message, verbose=self.verbose)}
+        extra = {
+            "data": trace_data() | pipeline_message_data(message, verbose=self.verbose)
+        }
         with self.log_context(extra["data"]):
             self.logger.debug("Executing pipeline", extra=extra)
             try:
