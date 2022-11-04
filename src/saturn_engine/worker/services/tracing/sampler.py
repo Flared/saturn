@@ -27,10 +27,10 @@ class SaturnSampler(sampling.Sampler):
             return _drop(parent_context)
 
         sampling_rate = attributes.get("saturn.sampling.rate")
-        if not isinstance(sampling_rate, float):
+        if not isinstance(sampling_rate, (float, int)):
             return _drop(parent_context)
 
-        rate_sampler = sampling.TraceIdRatioBased(rate=sampling_rate)
+        rate_sampler = sampling.TraceIdRatioBased(rate=float(sampling_rate))
         return rate_sampler.should_sample(
             parent_context=parent_context,
             trace_id=trace_id,
