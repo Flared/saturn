@@ -19,8 +19,8 @@ class config(SaturnConfig):
 
     class services_manager(ServicesManagerConfig):
         services = [
-            "saturn_engine.worker.services.loggers.Logger",
             "saturn_engine.worker.services.tracing.Tracer",
+            "saturn_engine.worker.services.loggers.Logger",
             "saturn_engine.worker.services.metrics.MemoryMetrics",
             "saturn_engine.worker.services.rabbitmq.RabbitMQService",
         ]
@@ -52,6 +52,9 @@ class config(SaturnConfig):
 
     class redis(RedisConfig):
         dsn = "redis://localhost:6379"
+
+    class tracer:
+        rate: float = 0.0
 
 
 class client_config(config):

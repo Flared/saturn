@@ -16,7 +16,7 @@ from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.executable import ExecutableQueue
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.services.hooks import MessagePublished
-from saturn_engine.worker.services.tracing import get_trace_id
+from saturn_engine.worker.services.tracing import get_trace_context
 
 from .. import BaseServices
 from .. import Service
@@ -51,10 +51,10 @@ def topic_message_data(
 
 
 def trace_data() -> dict[str, t.Any]:
-    trace_id = get_trace_id()
-    if trace_id is None:
+    context = get_trace_context()
+    if context is None:
         return {}
-    return {"trace_id": trace_id}
+    return {"trace": context}
 
 
 class Logger(Service[BaseServices, "Logger.Options"]):
