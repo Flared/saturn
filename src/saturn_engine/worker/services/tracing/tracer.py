@@ -1,3 +1,5 @@
+import typing as t
+
 from collections.abc import AsyncGenerator
 from collections.abc import Generator
 from collections.abc import Mapping
@@ -14,9 +16,11 @@ from saturn_engine.worker.pipeline_message import PipelineMessage
 from .. import BaseServices
 from .. import Service
 
+_METADATA_KEY: t.Final[str] = "tracing"
+
 
 class Tracer(Service[BaseServices, "Tracer.Options"]):
-    name = "tracing"
+    name = "tracer"
 
     class Options:
         rate: float = 0.0
@@ -43,7 +47,7 @@ class Tracer(Service[BaseServices, "Tracer.Options"]):
         ) as span:
 
             opentelemetry.propagate.inject(
-                xmsg.message.message.metadata.setdefault("tracing", {})
+                xmsg.message.message.metadata.setdefault(_METADATA_KEY, {})
             )
 
             results = yield
@@ -64,7 +68,7 @@ class PipelineTracer:
         self, message: PipelineMessage
     ) -> Generator[None, PipelineResults, None]:
         tracectx = opentelemetry.propagate.extract(
-            message.message.metadata.get("tracing", {})
+            message.message.metadata.get(_METADATA_KEY, {})
         )
 
         operation_name = "executor executing"

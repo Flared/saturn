@@ -64,7 +64,7 @@ spec:
       name: example.pipelines.echo
       resources: {"api_key": "example.resources.TestApiKey"}
     config:
-      tracing:
+      tracer:
         rate: 0.5
 ---
 apiVersion: saturn.flared.io/v1alpha1

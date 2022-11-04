@@ -34,7 +34,7 @@ async def test_trace_message_executed(
 ) -> None:
     services_manager.services.cast_service(Tracer)
     xmsg = executable_maker(
-        message=TopicMessage(args={}, config={"tracing": {"rate": 0.5}})
+        message=TopicMessage(args={}, config={"tracer": {"rate": 0.5}})
     )
 
     @services_manager.services.s.hooks.message_executed.emit
