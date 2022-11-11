@@ -91,7 +91,7 @@ class NestedTestTopic(Topic):
         self.exited_context_managers: list[int] = []
 
     async def publish(self, message: TopicMessage, wait: bool) -> bool:
-        ...
+        return True
 
     async def run(self) -> AsyncGenerator[TopicOutput, None]:
         for i in range(4):

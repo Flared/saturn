@@ -12,7 +12,7 @@ from saturn_engine.worker_manager.services.sync import sync_jobs
 
 
 def get_app(
-    config: dict = None,
+    config: Optional[dict] = None,
 ) -> SaturnApp:
     worker_manager_context = WorkerManagerContext(
         config=default_config_with_env().c.worker_manager,

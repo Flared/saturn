@@ -20,7 +20,7 @@ from .options import fromdict
 T = TypeVar("T")
 
 
-class Json(Generic[T]):
+class Json(flask.wrappers.Response, Generic[T]):
     pass
 
 

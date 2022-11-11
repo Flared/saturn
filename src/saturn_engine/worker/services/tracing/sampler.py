@@ -18,10 +18,10 @@ class SaturnSampler(sampling.Sampler):
         parent_context: t.Optional[Context],
         trace_id: int,
         name: str,
-        kind: SpanKind = None,
-        attributes: Attributes = None,
-        links: Sequence[Link] = None,
-        trace_state: TraceState = None,
+        kind: t.Optional[SpanKind] = None,
+        attributes: t.Optional[Attributes] = None,
+        links: t.Optional[Sequence[Link]] = None,
+        trace_state: t.Optional[TraceState] = None,
     ) -> sampling.SamplingResult:
         if not attributes:
             return _drop(parent_context)
@@ -35,10 +35,10 @@ class SaturnSampler(sampling.Sampler):
             parent_context=parent_context,
             trace_id=trace_id,
             name=name,
-            kind=kind,
-            attributes=attributes,
-            links=links,
-            trace_state=trace_state,
+            kind=kind,  # type: ignore[arg-type]
+            attributes=attributes,  # type: ignore[arg-type]
+            links=links,  # type: ignore[arg-type]
+            trace_state=trace_state,  # type: ignore[arg-type]
         )
 
     def get_description(self) -> str:
@@ -60,7 +60,7 @@ def _drop(parent_context: t.Optional[Context]) -> sampling.SamplingResult:
     return sampling.SamplingResult(
         sampling.Decision.DROP,
         {},
-        _get_parent_trace_state(parent_context),
+        _get_parent_trace_state(parent_context),  # type: ignore[arg-type]
     )
 
 
