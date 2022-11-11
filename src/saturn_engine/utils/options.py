@@ -62,7 +62,9 @@ class ObjectUnion(marshmallow.fields.Field):
             name: schema_for(cast(Hashable, klass)) for name, klass in union.items()
         }
 
-    def _serialize(self, value: Any, attr: str, obj: Any, **kwargs: Any) -> dict:
+    def _serialize(
+        self, value: Any, attr: Optional[str], obj: Any, **kwargs: Any
+    ) -> dict:
         klass = value.__class__
         name = self.class_to_name.get(klass)
         if name is None:
