@@ -9,6 +9,7 @@ from saturn_engine.core import PipelineInfo
 from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResults
 from saturn_engine.core import TopicMessage
+from saturn_engine.core.api import TopicItem
 from saturn_engine.worker.executors import Executor
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.parkers import Parkers
@@ -41,6 +42,12 @@ class FakeExecutor(Executor):
             ],
             resources=[],
         )
+
+
+class FakeFailingExecutor(FakeExecutor):
+    async def process_message(self, message: PipelineMessage) -> PipelineResults:
+        self.processed += 1
+        raise Exception("TEST_EXCEPTION")
 
 
 @pytest.mark.asyncio
@@ -197,3 +204,53 @@ async def test_executor_wait_pusblish_and_queue(
     assert executor.processed == 2
     assert output_queue.qsize() == 0
     assert not parker.locked()
+
+
+@pytest.mark.asyncio
+async def test_executor_error_handler(
+    fake_executable_maker_with_output: Callable[..., ExecutableMessage],
+    event_loop: TimeForwardLoop,
+    executor_queue_maker: Callable[..., ExecutorQueue],
+) -> None:
+    executor = FakeFailingExecutor()
+    executor.concurrency = 1
+    executor_manager = executor_queue_maker(executor=executor)
+    output_queue = get_queue("q1", maxsize=1)
+    output_topics = {
+        "error:TEST_EXCEPTION:Exception": [
+            TopicItem(
+                "q1",
+                "MemoryTopic",
+            )
+        ]
+    }
+    # Execute our failing message
+    async with event_loop.until_idle():
+        asyncio.create_task(
+            executor_manager.submit(
+                fake_executable_maker_with_output(
+                    output=output_topics,
+                )
+            )
+        )
+
+    # Our pipeline should cause a test exception and publish it in its channel
+    assert output_queue.qsize() == 1
+    output: TopicMessage = output_queue.get_nowait()
+
+    # We can't really assert the traceback and id fields
+    # so we just copy them from our output
+    expected_message = TopicMessage(
+        id=output.id,
+        args={
+            "type": "Exception",
+            "module": "tests.worker.test_executor",
+            "message": "TEST_EXCEPTION",
+            "traceback": output.args["traceback"],
+        },
+        config={},
+        metadata={},
+        tags={},
+    )
+
+    assert expected_message == output

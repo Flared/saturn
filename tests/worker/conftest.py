@@ -214,6 +214,56 @@ def fake_executable_queue(
 
 
 @pytest.fixture
+def fake_executable_maker_with_output(
+    fake_pipeline_info: PipelineInfo,
+    fake_topic: Topic,
+    services_manager: ServicesManager,
+) -> t.Callable[..., ExecutableMessage]:
+    def maker(
+        *,
+        message: t.Optional[TopicMessage] = None,
+        parker: t.Optional[Parkers] = None,
+        pipeline_info: PipelineInfo = fake_pipeline_info,
+        output: t.Optional[dict[str, list[TopicItem]]] = None,
+    ) -> ExecutableMessage:
+        queue_item = QueueItem(
+            name="fake-failing-queue",
+            pipeline=QueuePipeline(info=fake_pipeline_info, args={}),
+            output=output or {},
+            input=TopicItem(
+                name="fake-topic",
+                type="MemoryTopic",
+            ),
+        )
+
+        output_topics: dict[str, list[Topic]] = {}
+        for channel, topic_items in queue_item.output.items():
+            output_topics[channel] = [
+                MemoryTopic(MemoryTopic.Options(name=topic_item.name))
+                for topic_item in topic_items
+            ]
+
+        executable_queue = ExecutableQueue(
+            definition=queue_item,
+            topic=fake_topic,
+            output=output_topics,
+            services=services_manager.services,
+        )
+
+        return ExecutableMessage(
+            queue=executable_queue,
+            message=PipelineMessage(
+                info=pipeline_info or fake_pipeline_info,
+                message=message or TopicMessage(args={}),
+            ),
+            parker=parker or Parkers(),
+            output=executable_queue.output,
+        )
+
+    return maker
+
+
+@pytest.fixture
 def executable_maker(
     fake_pipeline_info: PipelineInfo,
     fake_executable_queue: ExecutableQueue,
