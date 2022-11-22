@@ -4,3 +4,4 @@ test.db
 /.venv-tools
 /dist
 *.egg-info
+/.python-version

@@ -215,7 +215,7 @@ class PipelineLogger:
                 yield
                 self.logger.debug("Executed pipeline", extra=extra)
             except Exception:
-                self.logger.exception("Failed to executed pipeline", extra=extra)
+                self.logger.exception("Failed to execute pipeline", extra=extra)
 
     @contextlib.contextmanager
     def log_context(self, data: dict) -> Iterator[None]:
