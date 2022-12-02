@@ -1,7 +1,10 @@
 import typing as t
 
+import asyncio
 import dataclasses
+from unittest.mock import AsyncMock
 
+import asyncstdlib as alib
 import pytest
 
 from saturn_engine.config import Config
@@ -9,6 +12,8 @@ from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import QueueItem
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.executable import ExecutableQueue
+from saturn_engine.worker.topics import MemoryTopic
+from tests.utils import TimeForwardLoop
 
 
 class ServiceA:
@@ -86,3 +91,32 @@ def test_config_override(
     assert xmsg.config.cast_namespace("test-service-a", ServiceA).x == "foo"
     assert xmsg.config.cast_namespace("test-service-b", ServiceB).y == "bar-queue"
     assert xmsg.config.cast_namespace("test-service-b", ServiceB).z == "biz-message"
+
+
+async def test_executable_close(
+    executable_queue_maker: t.Callable[..., ExecutableQueue],
+    event_loop: TimeForwardLoop,
+) -> None:
+    output_topic = MemoryTopic(MemoryTopic.Options(name="output_topic"))
+    output_topic.close = AsyncMock()  # type: ignore[assignment]
+
+    input_topic = MemoryTopic(MemoryTopic.Options(name="input_topic"))
+    input_topic.close = AsyncMock()  # type: ignore[assignment]
+    await input_topic.publish(TopicMessage(args={}), wait=True)
+
+    executable_queue = executable_queue_maker(
+        topic=input_topic, output={"default": [output_topic]}
+    )
+
+    xmsg_iter = executable_queue.iterable
+
+    xmsg_ctx = await alib.anext(xmsg_iter)
+    async with xmsg_ctx._context:
+        async with event_loop.until_idle():
+            close_task = asyncio.create_task(executable_queue.close())
+        input_topic.close.assert_awaited()
+        output_topic.close.assert_not_called()
+        assert not close_task.done()
+
+    await close_task
+    output_topic.close.assert_awaited()
