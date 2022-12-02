@@ -1,8 +1,10 @@
 from typing import AsyncContextManager
 from typing import Optional
 
+import asyncio
 import contextlib
 from collections.abc import AsyncGenerator
+from collections.abc import Iterator
 from functools import cached_property
 
 from saturn_engine.core import ResourceUsed
@@ -93,6 +95,10 @@ class ExecutableQueue:
         self.parkers = Parkers()
         self.iterable = self.run()
 
+        self.is_closed = False
+        self.pending_messages_count = 0
+        self.done = asyncio.Event()
+
     async def run(self) -> AsyncGenerator[ExecutableMessage, None]:
         try:
             async for message in self.topic.run():
@@ -114,16 +120,38 @@ class ExecutableQueue:
                 )
                 await self.services.s.hooks.message_polled.emit(executable_message)
                 await self.parkers.wait()
+                executable_message._context.enter_context(self.pending_context())
                 yield executable_message
         finally:
             await self.close()
 
     async def close(self) -> None:
+        if self.is_closed:
+            return
+        self.is_closed = True
+
         # TODO: don't clean topics here once topics are shared between jobs.
         await self.topic.close()
+
+        # Wait until all in-fligth messages are done before closing outputs.
+        await self.wait_for_done()
         for topics in self.output.values():
             for topic in topics:
                 await topic.close()
+
+    async def wait_for_done(self) -> None:
+        if self.pending_messages_count:
+            await self.done.wait()
+
+    @contextlib.contextmanager
+    def pending_context(self) -> Iterator[None]:
+        self.pending_messages_count += 1
+        try:
+            yield
+        finally:
+            self.pending_messages_count -= 1
+            if self.is_closed and self.pending_messages_count == 0:
+                self.done.set()
 
     @cached_property
     def config(self) -> LazyConfig:
