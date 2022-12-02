@@ -199,3 +199,13 @@ async def test_rabbitmq_topic_channel_closed(
     assert await topic.publish(message, wait=True)
 
     await topic.close()
+
+
+@pytest.mark.asyncio
+async def test_closed_rabbitmq_topic(
+    topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]]
+) -> None:
+    topic = await topic_maker()
+    await topic.close()
+    with pytest.raises(Exception):
+        await topic.publish(TopicMessage(id="0", args={"n": 0}), wait=True)

@@ -14,6 +14,10 @@ from saturn_engine.utils.options import OptionsSchema
 TopicOutput = Union[AsyncContextManager[TopicMessage], TopicMessage]
 
 
+class TopicClosedError(Exception):
+    pass
+
+
 class Topic(OptionsSchema):
     name: str
 
