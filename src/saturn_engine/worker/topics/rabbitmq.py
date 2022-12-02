@@ -24,7 +24,8 @@ from saturn_engine.utils.options import fromdict
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.rabbitmq import RabbitMQService
 
-from . import Topic
+from ..topic import Topic
+from ..topic import TopicClosedError
 
 
 class RabbitMQSerializer(enum.Enum):
@@ -55,13 +56,17 @@ class RabbitMQTopic(Topic):
         self.options = options
         self.services = services.cast(RabbitMQTopic.TopicServices)
         self.exit_stack = contextlib.AsyncExitStack()
+        self.is_closed = False
         self._queue: t.Optional[aio_pika.abc.AbstractQueue] = None
         self._publish_lock = SharedLock(max_reservations=8)
 
     async def run(self) -> AsyncGenerator[t.AsyncContextManager[TopicMessage], None]:
+        if self.is_closed:
+            raise TopicClosedError()
+
         self.logger.info("Starting queue %s", self.options.queue_name)
         attempt = 0
-        while True:
+        while not self.is_closed:
             try:
                 self.logger.info("Processing queue %s", self.options.queue_name)
                 queue = await self.queue
@@ -81,6 +86,9 @@ class RabbitMQTopic(Topic):
         message: TopicMessage,
         wait: bool,
     ) -> bool:
+        if self.is_closed:
+            raise TopicClosedError()
+
         attempt = 0
 
         # Wait for the queue to unblock.
@@ -192,6 +200,7 @@ class RabbitMQTopic(Topic):
         return await self.queue
 
     async def close(self) -> None:
+        self.is_closed = True
         await self.exit_stack.aclose()
 
     def _serialize(self, message: TopicMessage) -> bytes:
