@@ -22,6 +22,11 @@ class MessagePublished(t.NamedTuple):
     output: "PipelineOutput"
 
 
+class ExceptionInfo(t.NamedTuple):
+    xmsg: "ExecutableMessage"
+    exc: BaseException
+
+
 class Hooks:
     name = "hooks"
 
@@ -32,6 +37,7 @@ class Hooks:
     message_submitted: AsyncEventHook["ExecutableMessage"]
     message_executed: AsyncContextHook["ExecutableMessage", "PipelineResults"]
     message_published: AsyncContextHook["MessagePublished", None]
+    unhandled_error: AsyncEventHook["ExceptionInfo"]
     output_blocked: AsyncEventHook["Topic"]
 
     work_queue_built: AsyncContextHook["QueueItem", "ExecutableQueue"]
@@ -45,6 +51,7 @@ class Hooks:
         self.message_submitted = AsyncEventHook(error_handler=self.hook_failed.emit)
         self.message_executed = AsyncContextHook(error_handler=self.hook_failed.emit)
         self.message_published = AsyncContextHook(error_handler=self.hook_failed.emit)
+        self.unhandled_error = AsyncEventHook(error_handler=self.hook_failed.emit)
         self.output_blocked = AsyncEventHook(error_handler=self.hook_failed.emit)
         self.executor_initialized = EventHook(
             error_handler=partial(self.remote_hook_failed, name="executor_initialized")

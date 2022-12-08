@@ -10,6 +10,7 @@ from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.error_handling import process_pipeline_exception
 from saturn_engine.worker.resources.manager import ResourceUnavailable
 from saturn_engine.worker.services import Services
+from saturn_engine.worker.services.hooks import ExceptionInfo
 from saturn_engine.worker.services.hooks import MessagePublished
 
 from . import Executor
@@ -69,6 +70,10 @@ class ExecutorQueue:
                                 xmsg.queue.definition.output, exc_value, exc_traceback
                             )
                             if not result:
+                                # If the exception is not handled, emit it and raise
+                                await self.services.s.hooks.unhandled_error.emit(
+                                    ExceptionInfo(xmsg=xmsg, exc=exc_value)
+                                )
                                 raise
                             return result
 

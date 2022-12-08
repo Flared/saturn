@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 
 from saturn_engine.core import PipelineResults
 from saturn_engine.worker.executors.executable import ExecutableMessage
+from saturn_engine.worker.services.hooks import ExceptionInfo
 from saturn_engine.worker.services.hooks import MessagePublished
 from saturn_engine.worker.topic import Topic
 
@@ -26,6 +27,7 @@ class BaseMetricsService(
         self.services.hooks.message_scheduled.register(self.on_message_scheduled)
         self.services.hooks.message_submitted.register(self.on_message_submitted)
         self.services.hooks.message_executed.register(self.on_message_executed)
+        self.services.hooks.unhandled_error.register(self.on_unhandled_error)
         self.services.hooks.message_published.register(self.on_message_published)
         self.services.hooks.output_blocked.register(self.on_output_blocked)
 
@@ -40,6 +42,13 @@ class BaseMetricsService(
     async def on_message_submitted(self, xmsg: ExecutableMessage) -> None:
         params = {"pipeline": xmsg.message.info.name}
         await self.incr("message.submitted", params=params)
+
+    async def on_unhandled_error(self, exc_info: ExceptionInfo) -> None:
+        params = {
+            "pipeline": exc_info.xmsg.message.info.name,
+            "error": str(exc_info.exc),
+        }
+        await self.incr("message.unhandled_error", params=params)
 
     async def on_message_executed(
         self, xmsg: ExecutableMessage

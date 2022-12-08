@@ -252,4 +252,5 @@ def register_hooks_handler(services: Services) -> AsyncMock:
     services.s.hooks.message_published.register(
         async_context_mock_handler(_hooks_handler.message_published)
     )
+    services.s.hooks.unhandled_error.register(_hooks_handler.unhandled_error)
     return _hooks_handler

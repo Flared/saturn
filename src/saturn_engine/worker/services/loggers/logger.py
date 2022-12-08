@@ -15,6 +15,7 @@ from saturn_engine.worker.executors.bootstrap import PipelineBootstrap
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.executable import ExecutableQueue
 from saturn_engine.worker.pipeline_message import PipelineMessage
+from saturn_engine.worker.services.hooks import ExceptionInfo
 from saturn_engine.worker.services.hooks import MessagePublished
 from saturn_engine.worker.services.tracing import get_trace_context
 
@@ -76,6 +77,7 @@ class Logger(Service[BaseServices, "Logger.Options"]):
         self.services.hooks.message_submitted.register(self.on_message_submitted)
         self.services.hooks.message_executed.register(self.on_message_executed)
         self.services.hooks.message_published.register(self.on_message_published)
+        self.services.hooks.unhandled_error.register(self.on_unhandled_error)
         self.services.hooks.executor_initialized.register(on_executor_initialized)
 
     @property
@@ -94,6 +96,19 @@ class Logger(Service[BaseServices, "Logger.Options"]):
             self.engine_logger.exception(
                 "Failed to build item", extra={"data": self.queue_item_data(item)}
             )
+
+    async def on_unhandled_error(self, exc_info: ExceptionInfo) -> None:
+        self.message_logger.error(
+            "Unhandled error",
+            extra={
+                "data": {
+                    "exception": str(exc_info.exc),
+                    "message": executable_message_data(
+                        exc_info.xmsg, verbose=self.verbose
+                    ),
+                }
+            },
+        )
 
     async def on_message_polled(self, xmsg: ExecutableMessage) -> None:
         self.message_logger.debug(
@@ -136,13 +151,15 @@ class Logger(Service[BaseServices, "Logger.Options"]):
                 },
             )
         except Exception:
-            self.message_logger.exception(
-                "Failed to execute message",
-                extra={
-                    "data": trace_info
-                    | executable_message_data(xmsg, verbose=self.verbose)
-                },
-            )
+            # self.message_logger.exception(
+            #     "Failed to execute message",
+            #     extra={
+            #         "data": trace_info
+            #         | executable_message_data(xmsg, verbose=self.verbose)
+            #     },
+            # )
+            # We pass since this is handled elsewhere and emits to our unhandled error hook
+            pass
 
     async def on_message_published(
         self, event: MessagePublished
@@ -215,7 +232,9 @@ class PipelineLogger:
                 yield
                 self.logger.debug("Executed pipeline", extra=extra)
             except Exception:
-                self.logger.exception("Failed to execute pipeline", extra=extra)
+                # self.logger.exception("Failed to execute pipeline", extra=extra)
+                # We pass since this is handled elsewhere and emits to our unhandled error hook
+                pass
 
     @contextlib.contextmanager
     def log_context(self, data: dict) -> Iterator[None]:

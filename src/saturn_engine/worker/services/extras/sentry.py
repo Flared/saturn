@@ -21,6 +21,7 @@ from saturn_engine.utils.traceback_data import TracebackData
 from saturn_engine.worker.executors.bootstrap import RemoteException
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.executable import ExecutableQueue
+from saturn_engine.worker.services.hooks import ExceptionInfo
 from saturn_engine.worker.services.hooks import MessagePublished
 
 from .. import BaseServices
@@ -51,6 +52,7 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
         self.services.hooks.work_queue_built.register(self.on_work_queue_built)
         self.services.hooks.message_executed.register(self.on_message_executed)
         self.services.hooks.message_published.register(self.on_message_published)
+        self.services.hooks.unhandled_error.register(self.on_unhandled_error)
 
     def on_before_send(self, event: Event, hint: Hint) -> Optional[Event]:
         exc_info = hint.get("exc_info")
@@ -89,6 +91,9 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
                 yield
             except Exception as e:
                 self._capture_exception(e)
+
+    async def on_unhandled_error(self, exc_info: ExceptionInfo) -> None:
+        self._capture_exception(exc_info.exc)
 
     async def on_message_executed(
         self, xmsg: ExecutableMessage
@@ -133,7 +138,7 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
             except Exception as e:
                 self._capture_exception(e)
 
-    def _capture_exception(self, exc_info: Exception) -> None:
+    def _capture_exception(self, exc_info: BaseException) -> None:
         hub = Hub.current
         client = hub.client
         if not client:
