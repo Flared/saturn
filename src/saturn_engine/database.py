@@ -15,6 +15,7 @@ from sqlalchemy.orm import sessionmaker
 
 from saturn_engine.models import Base
 from saturn_engine.utils import lazy
+from saturn_engine.utils.inspect import import_name
 from saturn_engine.worker_manager.app import current_app
 
 AnySyncSession = Union[Session, _sqlalchemy_scoped_session]
@@ -60,9 +61,16 @@ def drop_all() -> None:
 
 def engine() -> Engine:
     init()
+    database_connection_creator: Optional[
+        str
+    ] = current_app.saturn.config.database_connection_creator
+    extra_args = {}
+    if database_connection_creator:
+        extra_args["creator"] = import_name(database_connection_creator)
     return create_engine(
         current_app.saturn.config.database_url,
         future=True,
+        **extra_args,
     )
 
 

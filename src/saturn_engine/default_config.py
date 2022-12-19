@@ -37,11 +37,7 @@ class config(SaturnConfig):
         flask_host = os.environ.get("SATURN_FLASK_HOST", "127.0.0.1")
         flask_port = int(os.environ.get("SATURN_FLASK_PORT", 5000))
         database_url: str = os.environ.get("SATURN_DATABASE_URL", "sqlite:///test.db")
-        async_database_url: str = (
-            os.environ.get("SATURN_DATABASE_URL", "sqlite:///test.db")
-            .replace("sqlite:/", "sqlite+aiosqlite:/")
-            .replace("postgresql:/", "postgresql+asyncpg:/")
-        )
+        database_connection_creator: t.Optional[str] = None
         static_definitions_directories: list[str] = os.environ.get(
             "SATURN_STATIC_DEFINITIONS_DIRS", "/opt/saturn/definitions"
         ).split(":")
