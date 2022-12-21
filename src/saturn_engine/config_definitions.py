@@ -21,6 +21,8 @@ class WorkerManagerConfig:
     flask_port: int
     database_url: str
     database_connection_creator: t.Optional[str]
+    database_pool_recycle: int
+    database_pool_pre_ping: bool
     static_definitions_directories: list[str]
     static_definitions_jobs_selector: t.Optional[str]
     work_items_per_worker: int

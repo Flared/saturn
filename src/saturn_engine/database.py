@@ -70,6 +70,8 @@ def engine() -> Engine:
     return create_engine(
         current_app.saturn.config.database_url,
         future=True,
+        pool_recycle=current_app.saturn.config.database_pool_recycle,
+        pool_pre_ping=current_app.saturn.config.database_pool_pre_ping,
         **extra_args,
     )
 
