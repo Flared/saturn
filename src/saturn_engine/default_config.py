@@ -38,6 +38,8 @@ class config(SaturnConfig):
         flask_port = int(os.environ.get("SATURN_FLASK_PORT", 5000))
         database_url: str = os.environ.get("SATURN_DATABASE_URL", "sqlite:///test.db")
         database_connection_creator: t.Optional[str] = None
+        database_pool_recycle: int = -1
+        database_pool_pre_ping: bool = False
         static_definitions_directories: list[str] = os.environ.get(
             "SATURN_STATIC_DEFINITIONS_DIRS", "/opt/saturn/definitions"
         ).split(":")
