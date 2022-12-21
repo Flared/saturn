@@ -47,6 +47,17 @@ spec:
     - {message: hello-14}
 ---
 apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnInventory
+metadata:
+  name: static-inventory-2
+spec:
+  type: StaticInventory
+  options:
+    items:
+    - {message: another-hello-0}
+    - {message: another-hello-1}
+---
+apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: example-job-definition
@@ -66,6 +77,29 @@ spec:
     config:
       tracer:
         rate: 0.5
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJobDefinition
+metadata:
+  name: example-job-error-definition
+spec:
+  minimalInterval: "@weekly"
+  template:
+    input:
+      inventory: static-inventory-2
+
+    output:
+      default:
+        - topic: stdout
+      error::ZeroDivisionError:
+        - topic: stdout
+
+    pipeline:
+      name: example.pipelines.echo_with_error
+      resources: {"api_key": "example.resources.TestApiKey"}
+    config:
+      tracer:
+        rate: 0.0
 ---
 apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition

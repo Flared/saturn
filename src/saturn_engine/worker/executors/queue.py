@@ -1,11 +1,13 @@
 import asyncio
 import contextlib
 import datetime
+import sys
 
 from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResults
 from saturn_engine.utils.asyncutils import TasksGroupRunner
 from saturn_engine.utils.log import getLogger
+from saturn_engine.worker.error_handling import process_pipeline_exception
 from saturn_engine.worker.resources.manager import ResourceUnavailable
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.hooks import MessagePublished
@@ -53,8 +55,22 @@ class ExecutorQueue:
                 async with processable._context:
 
                     @self.services.s.hooks.message_executed.emit
-                    async def scope(xmsg: ExecutableMessage) -> PipelineResults:
-                        return await self.executor.process_message(xmsg.message)
+                    async def scope(
+                        xmsg: ExecutableMessage,
+                    ) -> PipelineResults:
+                        try:
+                            return await self.executor.process_message(xmsg.message)
+                        except Exception:
+                            _, exc_value, exc_traceback = sys.exc_info()
+                            # Shouldn't be None but we want to make mypy happy
+                            if exc_value is None or exc_traceback is None:
+                                raise
+                            result = process_pipeline_exception(
+                                xmsg.queue.definition.output, exc_value, exc_traceback
+                            )
+                            if not result:
+                                raise
+                            return result
 
                     try:
                         output = await scope(processable)

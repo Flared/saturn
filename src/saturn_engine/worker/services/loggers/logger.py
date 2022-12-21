@@ -5,6 +5,7 @@ import logging
 from collections.abc import AsyncGenerator
 from collections.abc import Generator
 from collections.abc import Iterator
+from traceback import format_exc
 
 from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResults
@@ -215,7 +216,10 @@ class PipelineLogger:
                 yield
                 self.logger.debug("Executed pipeline", extra=extra)
             except Exception:
-                self.logger.exception("Failed to executed pipeline", extra=extra)
+                # add stack trace
+                self.logger.debug(
+                    f"Failed to execute pipeline\n{format_exc()}", extra=extra
+                )
 
     @contextlib.contextmanager
     def log_context(self, data: dict) -> Iterator[None]:
