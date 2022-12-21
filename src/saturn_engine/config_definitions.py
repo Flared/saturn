@@ -20,7 +20,7 @@ class WorkerManagerConfig:
     flask_host: str
     flask_port: int
     database_url: str
-    async_database_url: str
+    database_connection_creator: t.Optional[str]
     static_definitions_directories: list[str]
     static_definitions_jobs_selector: t.Optional[str]
     work_items_per_worker: int
