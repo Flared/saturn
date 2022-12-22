@@ -14,7 +14,6 @@ from saturn_engine.worker.executors import Executor
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.parkers import Parkers
 from saturn_engine.worker.executors.queue import ExecutorQueue
-from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources.manager import ResourceData
 from saturn_engine.worker.topics.memory import MemoryTopic
 from saturn_engine.worker.topics.memory import get_queue
@@ -30,7 +29,7 @@ class FakeExecutor(Executor):
         self.processing = 0
         self.processed = 0
 
-    async def process_message(self, message: PipelineMessage) -> PipelineResults:
+    async def process_message(self, message: ExecutableMessage) -> PipelineResults:
         self.processing += 1
         await self.execute_semaphore.acquire()
         self.processed += 1
@@ -45,7 +44,7 @@ class FakeExecutor(Executor):
 
 
 class FakeFailingExecutor(FakeExecutor):
-    async def process_message(self, message: PipelineMessage) -> PipelineResults:
+    async def process_message(self, message: ExecutableMessage) -> PipelineResults:
         self.processed += 1
         raise Exception("TEST_EXCEPTION")
 

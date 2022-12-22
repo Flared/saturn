@@ -39,7 +39,7 @@ async def test_trace_message_executed(
 
     @services_manager.services.s.hooks.message_executed.emit
     async def scope(xmsg: ExecutableMessage) -> PipelineResults:
-        return await executor.process_message(xmsg.message)
+        return await executor.process_message(xmsg)
 
     await scope(xmsg)
 

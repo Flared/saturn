@@ -140,6 +140,11 @@ def test_lazy_config() -> None:
     if t.TYPE_CHECKING:
         assert_type[Interface.c](config.cast_namespace("c", Interface.c))
 
+    config_2 = LazyConfig([ObjectConfig])
+    assert config.cast_namespace("c", Interface.c).x == "3"
+    extended_config_2 = config_2.load_object(extended_config)
+    assert extended_config_2.cast_namespace("c", Interface.c).x == "4"
+
 
 def test_default_config() -> None:
     # Test default_config can be loaded by itself.
