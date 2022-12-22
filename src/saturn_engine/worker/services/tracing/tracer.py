@@ -49,10 +49,13 @@ class Tracer(Service[BaseServices, "Tracer.Options"]):
             opentelemetry.propagate.inject(
                 xmsg.message.message.metadata.setdefault(_METADATA_KEY, {})
             )
-
-            results = yield
-
-            span.set_attribute("saturn.outputs.count", len(results.outputs))
+            try:
+                results = yield
+            except Exception as exc:
+                span.set_status(trace.Status(trace.StatusCode.ERROR))
+                span.record_exception(exc)
+            else:
+                span.set_attribute("saturn.outputs.count", len(results.outputs))
 
 
 def on_executor_initialized(bootstrapper: PipelineBootstrap) -> None:
