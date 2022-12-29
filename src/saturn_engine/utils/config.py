@@ -101,15 +101,15 @@ class Config(Generic[T]):
 
 class LazyConfig:
     def __init__(self, objects: Iterable[Any] = ()) -> None:
-        self._layers: list[Any] = list(objects)
+        self._layers: list[Any] = list(self._objects_to_layers(objects))
         self._interfaces: dict[tuple[str, Type], Any] = {}
 
     def load_object(self, obj: Any) -> "LazyConfig":
         return self.load_objects([obj])
 
-    def load_objects(self, obj: Iterable[Any]) -> "LazyConfig":
+    def load_objects(self, objects: Iterable[Any]) -> "LazyConfig":
         new_config = self.copy()
-        new_config._layers.extend(obj)
+        new_config._layers.extend(self._objects_to_layers(objects))
         return new_config
 
     def cast_namespace(self, namespace: str, interface: Type[U]) -> U:
@@ -128,6 +128,14 @@ class LazyConfig:
         new_config = type(self)()
         new_config._layers.extend(self._layers)
         return new_config
+
+    @staticmethod
+    def _objects_to_layers(objects: Iterable[Any]) -> typing.Iterator[Any]:
+        for obj in objects:
+            if isinstance(obj, LazyConfig):
+                yield from obj._layers
+            else:
+                yield obj
 
 
 def load_config_interface(
@@ -199,6 +207,8 @@ def get_attr(obj: Any, name: str) -> Any:
     if isinstance(obj, Mapping):
         ikey_map = {k.lower(): k for k in obj.keys()}
         k = ikey_map.get(name, _MISSING)
+        if k is _MISSING:
+            return _MISSING
         return obj.get(k, _MISSING)
 
     ikey_map = {k.lower(): k for k in dir(obj)}

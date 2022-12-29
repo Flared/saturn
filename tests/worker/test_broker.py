@@ -16,8 +16,8 @@ from saturn_engine.core.api import ResourceItem
 from saturn_engine.core.api import ResourcesProviderItem
 from saturn_engine.utils.inspect import get_import_name
 from saturn_engine.worker.broker import Broker
+from saturn_engine.worker.executors import ExecutableMessage
 from saturn_engine.worker.executors import Executor
-from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources.provider import ProvidedResource
 from saturn_engine.worker.resources.provider import ResourcesProvider
 from tests.utils import register_hooks_handler
@@ -36,10 +36,11 @@ class FakeExecutor(Executor):
     def __init__(self, options: Options, services: object) -> None:
         assert options.ok is True
 
-    async def process_message(self, message: PipelineMessage) -> PipelineResults:
-        assert isinstance(message.message.args["resource"], dict)
-        assert message.message.args["resource"]["data"] == "fake"
-        if message.message.args["n"] == 999:
+    async def process_message(self, message: ExecutableMessage) -> PipelineResults:
+        pipeline_message = message.message
+        assert isinstance(pipeline_message.message.args["resource"], dict)
+        assert pipeline_message.message.args["resource"]["data"] == "fake"
+        if pipeline_message.message.args["n"] == 999:
             FakeExecutor.done_event.set()
         return PipelineResults(outputs=[], resources=[])
 

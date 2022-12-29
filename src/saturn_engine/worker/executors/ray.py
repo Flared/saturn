@@ -10,6 +10,7 @@ from saturn_engine.core import PipelineResults
 from saturn_engine.utils.hooks import EventHook
 from saturn_engine.utils.log import getLogger
 from saturn_engine.utils.ray import ActorPool
+from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.pipeline_message import PipelineMessage
 
 from ..services import Services
@@ -101,7 +102,7 @@ class RayExecutor(Executor):
                     self._session.close()
                 self._session = None
 
-    async def process_message(self, message: PipelineMessage) -> PipelineResults:
+    async def process_message(self, message: ExecutableMessage) -> PipelineResults:
         with self.session() as session:
             async with session.pool.scoped_actor() as actor:
-                return await actor.process_message.remote(message)
+                return await actor.process_message.remote(message.message)

@@ -9,6 +9,7 @@ from functools import partial
 
 from saturn_engine.core import PipelineResults
 from saturn_engine.utils.hooks import EventHook
+from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.services import Services
 
@@ -68,9 +69,9 @@ class ProcessExecutor(Executor):
             ),
         )
 
-    async def process_message(self, message: PipelineMessage) -> PipelineResults:
+    async def process_message(self, message: ExecutableMessage) -> PipelineResults:
         loop = asyncio.get_running_loop()
-        execute = partial(self.remote_execute, message=message)
+        execute = partial(self.remote_execute, message=message.message)
         return await loop.run_in_executor(self.pool_executor, execute)
 
     @property

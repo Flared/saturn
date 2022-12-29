@@ -7,7 +7,7 @@ from saturn_engine.core import PipelineResults
 from saturn_engine.core import api
 from saturn_engine.utils.inspect import import_name
 from saturn_engine.utils.options import OptionsSchema
-from saturn_engine.worker.pipeline_message import PipelineMessage
+from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.services import Services
 
 
@@ -15,7 +15,7 @@ class Executor(ABC, OptionsSchema):
     name: str
 
     @abstractmethod
-    async def process_message(self, message: PipelineMessage) -> PipelineResults:
+    async def process_message(self, message: ExecutableMessage) -> PipelineResults:
         pass
 
     @property

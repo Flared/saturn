@@ -59,7 +59,7 @@ class ExecutorQueue:
                         xmsg: ExecutableMessage,
                     ) -> PipelineResults:
                         try:
-                            return await self.executor.process_message(xmsg.message)
+                            return await self.executor.process_message(xmsg)
                         except Exception:
                             _, exc_value, exc_traceback = sys.exc_info()
                             # Shouldn't be None but we want to make mypy happy
