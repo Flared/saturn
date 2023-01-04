@@ -16,7 +16,10 @@ def queue_pipeline_maker(
     fake_pipeline_info: api.PipelineInfo,
 ) -> t.Callable[..., api.QueuePipeline]:
     def maker() -> api.QueuePipeline:
-        return api.QueuePipeline(info=fake_pipeline_info, args={})
+        return api.QueuePipeline(
+            info=fake_pipeline_info,
+            args={},
+        )
 
     return maker
 
@@ -41,6 +44,7 @@ def queue_item_maker(
             pipeline=queue_pipeline_maker(),
             input=topic_item_maker(),
             output={"default": [topic_item_maker()]},
+            labels={"owner": "team-saturn"},
             executor=fake_executor.name,
         )
 

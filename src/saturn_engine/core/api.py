@@ -61,6 +61,7 @@ class QueueItem:
         ObjectUnion(union={"topic": TopicItem, "inventory": InventoryItem})
     )
     config: dict[str, Any] = dataclasses.field(default_factory=dict)
+    labels: dict[str, str] = dataclasses.field(default_factory=dict)
     executor: str = "default"
 
 

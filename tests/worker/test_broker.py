@@ -64,6 +64,7 @@ def config(config: Config) -> Config:
         {
             "services_manager": {
                 "services": [
+                    "saturn_engine.worker.services.labels_propagator.LabelsPropagator",
                     "saturn_engine.worker.services.tracing.Tracer",
                 ]
             }
@@ -89,7 +90,11 @@ async def test_broker_dummy(
                 input=InventoryItem(
                     name="dummy", type="DummyInventory", options={"count": 10000}
                 ),
-                pipeline=QueuePipeline(args={}, info=pipeline_info),
+                pipeline=QueuePipeline(
+                    args={},
+                    info=pipeline_info,
+                ),
+                labels={"owner": "team-saturn"},
                 output={},
                 executor="e1",
             )
@@ -145,6 +150,9 @@ async def test_broker_dummy(
     assert exported_traces[0].otel_span.name == "worker executing"
     assert exported_traces[0].otel_span.attributes
     assert exported_traces[0].otel_span.attributes["saturn.message.id"] == "0"
+    assert (
+        exported_traces[0].otel_span.attributes["saturn.labels.owner"] == "team-saturn"
+    )
 
     broker_task.cancel()
     await broker_task

@@ -178,6 +178,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: unscheduled
+  labels:
+    owner: team-saturn
 spec:
   minimalInterval: "@weekly"
   template:
@@ -194,6 +196,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: running
+  labels:
+    owner: team-saturn
 spec:
   minimalInterval: "@weekly"
   template:
@@ -210,6 +214,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: due
+  labels:
+    owner: team-saturn
 spec:
   minimalInterval: "@weekly"
   template:
@@ -226,6 +232,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: not-due
+  labels:
+    owner: team-saturn
 spec:
   minimalInterval: "@weekly"
   template:
@@ -382,6 +390,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: test
+  labels:
+    owner: team-saturn
 spec:
   minimalInterval: "@weekly"
   template:
@@ -483,6 +493,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJob
 metadata:
   name: test-job
+  labels:
+    owner: team-saturn
 spec:
   input:
     inventory: test-inventory

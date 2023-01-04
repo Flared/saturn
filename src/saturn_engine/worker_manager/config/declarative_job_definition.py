@@ -24,7 +24,9 @@ class JobDefinition(BaseObject):
         static_definitions: StaticDefinitions,
     ) -> t.Iterator[api.JobDefinition]:
         for template in self.spec.template.to_core_objects(
-            self.metadata.name, static_definitions
+            self.metadata.name,
+            self.metadata.labels,
+            static_definitions,
         ):
             yield api.JobDefinition(
                 name=template.name,

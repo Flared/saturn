@@ -22,6 +22,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: provider-job-definition
+  labels:
+    owner: team-saturn
 spec:
   minimalInterval: "@weekly"
   template:

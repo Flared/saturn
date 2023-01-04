@@ -5,6 +5,7 @@ import logging
 
 import pytest
 
+from saturn_engine.config import Config
 from saturn_engine.core import PipelineInfo
 from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResults
@@ -25,6 +26,19 @@ def fake_pipeline(x: int, r: FakeResource) -> None:
     pass
 
 
+@pytest.fixture
+def config(config: Config) -> Config:
+    return config.load_object(
+        {
+            "services_manager": {
+                "services": [
+                    "saturn_engine.worker.services.labels_propagator.LabelsPropagator",
+                ]
+            }
+        }
+    )
+
+
 @pytest.mark.asyncio
 async def test_logger_message_executed(
     services_manager: ServicesManager,
@@ -40,6 +54,8 @@ async def test_logger_message_executed(
     xmsg.message.update_with_resources(
         {FakeResource._typename(): {"name": "r1", "data": "foobar"}}
     )
+
+    await services_manager.services.s.hooks.message_polled.emit(xmsg)
 
     results = PipelineResults(
         outputs=[
@@ -62,6 +78,7 @@ async def test_logger_message_executed(
                 "id": "m1",
                 "tags": {},
             },
+            "labels": {"owner": "team-saturn"},
             "resources": {FakeResource._typename(): "r1"},
             "pipeline": "tests.worker.services.test_logger.fake_pipeline",
         }
@@ -78,6 +95,7 @@ async def test_logger_message_executed(
                 "id": "m1",
                 "tags": {},
             },
+            "labels": {"owner": "team-saturn"},
             "resources": {FakeResource._typename(): "r1"},
             "pipeline": "tests.worker.services.test_logger.fake_pipeline",
             "result": {
