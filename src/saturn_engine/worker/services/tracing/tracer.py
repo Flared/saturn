@@ -87,7 +87,6 @@ class PipelineTracer:
 def executable_message_attributes(
     xmsg: ExecutableMessage,
 ) -> Mapping[str, AttributeValue]:
-
     return {
         "saturn.job.name": xmsg.queue.name,
         "saturn.input.name": xmsg.queue.definition.input.name,
@@ -97,8 +96,15 @@ def executable_message_attributes(
 def pipeline_message_attributes(
     message: PipelineMessage,
 ) -> Mapping[str, AttributeValue]:
-    return {
-        "saturn.message.id": message.id,
-        "saturn.resources.names": [n for n in message.resource_names if n],
-        "saturn.pipeline.name": message.info.name,
-    } | {f"saturn.message.tags.{k}": v for k, v in message.message.tags.items()}
+    return (
+        {
+            "saturn.message.id": message.id,
+            "saturn.resources.names": [n for n in message.resource_names if n],
+            "saturn.pipeline.name": message.info.name,
+        }
+        | {f"saturn.message.tags.{k}": v for k, v in message.message.tags.items()}
+        | {
+            f"saturn.labels.{k}": str(v)
+            for k, v in message.message.metadata.get("labels", {}).items()
+        }
+    )

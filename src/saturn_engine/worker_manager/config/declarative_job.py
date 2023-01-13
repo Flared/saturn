@@ -56,6 +56,7 @@ class JobSpec:
     def to_core_objects(
         self,
         name: str,
+        labels: dict[str, str],
         static_definitions: StaticDefinitions,
     ) -> t.Iterator[api.QueueItem]:
         inputs = {k: v for k, v in self.inputs.items()}
@@ -81,6 +82,7 @@ class JobSpec:
                     info=self.pipeline.to_core_object(),
                     args=dict(),
                 ),
+                labels=labels,
                 config=self.config,
                 executor=self.executor,
             )
@@ -94,4 +96,8 @@ class Job(BaseObject):
         self,
         static_definitions: StaticDefinitions,
     ) -> t.Iterator[api.QueueItem]:
-        yield from self.spec.to_core_objects(self.metadata.name, static_definitions)
+        yield from self.spec.to_core_objects(
+            self.metadata.name,
+            self.metadata.labels,
+            static_definitions,
+        )

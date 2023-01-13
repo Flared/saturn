@@ -19,6 +19,7 @@ class config(SaturnConfig):
 
     class services_manager(ServicesManagerConfig):
         services = [
+            "saturn_engine.worker.services.labels_propagator.LabelsPropagator",
             "saturn_engine.worker.services.tracing.Tracer",
             "saturn_engine.worker.services.loggers.Logger",
             "saturn_engine.worker.services.metrics.MemoryMetrics",

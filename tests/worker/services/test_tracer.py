@@ -18,6 +18,7 @@ def config(config: Config) -> Config:
         {
             "services_manager": {
                 "services": [
+                    "saturn_engine.worker.services.labels_propagator.LabelsPropagator",
                     "saturn_engine.worker.services.tracing.Tracer",
                 ]
             }
@@ -41,6 +42,7 @@ async def test_trace_message_executed(
     async def scope(xmsg: ExecutableMessage) -> PipelineResults:
         return await executor.process_message(xmsg)
 
+    await services_manager.services.s.hooks.message_polled.emit(xmsg)
     await scope(xmsg)
 
     traces = span_exporter.get_finished_traces()
@@ -49,6 +51,7 @@ async def test_trace_message_executed(
     assert traces[0].otel_span.attributes == {
         "saturn.job.name": "fake-queue",
         "saturn.input.name": "fake-topic",
+        "saturn.labels.owner": "team-saturn",
         "saturn.resources.names": (),
         "saturn.message.id": xmsg.id,
         "saturn.pipeline.name": "tests.conftest.pipeline",
@@ -60,5 +63,6 @@ async def test_trace_message_executed(
     assert traces[0].children[0].otel_span.attributes == {
         "saturn.resources.names": (),
         "saturn.message.id": xmsg.id,
+        "saturn.labels.owner": "team-saturn",
         "saturn.pipeline.name": "tests.conftest.pipeline",
     }

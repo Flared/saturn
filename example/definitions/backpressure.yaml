@@ -35,6 +35,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: backpressure-fast-pipeline
+  labels:
+    owner: team-saturn
 spec:
   minimalInterval: "@weekly"
   template:
@@ -52,6 +54,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: backpressure-slow-pipeline
+  labels:
+    owner: team-saturn
 spec:
   minimalInterval: "@weekly"
   template:

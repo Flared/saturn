@@ -60,6 +60,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: test-job-definition
+  labels:
+    owner: team-saturn
 spec:
   minimalInterval: "@weekly"
   template:
@@ -113,6 +115,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: test-job-definition
+  labels:
+    owner: team-saturn
 spec:
   minimalInterval: "@weekly"
   template:
@@ -159,6 +163,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: test-job-definition
+  labels:
+    owner: team-saturn
 spec:
   minimalInterval: "@weekly"
   template:
@@ -204,6 +210,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: test-job-definition
+  labels:
+    owner: team-saturn
 spec:
   minimalInterval: "@weekly"
   template:
@@ -247,6 +255,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJob
 metadata:
   name: test-job
+  labels:
+    owner: team-saturn
 spec:
   input:
     inventory: test-inventory
@@ -280,6 +290,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJob
 metadata:
   name: test-job
+  labels:
+    owner: team-saturn
 spec:
   input:
     inventory: test-inventory
@@ -292,6 +304,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJob
 metadata:
   name: test-job-2
+  labels:
+    owner: team-saturn
 spec:
   input:
     inventory: test-inventory
@@ -337,6 +351,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJob
 metadata:
   name: test-job
+  labels:
+    owner: team-saturn
 spec:
   inputs:
     default:
@@ -365,6 +381,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJob
 metadata:
   name: test-job
+  labels:
+    owner: team-saturn
 spec:
   input: {}
   pipeline:
@@ -382,6 +400,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJob
 metadata:
   name: test-job
+  labels:
+    owner: team-saturn
 spec:
   input:
     topic: aa
@@ -435,6 +455,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJob
 metadata:
   name: test-1-job
+  labels:
+    owner: team-saturn
 spec:
   input:
     inventory: test-inventory
@@ -445,6 +467,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJob
 metadata:
   name: test-2-job
+  labels:
+    owner: team-saturn
 spec:
   input:
     inventory: test-inventory
@@ -455,6 +479,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: test-1-job-definition
+  labels:
+    owner: team-saturn
 spec:
   minimalInterval: "@weekly"
   template:
@@ -467,6 +493,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: test-2-job-definition
+  labels:
+    owner: team-saturn
 spec:
   minimalInterval: "@weekly"
   template:

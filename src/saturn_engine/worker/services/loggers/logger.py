@@ -26,9 +26,14 @@ from .. import Service
 def executable_message_data(
     xmsg: ExecutableMessage, *, verbose: bool = False
 ) -> dict[str, t.Any]:
+    labels_dict = {}
+    if labels := xmsg.message.message.metadata.get("labels"):
+        labels_dict = labels.copy()
+
     return pipeline_message_data(xmsg.message, verbose=verbose) | {
         "job": xmsg.queue.name,
         "input": xmsg.queue.definition.input.name,
+        "labels": labels_dict,
     }
 
 

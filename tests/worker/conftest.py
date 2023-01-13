@@ -172,7 +172,11 @@ def fake_queue_item(
 ) -> QueueItem:
     return QueueItem(
         name="fake-queue",
-        pipeline=QueuePipeline(info=fake_pipeline_info, args={}),
+        pipeline=QueuePipeline(
+            info=fake_pipeline_info,
+            args={},
+        ),
+        labels={"owner": "team-saturn"},
         output={},
         input=TopicItem(
             name="fake-topic",
@@ -228,7 +232,11 @@ def fake_executable_maker_with_output(
     ) -> ExecutableMessage:
         queue_item = QueueItem(
             name="fake-failing-queue",
-            pipeline=QueuePipeline(info=fake_pipeline_info, args={}),
+            pipeline=QueuePipeline(
+                info=fake_pipeline_info,
+                args={},
+            ),
+            labels={"owner": "team-saturn"},
             output=output or {},
             input=TopicItem(
                 name="fake-topic",

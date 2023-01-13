@@ -36,6 +36,8 @@ apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnJobDefinition
 metadata:
   name: test-job-definition
+  labels:
+    owner: team-saturn
 spec:
   minimalInterval: "@weekly"
   template:
@@ -91,6 +93,7 @@ spec:
                             "resources": {"api_key": "GithubApiKey"},
                         },
                     },
+                    "labels": {"owner": "team-saturn"},
                     "config": {
                         "tracer": {
                             "sampler": {

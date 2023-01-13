@@ -10,6 +10,7 @@ from saturn_engine.utils.options import schema_for
 @dataclasses.dataclass
 class ObjectMetadata:
     name: str
+    labels: dict[str, str] = dataclasses.field(default_factory=dict)
 
 
 @dataclasses.dataclass
