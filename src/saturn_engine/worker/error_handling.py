@@ -2,7 +2,6 @@ from typing import Optional
 from typing import Type
 from typing import cast
 
-import dataclasses
 import re
 from dataclasses import dataclass
 from functools import lru_cache
@@ -57,14 +56,14 @@ def process_pipeline_exception(
                 PipelineOutput(
                     channel=channel,
                     message=TopicMessage(
-                        args=dataclasses.asdict(
-                            ErrorMessageArgs(
+                        args={
+                            "error": ErrorMessageArgs(
                                 type=exc_details.exception_type.__name__,
                                 module=exc_details.module,
                                 message=str(exc_value),
                                 traceback=exc_details.traceback,
                             )
-                        )
+                        }
                     ),
                 )
             ],

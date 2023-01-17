@@ -1,4 +1,28 @@
 from typing import Iterator
+from typing import overload
+
+import dataclasses
+
+
+@overload
+def normalize_json(obj: dict) -> dict:
+    ...
+
+
+@overload
+def normalize_json(obj: list) -> list:
+    ...
+
+
+def normalize_json(obj: object) -> object:
+    if dataclasses.is_dataclass(obj):
+        obj = dataclasses.asdict(obj)
+    if isinstance(obj, dict):
+        return {k: normalize_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [normalize_json(item) for item in obj]
+    else:
+        return obj
 
 
 def find_nodes(obj: dict, val: object, path: list[str]) -> Iterator[list[str]]:

@@ -67,8 +67,33 @@ spec:
     - outputs:
         - channel: error::ZeroDivisionError
           args:
-            type: ZeroDivisionError
-            module: 'example.pipelines'
-            message: division by zero
-            traceback: __any__
+            error:
+              type: ZeroDivisionError
+              module: 'example.pipelines'
+              message: division by zero
+              traceback: __any__
+      resources: []
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnPipelineTest
+metadata:
+  name: test-ignorable-error-pipeline
+spec:
+  selector:
+    job_definition: example-job-ignorable-error-definition
+  inventory:
+    - message: test-hello
+  resources:
+    example.resources.TestApiKey:
+      name: test-key-1
+      key: test
+  pipeline_results:
+    - outputs:
+        - channel: error:.*Ignorable Exception.*:Exception
+          args:
+            error:
+              type: Exception
+              module: 'example.pipelines'
+              message: Ignorable Exception
+              traceback: __any__
       resources: []

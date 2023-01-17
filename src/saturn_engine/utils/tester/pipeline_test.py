@@ -5,6 +5,7 @@ from saturn_engine.utils.hooks import EventHook
 from saturn_engine.utils.options import asdict
 from saturn_engine.utils.tester.json_utils import find_nodes
 from saturn_engine.utils.tester.json_utils import get_node_value
+from saturn_engine.utils.tester.json_utils import normalize_json
 from saturn_engine.utils.tester.json_utils import replace_node
 from saturn_engine.worker.error_handling import process_pipeline_exception
 from saturn_engine.worker.executors.bootstrap import PipelineBootstrap
@@ -79,6 +80,8 @@ def run_saturn_pipeline_test(
     expected_pipeline_results: list[dict] = [
         asdict(r) for r in pipeline_test.spec.pipeline_results
     ]
+
+    pipeline_results = normalize_json(pipeline_results)
 
     # Handle custom wildcard(__any__) fields in order to pass the assertion
     for i, expected_pipeline_result in enumerate(expected_pipeline_results):
