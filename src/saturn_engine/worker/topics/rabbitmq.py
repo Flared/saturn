@@ -32,6 +32,24 @@ class RabbitMQSerializer(enum.Enum):
     JSON = "json"
     PICKLE = "pickle"
 
+    @property
+    def content_type(self) -> str:
+        return SerializerToContentType[self]
+
+    @classmethod
+    def from_content_type(cls, content_type: str) -> "RabbitMQSerializer | None":
+        return ContentTypeToSerializer.get(content_type)
+
+
+SerializerToContentType = {
+    RabbitMQSerializer.JSON: "application/json",
+    RabbitMQSerializer.PICKLE: "application/python-pickle",
+}
+
+ContentTypeToSerializer: dict[str, RabbitMQSerializer] = {
+    v: k for k, v in SerializerToContentType.items()
+}
+
 
 class RabbitMQTopic(Topic):
     """A queue that consume message from RabbitMQ"""
@@ -103,10 +121,12 @@ class RabbitMQTopic(Topic):
                     exchange = channel.default_exchange
                     if exchange is None:
                         raise ValueError("Channel has no exchange")
+
                     await exchange.publish(
                         aio_pika.Message(
                             body=self._serialize(message),
                             delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+                            content_type=self.options.serializer.content_type,
                         ),
                         routing_key=self.options.queue_name,
                     )
@@ -212,7 +232,15 @@ class RabbitMQTopic(Topic):
     def _deserialize(
         self, message: aio_pika.abc.AbstractIncomingMessage
     ) -> TopicMessage:
-        if self.options.serializer == RabbitMQSerializer.PICKLE:
+        serializer = self.options.serializer
+        if message.content_type:
+            message_serializer = RabbitMQSerializer.from_content_type(
+                message.content_type
+            )
+            if message_serializer:
+                serializer = message_serializer
+
+        if serializer is RabbitMQSerializer.PICKLE:
             deserialized = pickle.loads(message.body)  # noqa: S301
             if not isinstance(deserialized, TopicMessage):
                 raise Exception("Deserialized RabbitMQ message is not a TopicMessage.")
