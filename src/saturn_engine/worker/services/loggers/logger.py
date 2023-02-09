@@ -2,6 +2,7 @@ import typing as t
 
 import contextlib
 import logging
+import time
 from collections.abc import AsyncGenerator
 from collections.abc import Generator
 from collections.abc import Iterator
@@ -56,10 +57,8 @@ def topic_message_data(
     } | ({"args": message.args} if verbose else {})
 
 
-def trace_data() -> dict[str, t.Any]:
-    context = get_trace_context()
-    if context is None:
-        return {}
+def trace_data() -> dict[t.Literal["trace"], t.Any]:
+    context: t.Any = get_trace_context() or {}
     return {"trace": context}
 
 
@@ -130,7 +129,13 @@ class Logger(Service[BaseServices, "Logger.Options"]):
             },
         )
         try:
-            result = yield
+            try:
+                start_time_ns = time.perf_counter_ns()
+                result = yield
+            finally:
+                duration_ns = start_time_ns - time.perf_counter_ns()
+                trace_info["trace"]["duration_ms"] = duration_ns // 1000
+
             self.message_logger.debug(
                 "Executed message",
                 extra={
@@ -218,7 +223,12 @@ class PipelineLogger:
         with self.log_context(extra["data"]):
             self.logger.debug("Executing pipeline", extra=extra)
             try:
-                yield
+                try:
+                    start_time_ns = time.perf_counter_ns()
+                    yield
+                finally:
+                    duration_ns = start_time_ns - time.perf_counter_ns()
+                    extra["data"]["trace"]["duration_ms"] = duration_ns // 1000
                 self.logger.debug("Executed pipeline", extra=extra)
             except Exception:
                 # add stack trace
