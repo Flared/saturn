@@ -15,6 +15,7 @@ from saturn_engine.core import TopicMessage
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.services.loggers.logger import Logger
 from saturn_engine.worker.services.manager import ServicesManager
+from tests.utils import EqualAny
 
 
 @dataclasses.dataclass(eq=False)
@@ -81,6 +82,7 @@ async def test_logger_message_executed(
             "labels": {"owner": "team-saturn"},
             "resources": {FakeResource._typename(): "r1"},
             "pipeline": "tests.worker.services.test_logger.fake_pipeline",
+            "trace": {},
         }
 
         with pytest.raises(StopAsyncIteration):
@@ -107,4 +109,5 @@ async def test_logger_message_executed(
                 ],
                 "resources": {FakeResource._typename(): {"release_at": 10}},
             },
+            "trace": {"duration_ms": EqualAny()},
         }
