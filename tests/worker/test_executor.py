@@ -1,4 +1,5 @@
 from typing import Callable
+from typing import cast
 
 import asyncio
 from functools import partial
@@ -10,6 +11,7 @@ from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResults
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import TopicItem
+from saturn_engine.core.error import ErrorMessageArgs
 from saturn_engine.worker.executors import Executor
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.parkers import Parkers
@@ -242,10 +244,12 @@ async def test_executor_error_handler(
     expected_message = TopicMessage(
         id=output.id,
         args={
-            "type": "Exception",
-            "module": "tests.worker.test_executor",
-            "message": "TEST_EXCEPTION",
-            "traceback": output.args["traceback"],
+            "error": ErrorMessageArgs(
+                type="Exception",
+                module="tests.worker.test_executor",
+                message="TEST_EXCEPTION",
+                traceback=cast(ErrorMessageArgs, output.args["error"]).traceback,
+            )
         },
         config={},
         metadata={},

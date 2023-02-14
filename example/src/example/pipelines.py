@@ -50,9 +50,11 @@ def echo(api_key: TestApiKey, **kwargs: t.Any) -> TopicMessage:
 
 def echo_with_error(api_key: TestApiKey, **kwargs: t.Any) -> TopicMessage:
     error_maker = 1 / (1 - 1)  # noqa
-    trace_pipeline("echo", {"api_key": api_key.key} | kwargs)
-    logging.info("api_key: %s, data: %s", api_key.key, kwargs)
     return TopicMessage(args=kwargs)
+
+
+def echo_with_ignorable_error(api_key: TestApiKey, **kwargs: t.Any) -> TopicMessage:
+    raise Exception("Ignorable Exception")
 
 
 def slow(api_key: BackpressureApiKey, **kwargs: t.Any) -> TopicMessage:

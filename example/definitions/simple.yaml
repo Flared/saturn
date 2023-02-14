@@ -12,6 +12,23 @@ spec:
 apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnTopic
 metadata:
+  name: null-topic
+spec:
+  type: NullTopic
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnTopic
+metadata:
+  name: logging-error
+spec:
+  type: LoggingTopic
+  options:
+    name: "error-logging-topic"
+    level: "ERROR"
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnTopic
+metadata:
   name: static-topic
 spec:
   type: StaticTopic
@@ -96,10 +113,35 @@ spec:
       default:
         - topic: stdout
       error::ZeroDivisionError:
-        - topic: stdout
+        - topic: logging-error
 
     pipeline:
       name: example.pipelines.echo_with_error
+      resources: {"api_key": "example.resources.TestApiKey"}
+    config:
+      tracer:
+        rate: 0.0
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJobDefinition
+metadata:
+  name: example-job-ignorable-error-definition
+  labels:
+    owner: team-saturn
+spec:
+  minimalInterval: "@weekly"
+  template:
+    input:
+      inventory: static-inventory-2
+
+    output:
+      default:
+        - topic: stdout
+      error:.*Ignorable Exception.*:Exception:
+        - topic: null-topic
+
+    pipeline:
+      name: example.pipelines.echo_with_ignorable_error
       resources: {"api_key": "example.resources.TestApiKey"}
     config:
       tracer:
