@@ -2,6 +2,7 @@ import typing as t
 
 import dataclasses
 import logging
+from datetime import timedelta
 
 import pytest
 
@@ -15,7 +16,7 @@ from saturn_engine.core import TopicMessage
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.services.loggers.logger import Logger
 from saturn_engine.worker.services.manager import ServicesManager
-from tests.utils import EqualAny
+from tests.conftest import FreezeTime
 
 
 @dataclasses.dataclass(eq=False)
@@ -44,6 +45,7 @@ def config(config: Config) -> Config:
 async def test_logger_message_executed(
     services_manager: ServicesManager,
     caplog: t.Any,
+    frozen_time: FreezeTime,
     executable_maker: t.Callable[..., ExecutableMessage],
 ) -> None:
     logger = services_manager._load_service(Logger)
@@ -85,6 +87,8 @@ async def test_logger_message_executed(
             "trace": {},
         }
 
+        frozen_time.tick(delta=timedelta(seconds=1))
+
         with pytest.raises(StopAsyncIteration):
             await hook_generator.asend(results)
 
@@ -109,5 +113,5 @@ async def test_logger_message_executed(
                 ],
                 "resources": {FakeResource._typename(): {"release_at": 10}},
             },
-            "trace": {"duration_ms": EqualAny()},
+            "trace": {"duration_ms": 1000},
         }

@@ -132,8 +132,8 @@ class Logger(Service[BaseServices, "Logger.Options"]):
                 start_time_ns = time.perf_counter_ns()
                 result = yield
             finally:
-                duration_ns = start_time_ns - time.perf_counter_ns()
-                trace_info["trace"]["duration_ms"] = duration_ns // 1000
+                duration_ns = time.perf_counter_ns() - start_time_ns
+                trace_info["trace"]["duration_ms"] = duration_ns // 10**6
 
             self.message_logger.debug(
                 "Executed message",
@@ -226,8 +226,8 @@ class PipelineLogger:
                     start_time_ns = time.perf_counter_ns()
                     yield
                 finally:
-                    duration_ns = start_time_ns - time.perf_counter_ns()
-                    extra["data"]["trace"]["duration_ms"] = duration_ns // 1000
+                    duration_ns = time.perf_counter_ns() - start_time_ns
+                    extra["data"]["trace"]["duration_ms"] = duration_ns // 10**6
                 self.logger.debug("Executed pipeline", extra=extra)
             except Exception as exc:
                 self.logger.debug(
