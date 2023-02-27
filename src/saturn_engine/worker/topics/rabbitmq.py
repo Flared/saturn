@@ -65,6 +65,7 @@ class RabbitMQTopic(Topic):
         max_length: t.Optional[int] = None
         prefetch_count: t.Optional[int] = None
         serializer: RabbitMQSerializer = RabbitMQSerializer.JSON
+        log_above_size: t.Optional[int] = None
 
     class TopicServices:
         rabbitmq: RabbitMQService
@@ -225,9 +226,28 @@ class RabbitMQTopic(Topic):
 
     def _serialize(self, message: TopicMessage) -> bytes:
         if self.options.serializer == RabbitMQSerializer.PICKLE:
-            return pickle.dumps(message)
+            serialized_message = pickle.dumps(message)
+        else:
+            serialized_message = json.dumps(asdict(message)).encode()
 
-        return json.dumps(asdict(message)).encode()
+        serialized_message_len = len(serialized_message)
+        if (
+            self.options.log_above_size
+            and self.options.log_above_size > serialized_message_len
+        ):
+            self.logger.warning(
+                "Sending large message",
+                extra={
+                    "data": {
+                        "message": {
+                            "id": message.id,
+                            "size": serialized_message_len,
+                        },
+                        "topic": {"id": self.name},
+                    }
+                },
+            )
+        return serialized_message
 
     def _deserialize(
         self, message: aio_pika.abc.AbstractIncomingMessage
