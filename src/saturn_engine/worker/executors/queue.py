@@ -11,6 +11,7 @@ from saturn_engine.worker.error_handling import process_pipeline_exception
 from saturn_engine.worker.resources.manager import ResourceUnavailable
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.hooks import MessagePublished
+from saturn_engine.worker.topic import Topic
 
 from . import Executor
 from .executable import ExecutableMessage
@@ -155,9 +156,13 @@ class ExecutorQueue:
                         with contextlib.suppress(Exception):
                             if await topic.publish(item.message, wait=False):
                                 return
-                        await self.services.s.hooks.output_blocked.emit(topic)
-                        processable.park()
-                        await topic.publish(item.message, wait=True)
+
+                        @self.services.s.hooks.output_blocked.emit
+                        async def scope(topic: Topic) -> None:
+                            processable.park()
+                            await topic.publish(item.message, wait=True)
+
+                        await scope(topic)
 
                     with contextlib.suppress(Exception):
                         await scope(
