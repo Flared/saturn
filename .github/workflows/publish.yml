@@ -21,7 +21,7 @@ jobs:
       with:
         role-to-assume: ${{ secrets.AWS_GITHUB_WORKFLOWS_ROLE_ARN }}
         aws-region: us-east-1
-    - uses: Flared/python-publish-action@v0.3.1
+    - uses: Flared/python-publish-action@v0.3.2
       with:
         AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
