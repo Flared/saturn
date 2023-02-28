@@ -1,9 +1,11 @@
 from typing import AsyncContextManager
 from typing import AsyncIterator
+from typing import DefaultDict
 
 import asyncio
 import contextlib
 import dataclasses
+from collections import defaultdict
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -109,6 +111,8 @@ class BatchingTopic(Topic):
     ) -> AsyncIterator[TopicMessage]:
         context = contextlib.AsyncExitStack()
         message_args: list[dict] = []
+        ids: list[str] = []
+        tag_lists: DefaultDict[str, list[str]] = defaultdict(list)
 
         for message_context in batch:
             message: TopicMessage
@@ -118,5 +122,16 @@ class BatchingTopic(Topic):
                 message = message_context
             message_args.append(message.args)
 
+            ids.append(message.id)
+            for tag, value in message.tags.items():
+                tag_lists[tag].append(value)
+
+        tags = {"batched_ids": ", ".join(ids)} | {
+            tag: ", ".join(values) for tag, values in tag_lists.items()
+        }
+
         async with context:
-            yield TopicMessage(args={"batch": message_args})
+            yield TopicMessage(
+                args={"batch": message_args},
+                tags=tags,
+            )

@@ -41,4 +41,8 @@ class BatchingInventory(Inventory):
                 return
 
             after = batch[-1].id
-            yield Item(id=after, args={"batch": [item.args for item in batch]})
+            yield Item(
+                id=after,
+                args={"batch": [item.args for item in batch]},
+                tags={"batched_ids": ", ".join([item.id for item in batch])},
+            )
