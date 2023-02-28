@@ -108,3 +108,60 @@ class BlockingInventory(Inventory, abc.ABC):
     @abc.abstractmethod
     def next_batch_blocking(self, after: t.Optional[str] = None) -> list[Item]:
         raise NotImplementedError()
+
+
+class SubInventory(abc.ABC, OptionsSchema):
+    @abc.abstractmethod
+    async def next_batch(
+        self, source_item: Item, after: t.Optional[str] = None
+    ) -> list[Item]:
+        """Returns a batch of item with id greater than `after`."""
+        raise NotImplementedError()
+
+    async def iterate(
+        self, source_item: Item, after: t.Optional[str] = None
+    ) -> AsyncIterator[Item]:
+        """Returns an iterable that goes over the whole inventory."""
+        retries_count = 0
+        while True:
+            try:
+                batch = await self.next_batch(source_item, after)
+            except RetryBatch as e:
+                e.check_max_retries(retries_count)
+                if e.__cause__:
+                    self.logger.warning("Retrying to get batch", exc_info=e)
+                await e.wait_delay()
+                retries_count += 1
+                continue
+            else:
+                retries_count = 0
+
+            if not batch:
+                return
+
+            for item in batch:
+                yield item
+
+            after = item.cursor
+
+    @cached_property
+    def logger(self) -> logging.Logger:
+        return logging.getLogger(__name__ + ".SubInventory")
+
+
+class BlockingSubInventory(SubInventory, abc.ABC):
+    async def next_batch(
+        self, source_item: Item, after: t.Optional[str] = None
+    ) -> list[Item]:
+        return await asyncio.get_event_loop().run_in_executor(
+            None,
+            self.next_batch_blocking,
+            source_item,
+            after,
+        )
+
+    @abc.abstractmethod
+    def next_batch_blocking(
+        self, source_item: Item, after: t.Optional[str] = None
+    ) -> list[Item]:
+        raise NotImplementedError()
