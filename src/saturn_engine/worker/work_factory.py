@@ -1,3 +1,5 @@
+import typing as t
+
 from saturn_engine.core.api import InventoryItem
 from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import ResourcesProviderItem
@@ -12,6 +14,7 @@ from . import inventories
 from . import topics
 from .executors.executable import ExecutableQueue
 from .inventories import Inventory
+from .inventories import SubInventory
 from .job import Job
 from .services import Services
 from .services.job_store import JobStoreService
@@ -69,6 +72,20 @@ def build_inventory(inventory_item: InventoryItem, *, services: Services) -> Inv
         raise ValueError(f"Unknown inventory type: {inventory_item.type}")
     if not issubclass(klass, Inventory):
         raise ValueError(f"{klass} must be an Inventory")
+    options = {"name": inventory_item.name} | inventory_item.options
+    return klass.from_options(options, services=services)
+
+
+def build_sub_inventory(
+    inventory_item: InventoryItem, *, services: Services
+) -> SubInventory:
+    klass: t.Optional[t.Type[SubInventory]] = extra_inspect.import_name(
+        inventory_item.type
+    )
+    if klass is None:
+        raise ValueError(f"Unknown inventory type: {inventory_item.type}")
+    if not issubclass(klass, SubInventory):
+        raise ValueError(f"{klass} must be a SubInventory")
     options = {"name": inventory_item.name} | inventory_item.options
     return klass.from_options(options, services=services)
 
