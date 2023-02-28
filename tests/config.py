@@ -9,7 +9,11 @@ class config(SaturnConfig):
 
     class services_manager(ServicesManagerConfig):
         strict_services = False
-        services: list[str] = []
+        services: list[str] = [
+            "saturn_engine.worker.services.tracing.Tracer",
+            "saturn_engine.worker.services.metrics.Metrics",
+            "saturn_engine.worker.services.loggers.Logger",
+        ]
 
     class worker(WorkerConfig):
         job_store_cls = "MemoryJobStore"

@@ -43,6 +43,7 @@ from saturn_engine.worker.topics import Topic
 from saturn_engine.worker.topics.memory import reset as reset_memory_queues
 from saturn_engine.worker.work_manager import WorkManager
 from tests.utils import TimeForwardLoop
+from tests.utils.metrics import MetricsCapture
 from tests.utils.span_exporter import InMemorySpanExporter
 
 
@@ -377,6 +378,14 @@ def _tracer() -> InMemorySpanExporter:
 def span_exporter(_tracer: InMemorySpanExporter) -> InMemorySpanExporter:
     _tracer.clear()
     return _tracer
+
+
+@pytest.fixture
+def metrics_capture() -> Iterator[MetricsCapture]:
+    helper = MetricsCapture()
+    helper.setup_provider()
+    yield helper
+    helper.reset_provider()
 
 
 @pytest.fixture

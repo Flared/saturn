@@ -21,6 +21,7 @@ from saturn_engine.worker.executors import Executor
 from saturn_engine.worker.resources.provider import ProvidedResource
 from saturn_engine.worker.resources.provider import ResourcesProvider
 from tests.utils import register_hooks_handler
+from tests.utils.metrics import MetricsCapture
 from tests.utils.span_exporter import InMemorySpanExporter
 from tests.worker.conftest import FakeResource
 
@@ -66,6 +67,7 @@ def config(config: Config) -> Config:
                 "services": [
                     "saturn_engine.worker.services.labels_propagator.LabelsPropagator",
                     "saturn_engine.worker.services.tracing.Tracer",
+                    "saturn_engine.worker.services.metrics.Metrics",
                 ]
             }
         }
@@ -78,6 +80,7 @@ async def test_broker_dummy(
     config: Config,
     worker_manager_client: Mock,
     span_exporter: InMemorySpanExporter,
+    metrics_capture: MetricsCapture,
 ) -> None:
     FakeExecutor.done_event = asyncio.Event()
 
@@ -152,6 +155,34 @@ async def test_broker_dummy(
     assert exported_traces[0].otel_span.attributes["saturn.message.id"] == "0"
     assert (
         exported_traces[0].otel_span.attributes["saturn.labels.owner"] == "team-saturn"
+    )
+
+    # Test metrics
+    pipeline_params = {"pipeline": pipeline_info.name}
+    metrics_capture.assert_metric_expected(
+        "saturn.pipeline.message",
+        [
+            metrics_capture.create_number_data_point(
+                1001,
+                attributes=pipeline_params | {"state": "polled"},
+            ),
+            metrics_capture.create_number_data_point(
+                1001,
+                attributes=pipeline_params | {"state": "scheduled"},
+            ),
+            metrics_capture.create_number_data_point(
+                1001,
+                attributes=pipeline_params | {"state": "submitted"},
+            ),
+            metrics_capture.create_number_data_point(
+                1000,
+                attributes=pipeline_params | {"state": "executing"},
+            ),
+            metrics_capture.create_number_data_point(
+                1000,
+                attributes=pipeline_params | {"state": "success"},
+            ),
+        ],
     )
 
     broker_task.cancel()
