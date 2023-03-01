@@ -133,7 +133,6 @@ class RabbitMQTopic(Topic):
                     )
                     return True
                 except aio_pika.exceptions.DeliveryError as e:
-
                     # Only handle Nack
                     if e.frame.name != "Basic.Nack":
                         raise
@@ -190,15 +189,22 @@ class RabbitMQTopic(Topic):
         if self.options.prefetch_count is not None:
             await channel.set_qos(prefetch_count=self.options.prefetch_count)
         channel.close_callbacks.add(self.channel_closed)
+        channel.reopen_callbacks.add(self.channel_reopened)
         return channel
 
     def channel_closed(
         self, channel: aio_pika.abc.AbstractChannel, reason: t.Optional[Exception]
     ) -> None:
+        extra = {"data": {"topic": {"id": self.name}}}
         if isinstance(reason, BaseException):
-            self.logger.error("Channel closed", exc_info=reason)
+            self.logger.error("Channel closed", exc_info=reason, extra=extra)
         elif reason:
-            self.logger.error("Channel closed: %s", reason)
+            self.logger.error("Channel closed: %s", reason, extra=extra)
+
+    def channel_reopened(self, channel: aio_pika.abc.AbstractChannel) -> None:
+        self.logger.info(
+            "Channel reopening", extra={"data": {"topic": {"id": self.name}}}
+        )
 
     @cached_property
     async def queue(self) -> aio_pika.abc.AbstractQueue:

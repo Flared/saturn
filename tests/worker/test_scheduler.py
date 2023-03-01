@@ -108,7 +108,6 @@ async def test_scheduler_iter_errors(scheduler: Scheduler) -> None:
     scheduler.add(schedulable3)
 
     async with alib.scoped_iter(scheduler.run()) as generator:
-
         messages.clear()
         async for item in alib.islice(generator, 5):
             messages[item] += 1

@@ -135,4 +135,4 @@ async def tcp_proxy() -> t.AsyncIterator[t.Callable[[int, int], Awaitable[TcpPro
 
     yield factory
     for proxy in proxies:
-        await proxy.disconnect()
+        await proxy.close()

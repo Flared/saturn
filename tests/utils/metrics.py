@@ -17,6 +17,7 @@ class MetricsCapture:
     def __init__(self) -> None:
         self.memory_reader = InMemoryMetricReader()
         self.meter_provider = MeterProvider(metric_readers=[self.memory_reader])
+        self._metrics_data: t.Any = None
 
     @staticmethod
     def reset_provider() -> None:
@@ -29,7 +30,10 @@ class MetricsCapture:
         metrics_api.set_meter_provider(self.meter_provider)
 
     def get_metric(self, name: str) -> Metric:
-        resource_metrics = self.memory_reader.get_metrics_data().resource_metrics
+        if self._metrics_data is None:
+            self.collect()
+        assert self._metrics_data
+        resource_metrics = self._metrics_data.resource_metrics
 
         for metrics in resource_metrics:
             for scope_metrics in metrics.scope_metrics:
@@ -37,6 +41,9 @@ class MetricsCapture:
                     if name == metric.name:
                         return metric
         raise IndexError(name)
+
+    def collect(self) -> None:
+        self._metrics_data = self.memory_reader.get_metrics_data()
 
     def assert_metric_expected(
         self,

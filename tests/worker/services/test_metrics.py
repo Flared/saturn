@@ -234,6 +234,7 @@ async def test_metrics_topic_blocked(
 
         await hook_generator.asend(None)
 
+    metrics_capture.collect()
     metrics_capture.assert_metric_expected(
         "saturn.topic.blocked",
         [

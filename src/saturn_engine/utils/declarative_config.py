@@ -32,7 +32,6 @@ def load_uncompiled_objects_from_str(definitions: str) -> list[UncompiledObject]
     uncompiled_objects: list[UncompiledObject] = []
 
     for yaml_object in yaml.load_all(definitions, yaml.SafeLoader):
-
         if not yaml_object:
             continue
 

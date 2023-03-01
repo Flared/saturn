@@ -26,7 +26,7 @@ aiosqlite = "^0.17.0"
 marshmallow = "^3.13.0"
 desert = ">=2020.11.18"
 asyncstdlib = "^3.10.2"
-aio-pika = "^7.1"
+aio-pika = ">=8.0"
 ####################
 ## worker-manager ##
 ####################

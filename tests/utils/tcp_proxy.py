@@ -1,6 +1,7 @@
 import typing as t
 
 import asyncio
+import contextlib
 
 
 # Adapted from https://github.com/aio-libs/aiopg/blob/master/tests/conftest.py#L416
@@ -62,12 +63,15 @@ class TcpProxy:
         self.connections.add(server_writer)
         self.connections.add(client_writer)
 
-        await asyncio.wait(
+        done, _ = await asyncio.wait(
             [
                 asyncio.ensure_future(self._pipe(server_reader, client_writer)),
                 asyncio.ensure_future(self._pipe(client_reader, server_writer)),
             ]
         )
+        for fut in done:
+            with contextlib.suppress(Exception):
+                await fut
 
     async def close(self) -> None:
         await self.disconnect()
