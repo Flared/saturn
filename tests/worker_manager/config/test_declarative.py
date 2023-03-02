@@ -577,7 +577,6 @@ def test_resource_concurrency() -> None:
 
 
 def test_resources_provider() -> None:
-
     resources_provider_str = """
     apiVersion: saturn.flared.io/v1alpha1
     kind: SaturnResourcesProvider

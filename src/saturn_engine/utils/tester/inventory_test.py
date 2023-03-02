@@ -46,7 +46,6 @@ def run_saturn_inventory_test(
     static_definitions: StaticDefinitions,
     inventory_test: InventoryTest,
 ) -> None:
-
     items: list[dict] = run_saturn_inventory(
         static_definitions=static_definitions,
         inventory_name=inventory_test.spec.selector.inventory,

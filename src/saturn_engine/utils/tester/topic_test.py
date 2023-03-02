@@ -55,7 +55,6 @@ def run_saturn_topic_test(
     static_definitions: StaticDefinitions,
     topic_test: TopicTest,
 ) -> None:
-
     messages: list[dict] = run_saturn_topic(
         static_definitions=static_definitions,
         topic_name=topic_test.spec.selector.topic,

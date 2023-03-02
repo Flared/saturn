@@ -7,15 +7,15 @@ from datetime import timedelta
 
 import aio_pika
 import asyncstdlib as alib
-import pamqp.commands
-import pamqp.constants
 import pytest
+from aiormq.exceptions import AMQPConnectionError
 
 from saturn_engine.config import Config
 from saturn_engine.core import TopicMessage
 from saturn_engine.utils import utcnow
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.services.rabbitmq import RabbitMQService
+from saturn_engine.worker.topic import TopicClosedError
 from saturn_engine.worker.topics import RabbitMQTopic
 from saturn_engine.worker.topics.rabbitmq import RabbitMQSerializer
 from tests.utils.tcp_proxy import TcpProxy
@@ -58,6 +58,7 @@ async def topic_maker(
         kwargs.setdefault("durable", False)
         options = RabbitMQTopic.Options(queue_name=queue_name, **kwargs)
         topic = RabbitMQTopic(options, services=services_manager.services)
+        topic.name = queue_name
         topics.append(topic)
         queue_names.add(queue_name)
         return topic
@@ -167,38 +168,33 @@ async def test_rabbitmq_topic_channel_closed(
     )
     services_manager = await services_manager_maker(config)
 
-    async def close_all_channels() -> None:
-        rabbitmq_service = await rabbitmq_service_loader(services_manager)
-        connection = await rabbitmq_service.connection
-        for channel in dict(connection.connection.channels).values():
-            await channel.rpc(
-                pamqp.commands.Channel.Close(
-                    reply_code=pamqp.constants.REPLY_SUCCESS,
-                    class_id=0,
-                    method_id=0,
-                ),
-            )
-
     topic = await topic_maker(
+        services_manager=services_manager, durable=True, auto_delete=False
+    )
+
+    reader = await topic_maker(
         services_manager=services_manager, durable=True, auto_delete=False
     )
 
     message = TopicMessage(id="0", args={"n": 1})
 
-    assert await topic.publish(message, wait=False)
-    assert await topic.publish(message, wait=False)
-
-    await proxy.disconnect()
-    with pytest.raises(Exception):
+    async with alib.scoped_iter(reader.run()) as topic_iter:
         assert await topic.publish(message, wait=False)
-    assert await topic.publish(message, wait=True)
-
-    await close_all_channels()
-    with pytest.raises(Exception):
         assert await topic.publish(message, wait=False)
-    assert await topic.publish(message, wait=True)
 
-    await topic.close()
+        assert await unwrap(await alib.anext(topic_iter)) == message
+        assert await unwrap(await alib.anext(topic_iter)) == message
+
+        await proxy.disconnect()
+        with pytest.raises(AMQPConnectionError):
+            assert await topic.publish(message, wait=False)
+        assert await topic.publish(message, wait=True)
+
+        assert await unwrap(await alib.anext(topic_iter)) == message
+
+    # Rabbitmq service must be closed before the tcp proxy othwerwise a
+    # connection leak.
+    await services_manager.close()
 
 
 @pytest.mark.asyncio
@@ -207,5 +203,5 @@ async def test_closed_rabbitmq_topic(
 ) -> None:
     topic = await topic_maker()
     await topic.close()
-    with pytest.raises(Exception):
+    with pytest.raises(TopicClosedError):
         await topic.publish(TopicMessage(id="0", args={"n": 0}), wait=True)

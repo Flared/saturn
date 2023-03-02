@@ -45,7 +45,6 @@ class Tracer(Service[BaseServices, "Tracer.Options"]):
                 **executable_message_attributes(xmsg),
             },
         ) as span:
-
             opentelemetry.propagate.inject(
                 xmsg.message.message.metadata.setdefault(_METADATA_KEY, {})
             )

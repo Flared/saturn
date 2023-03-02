@@ -351,6 +351,7 @@ async def rabbitmq_service_loader(
             return services_manager.services.cast_service(RabbitMQService)
 
         _rabbitmq_service = services_manager._load_service(RabbitMQService)
+        await _rabbitmq_service.open()
         await _rabbitmq_service.connection
         return _rabbitmq_service
 
