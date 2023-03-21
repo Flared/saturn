@@ -40,5 +40,10 @@ class BatchingInventory(Inventory):
             if not batch:
                 return
 
-            after = batch[-1].id
-            yield Item(id=after, args={"batch": [item.args for item in batch]})
+            last_item = batch[-1]
+            yield Item(
+                id=last_item.id,
+                cursor=last_item.cursor,
+                args={"batch": [item.args for item in batch]},
+            )
+            after = last_item.cursor
