@@ -208,7 +208,7 @@ def single_exception_from_remote_error_tuple(
     if client_options is None:
         with_locals = True
     else:
-        with_locals = client_options["with_locals"]
+        with_locals = client_options.get("with_locals", True)
 
     frames = [serialize_frame(frame, with_locals=with_locals) for frame in tb.stack]
 
