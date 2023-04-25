@@ -102,6 +102,7 @@ filterwarnings = [
   "ignore::marshmallow.warnings.RemovedInMarshmallow4Warning",
   "ignore:.*/tmp/ray/.*:ResourceWarning",
   "ignore:.*You should use InstrumentationScope.*:DeprecationWarning",
+  "ignore:pkg_resources is deprecated as an API:DeprecationWarning",
 ]
 
 [tool.isort]
