@@ -63,6 +63,8 @@ class RabbitMQTopic(Topic):
         auto_delete: bool = False
         durable: bool = True
         max_length: t.Optional[int] = None
+        max_length_bytes: t.Optional[int] = None
+        overflow: t.Optional[str] = "reject-publish"
         prefetch_count: t.Optional[int] = None
         serializer: RabbitMQSerializer = RabbitMQSerializer.JSON
         log_above_size: t.Optional[int] = None
@@ -211,7 +213,9 @@ class RabbitMQTopic(Topic):
         arguments: dict[str, t.Any] = {}
         if self.options.max_length:
             arguments["x-max-length"] = self.options.max_length
-            arguments["x-overflow"] = "reject-publish"
+        if self.options.max_length_bytes:
+            arguments["x-max-length-bytes"] = self.options.max_length
+        arguments["x-overflow"] = self.options.overflow
 
         channel = await self.channel
         queue = await channel.declare_queue(
