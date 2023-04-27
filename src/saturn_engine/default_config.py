@@ -32,6 +32,7 @@ class config(SaturnConfig):
 
     class rabbitmq(RabbitMQConfig):
         url = os.environ.get("SATURN_AMQP_URL", "amqp://127.0.0.1/")
+        urls = {}
         reconnect_interval = 10
 
     class worker_manager(WorkerManagerConfig):

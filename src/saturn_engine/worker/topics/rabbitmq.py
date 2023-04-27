@@ -60,6 +60,7 @@ class RabbitMQTopic(Topic):
     @dataclasses.dataclass
     class Options:
         queue_name: str
+        connection_name: str = "default"
         auto_delete: bool = False
         durable: bool = True
         max_length: t.Optional[int] = None
@@ -183,9 +184,11 @@ class RabbitMQTopic(Topic):
 
     @cached_property
     async def channel(self) -> aio_pika.abc.AbstractChannel:
-        connection = await self.services.s.rabbitmq.connection
-        channel = await self.exit_stack.enter_async_context(
-            connection.channel(on_return_raises=True)
+        connection = await self.services.s.rabbitmq.connections.get(
+            self.options.connection_name
+        )
+        channel: aio_pika.abc.AbstractRobustChannel = await self.exit_stack.enter_async_context(
+            connection.channel(on_return_raises=True)  # type: ignore[arg-type]
         )
 
         if self.options.prefetch_count is not None:

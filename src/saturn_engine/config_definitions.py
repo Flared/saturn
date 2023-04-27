@@ -31,6 +31,7 @@ class WorkerManagerConfig:
 @dataclasses.dataclass
 class RabbitMQConfig:
     url: str
+    urls: dict[str, str]
     reconnect_interval: int
 
 

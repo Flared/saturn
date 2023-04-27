@@ -6,6 +6,7 @@ from collections.abc import Awaitable
 from datetime import timedelta
 
 import aio_pika
+import aio_pika.abc
 import asyncstdlib as alib
 import pytest
 from aiormq.exceptions import AMQPConnectionError
@@ -22,7 +23,7 @@ from tests.utils.tcp_proxy import TcpProxy
 
 
 async def ensure_clean_queue(
-    queue_name: str, *, connection: aio_pika.Connection
+    queue_name: str, *, connection: aio_pika.abc.AbstractRobustConnection
 ) -> None:
     async with connection.channel(on_return_raises=True) as channel:
         await channel.queue_delete(queue_name)
@@ -51,7 +52,7 @@ async def topic_maker(
         if queue_name not in queue_names:
             await ensure_clean_queue(
                 queue_name,
-                connection=await rabbitmq_service.connection,
+                connection=await rabbitmq_service.connections.get("default"),
             )
 
         kwargs.setdefault("auto_delete", True)
@@ -70,7 +71,7 @@ async def topic_maker(
 
 
 @pytest.mark.asyncio
-async def test_rabbitmq_topic(
+async def test_rabbitmq_topic_simple(
     topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]]
 ) -> None:
     topic = await topic_maker()
@@ -164,16 +165,27 @@ async def test_rabbitmq_topic_channel_closed(
 ) -> None:
     proxy = await tcp_proxy(15672, 5672)
     config = config.load_object(
-        {"rabbitmq": {"url": "amqp://127.0.0.1:15672/", "reconnect_interval": 1}}
+        {
+            "rabbitmq": {
+                "urls": {"proxy": "amqp://127.0.0.1:15672/"},
+                "reconnect_interval": 1,
+            }
+        }
     )
     services_manager = await services_manager_maker(config)
 
     topic = await topic_maker(
-        services_manager=services_manager, durable=True, auto_delete=False
+        services_manager=services_manager,
+        durable=True,
+        auto_delete=False,
+        connection_name="proxy",
     )
 
     reader = await topic_maker(
-        services_manager=services_manager, durable=True, auto_delete=False
+        services_manager=services_manager,
+        durable=True,
+        auto_delete=False,
+        connection_name="proxy",
     )
 
     message = TopicMessage(id="0", args={"n": 1})

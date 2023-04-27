@@ -11,6 +11,8 @@ from collections.abc import Iterable
 from saturn_engine.utils.log import getLogger
 
 T = t.TypeVar("T")
+K = t.TypeVar("K")
+V = t.TypeVar("V")
 
 AsyncFNone = t.TypeVar("AsyncFNone", bound=t.Callable[..., Awaitable[None]])
 
@@ -235,6 +237,39 @@ class CachedProperty(t.Generic[T]):
             return value
 
         return await value
+
+
+class AsyncLazyDict(t.Generic[K, V]):
+    def __init__(
+        self, initializer: t.Callable[[K], t.Coroutine[t.Any, t.Any, V]]
+    ) -> None:
+        self.data: dict[K, asyncio.Future[V]] = {}
+        self._initializer = initializer
+
+    def clear(self) -> None:
+        self.data = {}
+
+    def __iter__(self) -> t.Iterator[asyncio.Future[V]]:
+        return iter(self.data.values())
+
+    async def get(self, key: K) -> V:
+        data = self.data
+        value = data.get(key)
+        if value:
+            return await value
+
+        task = asyncio.create_task(self._initializer(key))
+        data[key] = task
+        try:
+            fut_value = await task
+        except BaseException:
+            del data[key]
+            raise
+
+        future: asyncio.Future[V] = asyncio.Future()
+        future.set_result(fut_value)
+        data[key] = future
+        return fut_value
 
 
 cached_property = CachedProperty

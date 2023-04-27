@@ -352,7 +352,8 @@ async def rabbitmq_service_loader(
 
         _rabbitmq_service = services_manager._load_service(RabbitMQService)
         await _rabbitmq_service.open()
-        await _rabbitmq_service.connection
+        for connection in _rabbitmq_service.connections:
+            await connection
         return _rabbitmq_service
 
     yield loader
