@@ -1,12 +1,9 @@
 import typing as t
 
 import asyncio
-from collections.abc import AsyncIterator
 from collections.abc import Awaitable
 from datetime import timedelta
 
-import aio_pika
-import aio_pika.abc
 import asyncstdlib as alib
 import pytest
 from aiormq.exceptions import AMQPConnectionError
@@ -20,13 +17,7 @@ from saturn_engine.worker.topic import TopicClosedError
 from saturn_engine.worker.topics import RabbitMQTopic
 from saturn_engine.worker.topics.rabbitmq import RabbitMQSerializer
 from tests.utils.tcp_proxy import TcpProxy
-
-
-async def ensure_clean_queue(
-    queue_name: str, *, connection: aio_pika.abc.AbstractRobustConnection
-) -> None:
-    async with connection.channel(on_return_raises=True) as channel:
-        await channel.queue_delete(queue_name)
+from tests.worker.topics.conftest import RabbitMQTopicMaker
 
 
 async def unwrap(context: t.AsyncContextManager[TopicMessage]) -> TopicMessage:
@@ -34,47 +25,11 @@ async def unwrap(context: t.AsyncContextManager[TopicMessage]) -> TopicMessage:
         return message
 
 
-@pytest.fixture
-async def topic_maker(
-    rabbitmq_service_loader: t.Callable[..., Awaitable[RabbitMQService]],
-    services_manager: ServicesManager,
-) -> AsyncIterator[t.Callable[..., Awaitable[RabbitMQTopic]]]:
-    queue_names = set()
-    topics = []
-
-    async def maker(
-        services_manager: ServicesManager = services_manager,
-        queue_name: str = "test",
-        **kwargs: t.Any
-    ) -> RabbitMQTopic:
-        rabbitmq_service = await rabbitmq_service_loader(services_manager)
-
-        if queue_name not in queue_names:
-            await ensure_clean_queue(
-                queue_name,
-                connection=await rabbitmq_service.connections.get("default"),
-            )
-
-        kwargs.setdefault("auto_delete", True)
-        kwargs.setdefault("durable", False)
-        options = RabbitMQTopic.Options(queue_name=queue_name, **kwargs)
-        topic = RabbitMQTopic(options, services=services_manager.services)
-        topic.name = queue_name
-        topics.append(topic)
-        queue_names.add(queue_name)
-        return topic
-
-    yield maker
-
-    for topic in topics:
-        await topic.close()
-
-
 @pytest.mark.asyncio
 async def test_rabbitmq_topic_simple(
-    topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]]
+    rabbitmq_topic_maker: RabbitMQTopicMaker,
 ) -> None:
-    topic = await topic_maker()
+    topic = await rabbitmq_topic_maker(RabbitMQTopic)
 
     messages = [
         TopicMessage(id="0", args={"n": 1}),
@@ -96,9 +51,11 @@ async def test_rabbitmq_topic_simple(
 
 @pytest.mark.asyncio
 async def test_rabbitmq_topic_pickle(
-    topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]]
+    rabbitmq_topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]]
 ) -> None:
-    topic = await topic_maker(serializer=RabbitMQSerializer.PICKLE)
+    topic = await rabbitmq_topic_maker(
+        RabbitMQTopic, serializer=RabbitMQSerializer.PICKLE
+    )
 
     messages = [
         TopicMessage(id="0", args={"n": b"1", "time": utcnow()}),
@@ -120,9 +77,9 @@ async def test_rabbitmq_topic_pickle(
 
 @pytest.mark.asyncio
 async def test_bounded_rabbitmq_topic_max_length(
-    topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]]
+    rabbitmq_topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]]
 ) -> None:
-    topic = await topic_maker(max_length=2, prefetch_count=2)
+    topic = await rabbitmq_topic_maker(RabbitMQTopic, max_length=2, prefetch_count=2)
     topic.RETRY_PUBLISH_DELAY = timedelta(seconds=0.1)
 
     message = TopicMessage(id="0", args={"n": 1})
@@ -160,7 +117,7 @@ async def test_rabbitmq_topic_channel_closed(
     services_manager_maker: t.Callable[[Config], t.Awaitable[ServicesManager]],
     config: Config,
     tcp_proxy: t.Callable[[int, int], Awaitable[TcpProxy]],
-    topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]],
+    rabbitmq_topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]],
     rabbitmq_service_loader: t.Callable[..., Awaitable[RabbitMQService]],
 ) -> None:
     proxy = await tcp_proxy(15672, 5672)
@@ -174,14 +131,16 @@ async def test_rabbitmq_topic_channel_closed(
     )
     services_manager = await services_manager_maker(config)
 
-    topic = await topic_maker(
+    topic = await rabbitmq_topic_maker(
+        RabbitMQTopic,
         services_manager=services_manager,
         durable=True,
         auto_delete=False,
         connection_name="proxy",
     )
 
-    reader = await topic_maker(
+    reader = await rabbitmq_topic_maker(
+        RabbitMQTopic,
         services_manager=services_manager,
         durable=True,
         auto_delete=False,
@@ -211,9 +170,9 @@ async def test_rabbitmq_topic_channel_closed(
 
 @pytest.mark.asyncio
 async def test_closed_rabbitmq_topic(
-    topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]]
+    rabbitmq_topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]]
 ) -> None:
-    topic = await topic_maker()
+    topic = await rabbitmq_topic_maker(RabbitMQTopic)
     await topic.close()
     with pytest.raises(TopicClosedError):
         await topic.publish(TopicMessage(id="0", args={"n": 0}), wait=True)
