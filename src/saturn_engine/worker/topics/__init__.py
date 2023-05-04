@@ -4,6 +4,7 @@ from ..topic import BlockingTopic
 from ..topic import Topic
 from ..topic import TopicOutput
 from .batching import BatchingTopic
+from .delayed import DelayedTopic
 from .dummy import DummyTopic
 from .file import FileTopic
 from .logger import LoggingTopic
@@ -21,6 +22,7 @@ __all__ = (
 )
 
 BUILTINS: dict[str, Type[Topic]] = {
+    "DelayedTopic": DelayedTopic,
     "DummyTopic": DummyTopic,
     "FileTopic": FileTopic,
     "LoggingTopic": LoggingTopic,
