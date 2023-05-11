@@ -14,14 +14,14 @@ from . import TService
 
 class ServicesManager:
     def __init__(self, config: Config) -> None:
+        self.strict = config.c.services_manager.strict_services
         self.services: Services = ServicesNamespace(
             config=config,
             hooks=Hooks(),
             resources_manager=ResourcesManager(),
-            strict=True,
+            strict=self.strict,
         )
         self.loaded_services: list[Service] = []
-        self.strict = config.c.services_manager.strict_services
         self.is_opened = False
 
         # Some services are required for saturn to work at all.
@@ -69,6 +69,13 @@ class ServicesManager:
         self.loaded_services.append(service)
         self.services[service_cls.name] = service
         return service
+
+    # Useful for tests loading mock service.
+    async def _reload_service(self, service_cls: Type[TService]) -> TService:
+        if old_service := self.services.pop(service_cls.name, None):
+            self.loaded_services.remove(old_service)
+            await old_service.close()
+        return self._load_service(service_cls)
 
     def has_loaded(self, service_cls: Type[TService]) -> bool:
         return service_cls.name in self.services

@@ -35,6 +35,7 @@ from saturn_engine.worker.executors.process import ProcessExecutor
 from saturn_engine.worker.executors.queue import ExecutorQueue
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources.provider import ResourcesProvider
+from saturn_engine.worker.services import MinimalService
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.services.rabbitmq import RabbitMQService
@@ -398,3 +399,23 @@ async def executor(services_manager: ServicesManager) -> AsyncIterator[Executor]
     )
     yield executor
     await executor.close()
+
+
+@pytest.fixture
+def fake_http_client() -> t.Any:
+    def make_http_client(client_mock: Mock) -> t.Type:
+        class FakeHttpClient(MinimalService):
+            name = "http_client"
+
+            def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+                self.session = client_mock
+
+            async def open(self) -> None:
+                pass
+
+            async def close(self) -> None:
+                pass
+
+        return FakeHttpClient
+
+    return make_http_client
