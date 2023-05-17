@@ -15,7 +15,7 @@ def normalize_json(obj: list) -> list:
 
 
 def normalize_json(obj: object) -> object:
-    if dataclasses.is_dataclass(obj):
+    if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
         obj = dataclasses.asdict(obj)
     if isinstance(obj, dict):
         return {k: normalize_json(v) for k, v in obj.items()}
