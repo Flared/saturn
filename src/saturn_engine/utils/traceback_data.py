@@ -37,6 +37,7 @@ class TracebackData:
     __cause__: t.Optional["TracebackData"] = None
     __context__: t.Optional["TracebackData"] = None
     __suppress_context__: bool = False
+    __notes__: t.Optional[list[str]] = None
 
     @classmethod
     def from_exception(
@@ -81,6 +82,7 @@ class TracebackData:
             __cause__=cause,
             __context__=context,
             __suppress_context__=exc_value.__suppress_context__,
+            __notes__=exc_value.__notes__ if hasattr(exc_value, "__notes__") else None,
         )
 
     def __str__(self) -> str:
@@ -160,7 +162,12 @@ class TracebackData:
         if smod not in ("__main__", "builtins"):
             stype = smod + "." + stype
 
-        return _format_final_exc_line(stype, self.exc_str)
+        return "\n".join(
+            itertools.chain(
+                [_format_final_exc_line(stype, self.exc_str)],
+                self.__notes__ or [],
+            )
+        )
 
     def format(
         self,
