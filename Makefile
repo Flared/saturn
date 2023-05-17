@@ -5,7 +5,7 @@
 .venv-tools:
 	rm -rf venv
 	python -m venv .venv-tools
-	.venv-tools/bin/pip install poetry==1.1.12 nox==2022.1.7 nox-poetry==0.9.0 pip==21.3.1 || (rm -rf venv && exit 1)
+	.venv-tools/bin/pip install poetry==1.4.2 nox==2023.4.22 nox-poetry==1.0.2 pip==23.1.2 || (rm -rf venv && exit 1)
 
 .PHONY: nox
 nox: .venv-tools
