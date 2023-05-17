@@ -10,8 +10,8 @@ from nox_poetry import session as nox_session
 nox.options.sessions = "lint", "mypy", "tests", "tests_worker", "example_tests"
 nox.options.reuse_existing_virtualenvs = True
 
-python_all_versions = ["3.9"]
-python_tool_version = "3.9"
+python_all_versions = ["3.9", "3.11"]
+python_tool_version = "3.11"
 pyfiles_locations = "example", "src", "tests", "noxfile.py", "mypy_stubs"
 # These are package that are imported in the tests or this noxfile. Not all
 # package required to run lint and tests.

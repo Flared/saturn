@@ -97,29 +97,6 @@ def config() -> Config:
     return Config().load_objects([default_config, test_config])
 
 
-@pytest.fixture(scope="session")
-def ray_cluster() -> None:
-    try:
-        import ray
-    except ImportError:
-        raise pytest.skip("Skipping ray tests") from None
-
-    ray.init(local_mode=True)
-
-
-@pytest.fixture(scope="session")
-def remote_ray_cluster() -> None:
-    try:
-        import ray
-    except ImportError:
-        raise pytest.skip("Skipping ray tests") from None
-
-    try:
-        ray.init(address="auto", local_mode=False)
-    except Exception:
-        raise pytest.skip("Skipping remote ray tests") from None
-
-
 @pytest.fixture
 async def tcp_proxy() -> t.AsyncIterator[t.Callable[[int, int], Awaitable[TcpProxy]]]:
     proxies: list[TcpProxy] = []

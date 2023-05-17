@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-
-set -eo pipefail
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-ROOT_DIR="$( cd ${DIR}/.. && pwd )"
-
-export PYTHONPATH="${PYTHONPATH}:$DIR/src"
-exec ray start --head --port=6379
