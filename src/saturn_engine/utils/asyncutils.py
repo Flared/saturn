@@ -142,45 +142,72 @@ class TasksGroupRunner(TasksGroup):
 
 
 class DelayedThrottle(t.Generic[AsyncFNone]):
-    __call__: AsyncFNone
-
     def __init__(self, func: AsyncFNone, *, delay: float) -> None:
         self.func = func
         self.delay = delay
+        self.flush_event = asyncio.Event()
         self.delayed_task: t.Optional[asyncio.Task] = None
-        self.delayed_lock = asyncio.Lock()
-        self.delayed_args: tuple[t.Any, ...] = ()
-        self.delayed_kwargs: dict[str, t.Any] = {}
+        self.delayed_params: t.Optional[
+            tuple[tuple[t.Any, ...], dict[str, t.Any]]
+        ] = None
+        self.current_params: t.Optional[
+            tuple[tuple[t.Any, ...], dict[str, t.Any]]
+        ] = None
 
-    async def __call__(self, *args: t.Any, **kwargs: t.Any) -> None:  # type: ignore
-        async with self.delayed_lock:
-            self.delayed_args = args
-            self.delayed_kwargs = kwargs
+    @property
+    def is_idle(self) -> bool:
+        return self.delayed_task is None
 
-            if self.delayed_task is None:
-                name = f"{self.func.__qualname__}.delayed"
-                self.delayed_task = asyncio.create_task(self._delay_call(), name=name)
+    @property
+    def is_waiting(self) -> bool:
+        return bool(self.delayed_params)
+
+    @property
+    def is_running(self) -> bool:
+        return not self.is_idle and not self.is_waiting
+
+    def __call__(self, *args: t.Any, **kwargs: t.Any) -> None:
+        self.delayed_params = (args, kwargs)
+
+        if self.is_idle:
+            name = f"{self.func.__qualname__}.delayed"
+            self.delayed_task = asyncio.create_task(self._delay_call(), name=name)
 
     async def _delay_call(self) -> None:
-        await asyncio.sleep(self.delay)
-        async with self.delayed_lock:
-            await self.func(*self.delayed_args, **self.delayed_kwargs)
+        try:
+            self.flush_event.clear()
+            with contextlib.suppress(asyncio.TimeoutError):
+                await asyncio.wait_for(self.flush_event.wait(), timeout=self.delay)
+
+            if not self.delayed_params:
+                return
+
+            args, kwargs = self.delayed_params
+            self.delayed_params = None
+            await self.func(*args, **kwargs)
+        finally:
             self.delayed_task = None
 
+            # If __call__ was called while we were calling func, we requeue a new task.
+            if self.delayed_params:
+                args, kwargs = self.delayed_params
+                self.__call__(*args, **kwargs)
+
     async def cancel(self) -> None:
+        self.delayed_params = None
         if self.delayed_task is None:
             return
+
         self.delayed_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await self.delayed_task
 
-    async def flush(self) -> None:
+    async def flush(self, timeout: t.Optional[int] = None) -> None:
         if self.delayed_task is None:
             return
-        async with self.delayed_lock:
-            await self.cancel()
-            await self.func(*self.delayed_args, **self.delayed_kwargs)
-            self.delayed_task = None
+
+        self.flush_event.set()
+        await asyncio.wait_for(self.delayed_task, timeout=timeout)
 
 
 def print_tasks_summary(loop: t.Optional[asyncio.AbstractEventLoop] = None) -> None:
