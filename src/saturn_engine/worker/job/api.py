@@ -39,7 +39,7 @@ class ApiJobStore(JobStore):
 
     async def save_cursor(self, *, after: Cursor) -> None:
         self.after = after
-        await self.throttle_save_cursor(after=self.after)
+        self.throttle_save_cursor(after=self.after)
 
     async def delayed_save_cursor(self, *, after: Cursor) -> None:
         try:
