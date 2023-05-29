@@ -5,6 +5,7 @@ import dataclasses
 
 import asyncstdlib as alib
 
+from saturn_engine.core import Cursor
 from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.worker.services import Services
 
@@ -28,13 +29,13 @@ class BatchingInventory(Inventory):
 
         self.inventory = build_inventory(options.inventory, services=services)
 
-    async def next_batch(self, after: Optional[str] = None) -> list[Item]:
+    async def next_batch(self, after: Optional[Cursor] = None) -> list[Item]:
         batch: list[Item] = await alib.list(
             alib.islice(self.inventory.iterate(after=after), self.batch_size)
         )
         return batch
 
-    async def iterate(self, after: Optional[str] = None) -> AsyncIterator[Item]:
+    async def iterate(self, after: Optional[Cursor] = None) -> AsyncIterator[Item]:
         while True:
             batch = await self.next_batch(after)
             if not batch:

@@ -5,6 +5,8 @@ from collections.abc import AsyncGenerator
 
 import asyncstdlib as alib
 
+from saturn_engine.core import Cursor
+from saturn_engine.core import MessageId
 from saturn_engine.core import TopicMessage
 from saturn_engine.utils.log import getLogger
 from saturn_engine.utils.options import OptionsSchema
@@ -16,11 +18,11 @@ from ..topics import TopicOutput
 
 class JobStore(OptionsSchema, abc.ABC):
     @abc.abstractmethod
-    async def load_cursor(self) -> Optional[str]:
+    async def load_cursor(self) -> Optional[Cursor]:
         pass
 
     @abc.abstractmethod
-    async def save_cursor(self, *, after: str) -> None:
+    async def save_cursor(self, *, after: Cursor) -> None:
         pass
 
     @abc.abstractmethod
@@ -54,7 +56,7 @@ class Job(Topic):
                             after = item.cursor
                             done = False
                             message = TopicMessage(
-                                id=str(item.id),
+                                id=MessageId(item.id),
                                 args=item.args,
                                 tags=item.tags,
                                 metadata=item.metadata,

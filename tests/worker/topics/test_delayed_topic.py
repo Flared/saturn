@@ -10,6 +10,7 @@ from unittest.mock import call
 import asyncstdlib as alib
 import pytest
 
+from saturn_engine.core import MessageId
 from saturn_engine.core import TopicMessage
 from saturn_engine.utils import utcnow
 from saturn_engine.worker.topics import DelayedTopic
@@ -41,8 +42,8 @@ async def test_delayed_topic(
     topic = await rabbitmq_topic_maker(DelayedTopic, delay=TEST_DELAY)
 
     messages = [
-        TopicMessage(id="a", args={"message": "test-a"}),
-        TopicMessage(id="b", args={"message": "test-b"}),
+        TopicMessage(id=MessageId("a"), args={"message": "test-a"}),
+        TopicMessage(id=MessageId("b"), args={"message": "test-b"}),
     ]
 
     with mock.patch("saturn_engine.worker.topics.delayed.utcnow", new=publish_time):

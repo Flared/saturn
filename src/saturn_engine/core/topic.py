@@ -4,6 +4,8 @@ from typing import Optional
 import dataclasses
 import uuid
 
+from .types import MessageId
+
 
 @dataclasses.dataclass
 class TopicMessage:
@@ -11,7 +13,9 @@ class TopicMessage:
     args: dict[str, Optional[Any]]
 
     #: Unique message id.
-    id: str = dataclasses.field(default_factory=lambda: str(uuid.uuid4()))
+    id: MessageId = dataclasses.field(
+        default_factory=lambda: MessageId(str(uuid.uuid4()))
+    )
 
     #: Tags to attach to observability (logging, events, metrics and tracing).
     tags: dict[str, str] = dataclasses.field(default_factory=dict)

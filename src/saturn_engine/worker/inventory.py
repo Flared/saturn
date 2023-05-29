@@ -11,6 +11,8 @@ from functools import cached_property
 
 import asyncstdlib as alib
 
+from saturn_engine.core import Cursor
+from saturn_engine.core import MessageId
 from saturn_engine.utils.options import OptionsSchema
 
 MISSING = object()
@@ -19,14 +21,16 @@ MISSING = object()
 @dataclasses.dataclass
 class Item:
     args: dict[str, t.Any]
-    id: str = dataclasses.field(default_factory=lambda: str(uuid.uuid4()))
-    cursor: t.Optional[str] = MISSING  # type: ignore[assignment]
+    id: MessageId = dataclasses.field(
+        default_factory=lambda: MessageId(str(uuid.uuid4()))
+    )
+    cursor: t.Optional[Cursor] = MISSING  # type: ignore[assignment]
     tags: dict[str, str] = dataclasses.field(default_factory=dict)
     metadata: dict[str, t.Any] = dataclasses.field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.cursor is MISSING:
-            self.cursor = self.id
+            self.cursor = Cursor(self.id)
 
 
 class MaxRetriesError(Exception):
@@ -52,11 +56,11 @@ class Inventory(abc.ABC, OptionsSchema):
     name: str
 
     @abc.abstractmethod
-    async def next_batch(self, after: t.Optional[str] = None) -> list[Item]:
+    async def next_batch(self, after: t.Optional[Cursor] = None) -> list[Item]:
         """Returns a batch of item with id greater than `after`."""
         raise NotImplementedError()
 
-    async def iterate(self, after: t.Optional[str] = None) -> AsyncIterator[Item]:
+    async def iterate(self, after: t.Optional[Cursor] = None) -> AsyncIterator[Item]:
         """Returns an iterable that goes over the whole inventory."""
         retries_count = 0
         while True:
@@ -87,20 +91,20 @@ class IteratorInventory(Inventory):
     def __init__(self, *, batch_size: t.Optional[int] = None, **kwargs: object) -> None:
         self.batch_size = batch_size or 10
 
-    async def next_batch(self, after: t.Optional[str] = None) -> list[Item]:
+    async def next_batch(self, after: t.Optional[Cursor] = None) -> list[Item]:
         batch: list[Item] = await alib.list(
             alib.islice(self.iterate(after=after), self.batch_size)
         )
         return batch
 
     @abc.abstractmethod
-    async def iterate(self, after: t.Optional[str] = None) -> AsyncIterator[Item]:
+    async def iterate(self, after: t.Optional[Cursor] = None) -> AsyncIterator[Item]:
         raise NotImplementedError()
         yield
 
 
 class BlockingInventory(Inventory, abc.ABC):
-    async def next_batch(self, after: t.Optional[str] = None) -> list[Item]:
+    async def next_batch(self, after: t.Optional[Cursor] = None) -> list[Item]:
         return await asyncio.get_event_loop().run_in_executor(
             None,
             self.next_batch_blocking,
@@ -108,20 +112,20 @@ class BlockingInventory(Inventory, abc.ABC):
         )
 
     @abc.abstractmethod
-    def next_batch_blocking(self, after: t.Optional[str] = None) -> list[Item]:
+    def next_batch_blocking(self, after: t.Optional[Cursor] = None) -> list[Item]:
         raise NotImplementedError()
 
 
 class SubInventory(abc.ABC, OptionsSchema):
     @abc.abstractmethod
     async def next_batch(
-        self, source_item: Item, after: t.Optional[str] = None
+        self, source_item: Item, after: t.Optional[Cursor] = None
     ) -> list[Item]:
         """Returns a batch of item with id greater than `after`."""
         raise NotImplementedError()
 
     async def iterate(
-        self, source_item: Item, after: t.Optional[str] = None
+        self, source_item: Item, after: t.Optional[Cursor] = None
     ) -> AsyncIterator[Item]:
         """Returns an iterable that goes over the whole inventory."""
         retries_count = 0
@@ -153,7 +157,7 @@ class SubInventory(abc.ABC, OptionsSchema):
 
 class BlockingSubInventory(SubInventory, abc.ABC):
     async def next_batch(
-        self, source_item: Item, after: t.Optional[str] = None
+        self, source_item: Item, after: t.Optional[Cursor] = None
     ) -> list[Item]:
         return await asyncio.get_event_loop().run_in_executor(
             None,
@@ -164,6 +168,6 @@ class BlockingSubInventory(SubInventory, abc.ABC):
 
     @abc.abstractmethod
     def next_batch_blocking(
-        self, source_item: Item, after: t.Optional[str] = None
+        self, source_item: Item, after: t.Optional[Cursor] = None
     ) -> list[Item]:
         raise NotImplementedError()

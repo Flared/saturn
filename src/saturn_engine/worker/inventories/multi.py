@@ -7,6 +7,8 @@ import dataclasses
 import json
 from collections.abc import AsyncIterator
 
+from saturn_engine.core import Cursor
+from saturn_engine.core import MessageId
 from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.worker.services import Services
 
@@ -48,7 +50,7 @@ class MultiInventory(IteratorInventory, abc.ABC):
                 (inventory.name, build_inventory(inventory, services=services))
             )
 
-    async def iterate(self, after: Optional[str] = None) -> AsyncIterator[Item]:
+    async def iterate(self, after: Optional[Cursor] = None) -> AsyncIterator[Item]:
         cursors = json.loads(after) if after else {}
 
         async for item in self.inventories_iterator(
@@ -64,12 +66,14 @@ class MultiInventory(IteratorInventory, abc.ABC):
                     self.alias: args,
                 }
             yield Item(
-                id=json.dumps(item.ids), cursor=json.dumps(item.cursors), args=args
+                id=MessageId(json.dumps(item.ids)),
+                cursor=Cursor(json.dumps(item.cursors)),
+                args=args,
             )
 
     @abc.abstractmethod
     async def inventories_iterator(
-        self, *, inventories: list[tuple[str, Inventory]], after: dict[str, str]
+        self, *, inventories: list[tuple[str, Inventory]], after: dict[str, Cursor]
     ) -> AsyncIterator[MultiItems]:
         raise NotImplementedError()
         yield

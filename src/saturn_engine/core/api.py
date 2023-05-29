@@ -9,8 +9,10 @@ from datetime import datetime
 from pydantic import BaseModel
 from pydantic import dataclasses
 
-from saturn_engine.core import PipelineInfo  # noqa: F401  # Reexport for public API
-from saturn_engine.core import QueuePipeline
+from .pipeline import PipelineInfo  # noqa: F401  # Reexport for public API
+from .pipeline import QueuePipeline
+from .types import Cursor
+from .types import JobId
 
 T = TypeVar("T")
 
@@ -102,16 +104,16 @@ class InventoriesResponse(ListResponse[ComponentDefinition]):
 
 @dataclasses.dataclass
 class JobItem:
-    name: str
+    name: JobId
     started_at: datetime
     completed_at: Optional[datetime] = None
-    cursor: Optional[str] = None
+    cursor: Optional[Cursor] = None
     error: Optional[str] = None
 
 
 @dataclasses.dataclass
 class JobInput:
-    cursor: Optional[str] = None
+    cursor: Optional[Cursor] = None
     completed_at: Optional[datetime] = None
     error: Optional[str] = None
 

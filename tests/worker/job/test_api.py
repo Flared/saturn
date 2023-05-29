@@ -4,6 +4,7 @@ from datetime import timezone
 
 import pytest
 
+from saturn_engine.core import Cursor
 from saturn_engine.worker.job.api import ApiJobStore
 from tests.conftest import FreezeTime
 from tests.utils import HttpClientMock
@@ -41,11 +42,11 @@ async def test_api_jobstore(
     assert await job_store.load_cursor() == "10"
 
     http_client_mock.put("/api/jobs/test").return_value = {}
-    await job_store.save_cursor(after="20")
+    await job_store.save_cursor(after=Cursor("20"))
     http_client_mock.put("/api/jobs/test").assert_not_called()
 
     await asyncio.sleep(0.5)
-    await job_store.save_cursor(after="30")
+    await job_store.save_cursor(after=Cursor("30"))
     http_client_mock.put("/api/jobs/test").assert_not_called()
 
     await asyncio.sleep(0.6)
@@ -58,7 +59,7 @@ async def test_api_jobstore(
     http_client_mock.put("/api/jobs/test").assert_not_called()
 
     http_client_mock.reset_mock()
-    await job_store.save_cursor(after="40")
+    await job_store.save_cursor(after=Cursor("40"))
     await job_store.set_completed()
     http_client_mock.put("/api/jobs/test").assert_called_once_with(
         json={
@@ -72,7 +73,7 @@ async def test_api_jobstore(
     await asyncio.sleep(1.1)
     http_client_mock.put("/api/jobs/test").assert_not_called()
 
-    await job_store.save_cursor(after="50")
+    await job_store.save_cursor(after=Cursor("50"))
     await job_store.set_failed(ValueError("test"))
     http_client_mock.put("/api/jobs/test").assert_called_once_with(
         json={

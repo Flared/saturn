@@ -10,6 +10,8 @@ from sqlalchemy.orm import backref
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.sqltypes import Text
 
+from saturn_engine.core import Cursor
+from saturn_engine.core import JobId
 from saturn_engine.core.api import JobItem
 from saturn_engine.utils import utcnow
 
@@ -58,10 +60,10 @@ class Job(Base):
 
     def as_core_item(self) -> JobItem:
         return JobItem(
-            name=self.name,
+            name=JobId(self.name),
             completed_at=self.completed_at,
             started_at=self.started_at,
-            cursor=self.cursor,
+            cursor=Cursor(self.cursor) if self.cursor else None,
             error=self.error,
         )
 

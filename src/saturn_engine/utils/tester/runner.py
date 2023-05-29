@@ -8,6 +8,7 @@ from collections import defaultdict
 
 import click
 
+from saturn_engine.core import Cursor
 from saturn_engine.utils.declarative_config import UncompiledObject
 from saturn_engine.utils.declarative_config import load_uncompiled_objects_from_path
 from saturn_engine.utils.options import fromdict
@@ -154,7 +155,9 @@ def run(
 @click.option("--name", type=str, required=True)
 @click.option("--limit", type=int, required=True, default=1)
 @click.option("--after", type=str, required=False)
-def show_inventory(topology: str, name: str, limit: int, after: Optional[str]) -> None:
+def show_inventory(
+    topology: str, name: str, limit: int, after: Optional[Cursor]
+) -> None:
     static_definitions = compile_static_definitions(
         load_uncompiled_objects_from_path(topology),
     )
