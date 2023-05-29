@@ -3,6 +3,7 @@ from typing import Optional
 
 import aiohttp
 
+from saturn_engine.core import Cursor
 from saturn_engine.core.api import JobInput
 from saturn_engine.core.api import JobResponse
 from saturn_engine.utils import urlcat
@@ -29,18 +30,18 @@ class ApiJobStore(JobStore):
         self.base_url = base_url
         self.logger = getLogger(__name__, self)
 
-        self.after: Optional[str] = None
+        self.after: Optional[Cursor] = None
         self.throttle_save_cursor = DelayedThrottle(self.delayed_save_cursor, delay=1)
 
-    async def load_cursor(self) -> Optional[str]:
+    async def load_cursor(self) -> Optional[Cursor]:
         async with self.http_client.get(self.job_url) as response:
             return fromdict(await response.json(), JobResponse).data.cursor
 
-    async def save_cursor(self, *, after: str) -> None:
+    async def save_cursor(self, *, after: Cursor) -> None:
         self.after = after
         await self.throttle_save_cursor(after=self.after)
 
-    async def delayed_save_cursor(self, *, after: str) -> None:
+    async def delayed_save_cursor(self, *, after: Cursor) -> None:
         try:
             json = asdict(JobInput(cursor=after))
             async with self.http_client.put(self.job_url, json=json) as response:

@@ -7,6 +7,7 @@ from datetime import timedelta
 import pytest
 
 from saturn_engine.config import Config
+from saturn_engine.core import MessageId
 from saturn_engine.core import PipelineInfo
 from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResults
@@ -53,7 +54,7 @@ async def test_logger_message_executed(
 
     pipeline_info = PipelineInfo.from_pipeline(fake_pipeline)
     xmsg = executable_maker(pipeline_info=pipeline_info)
-    xmsg.message.message = TopicMessage(id="m1", args={"x": 42})
+    xmsg.message.message = TopicMessage(id=MessageId("m1"), args={"x": 42})
     xmsg.message.update_with_resources(
         {FakeResource._typename(): {"name": "r1", "data": "foobar"}}
     )
@@ -63,7 +64,8 @@ async def test_logger_message_executed(
     results = PipelineResults(
         outputs=[
             PipelineOutput(
-                channel="default", message=TopicMessage(id="m2", args={"foo": "bar"})
+                channel="default",
+                message=TopicMessage(id=MessageId("m2"), args={"foo": "bar"}),
             )
         ],
         resources=[ResourceUsed(type=FakeResource._typename(), release_at=10)],

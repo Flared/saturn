@@ -5,6 +5,7 @@ from unittest.mock import Mock
 import pytest
 
 from saturn_engine.config import Config
+from saturn_engine.core import JobId
 from saturn_engine.core import PipelineResults
 from saturn_engine.core import api
 from saturn_engine.core.api import ComponentDefinition
@@ -89,7 +90,7 @@ async def test_broker_dummy(
     worker_manager_client.lock.return_value = LockResponse(
         items=[
             QueueItem(
-                name="j1",
+                name=JobId("j1"),
                 input=ComponentDefinition(
                     name="dummy", type="DummyInventory", options={"count": 10000}
                 ),

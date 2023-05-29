@@ -3,6 +3,7 @@ from typing import Optional
 import asyncio
 
 from saturn_engine.config import default_config_with_env
+from saturn_engine.core import Cursor
 from saturn_engine.utils.options import asdict
 from saturn_engine.worker import work_factory
 from saturn_engine.worker.services.manager import ServicesManager
@@ -17,7 +18,7 @@ def run_saturn_inventory(
     static_definitions: StaticDefinitions,
     inventory_name: str,
     limit: Optional[int] = None,
-    after: Optional[str] = None,
+    after: Optional[Cursor] = None,
 ) -> list[dict]:
     inventory_item = static_definitions.inventories[inventory_name]
     inventory = work_factory.build_inventory(

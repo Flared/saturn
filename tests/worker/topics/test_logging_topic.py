@@ -4,6 +4,7 @@ import logging
 
 import pytest
 
+from saturn_engine.core import MessageId
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.error import ErrorMessageArgs
 from saturn_engine.utils.traceback_data import TracebackData
@@ -19,12 +20,12 @@ def generate_exception(msg: str) -> BaseException:
 @pytest.mark.asyncio
 async def test_logging_topic(caplog: t.Any) -> None:
     messages = [
-        TopicMessage(id="0", args={"n": 1}),
-        TopicMessage(id="1", args={"n": 2}),
+        TopicMessage(id=MessageId("0"), args={"n": 1}),
+        TopicMessage(id=MessageId("1"), args={"n": 2}),
     ]
     error_messages = [
         TopicMessage(
-            id="2",
+            id=MessageId("2"),
             args={
                 "error": ErrorMessageArgs(
                     type="Exception",
@@ -37,7 +38,7 @@ async def test_logging_topic(caplog: t.Any) -> None:
             },
         ),
         TopicMessage(
-            id="3",
+            id=MessageId("3"),
             args={
                 "error": ErrorMessageArgs(
                     type="Exception",

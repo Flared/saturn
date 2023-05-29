@@ -6,6 +6,9 @@ from .pipeline import QueuePipeline
 from .pipeline import ResourceUsed
 from .resource import Resource
 from .topic import TopicMessage
+from .types import Cursor
+from .types import JobId
+from .types import MessageId
 
 __all__ = [
     "PipelineInfo",
@@ -16,4 +19,7 @@ __all__ = [
     "Resource",
     "ResourceUsed",
     "TopicMessage",
+    "MessageId",
+    "Cursor",
+    "JobId",
 ]

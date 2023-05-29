@@ -9,6 +9,7 @@ import pytest
 from aiormq.exceptions import AMQPConnectionError
 
 from saturn_engine.config import Config
+from saturn_engine.core import MessageId
 from saturn_engine.core import TopicMessage
 from saturn_engine.utils import utcnow
 from saturn_engine.worker.services.manager import ServicesManager
@@ -32,8 +33,8 @@ async def test_rabbitmq_topic_simple(
     topic = await rabbitmq_topic_maker(RabbitMQTopic)
 
     messages = [
-        TopicMessage(id="0", args={"n": 1}),
-        TopicMessage(id="1", args={"n": 2}),
+        TopicMessage(id=MessageId("0"), args={"n": 1}),
+        TopicMessage(id=MessageId("1"), args={"n": 2}),
     ]
 
     for message in messages:
@@ -58,8 +59,8 @@ async def test_rabbitmq_topic_pickle(
     )
 
     messages = [
-        TopicMessage(id="0", args={"n": b"1", "time": utcnow()}),
-        TopicMessage(id="1", args={"n": b"2", "time": utcnow()}),
+        TopicMessage(id=MessageId("0"), args={"n": b"1", "time": utcnow()}),
+        TopicMessage(id=MessageId("1"), args={"n": b"2", "time": utcnow()}),
     ]
 
     for message in messages:
@@ -82,7 +83,7 @@ async def test_bounded_rabbitmq_topic_max_length(
     topic = await rabbitmq_topic_maker(RabbitMQTopic, max_length=2, prefetch_count=2)
     topic.RETRY_PUBLISH_DELAY = timedelta(seconds=0.1)
 
-    message = TopicMessage(id="0", args={"n": 1})
+    message = TopicMessage(id=MessageId("0"), args={"n": 1})
 
     assert await topic.publish(message, wait=False)
     assert await topic.publish(message, wait=True)
@@ -147,7 +148,7 @@ async def test_rabbitmq_topic_channel_closed(
         connection_name="proxy",
     )
 
-    message = TopicMessage(id="0", args={"n": 1})
+    message = TopicMessage(id=MessageId("0"), args={"n": 1})
 
     async with alib.scoped_iter(reader.run()) as topic_iter:
         assert await topic.publish(message, wait=False)
@@ -175,4 +176,4 @@ async def test_closed_rabbitmq_topic(
     topic = await rabbitmq_topic_maker(RabbitMQTopic)
     await topic.close()
     with pytest.raises(TopicClosedError):
-        await topic.publish(TopicMessage(id="0", args={"n": 0}), wait=True)
+        await topic.publish(TopicMessage(id=MessageId("0"), args={"n": 0}), wait=True)

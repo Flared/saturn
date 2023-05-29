@@ -3,6 +3,7 @@ import json
 import asyncstdlib as alib
 import pytest
 
+from saturn_engine.core import Cursor
 from saturn_engine.worker.inventories import JoinedInventory
 
 
@@ -39,14 +40,14 @@ async def test_joined_inventory() -> None:
         ({"a": "2", "b": "2"}, {"a": "1", "b": "2"}, {"a": {"n": 3}, "b": {"c": "C"}}),
     ]
 
-    batch = await alib.list(inventory.iterate(after='{"a": "0", "b": "1"}'))
+    batch = await alib.list(inventory.iterate(after=Cursor('{"a": "0", "b": "1"}')))
     assert [(json.loads(i.id), json.loads(i.cursor or ""), i.args) for i in batch] == [
         ({"a": "1", "b": "2"}, {"a": "0", "b": "2"}, {"a": {"n": 2}, "b": {"c": "C"}}),
         ({"a": "2", "b": "0"}, {"a": "1", "b": "0"}, {"a": {"n": 3}, "b": {"c": "A"}}),
         ({"a": "2", "b": "1"}, {"a": "1", "b": "1"}, {"a": {"n": 3}, "b": {"c": "B"}}),
         ({"a": "2", "b": "2"}, {"a": "1", "b": "2"}, {"a": {"n": 3}, "b": {"c": "C"}}),
     ]
-    assert not await alib.list(inventory.iterate(after='{"a": "1", "b": "2"}'))
+    assert not await alib.list(inventory.iterate(after=Cursor('{"a": "1", "b": "2"}')))
 
 
 @pytest.mark.asyncio

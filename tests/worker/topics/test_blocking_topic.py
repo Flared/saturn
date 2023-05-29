@@ -6,6 +6,7 @@ import threading
 import asyncstdlib as alib
 import pytest
 
+from saturn_engine.core import MessageId
 from saturn_engine.core import TopicMessage
 from saturn_engine.worker.topic import TopicOutput
 from saturn_engine.worker.topics import BlockingTopic
@@ -26,14 +27,14 @@ async def test_blocking_topic(event_loop: TimeForwardLoop) -> None:
             if self.x == 0:
                 self.x += 2
                 return [
-                    TopicMessage(id=str(1), args={}),
-                    TopicMessage(id=str(2), args={}),
+                    TopicMessage(id=MessageId(str(1)), args={}),
+                    TopicMessage(id=MessageId(str(2)), args={}),
                 ]
 
             self.x += 1
             if self.x == 3:
                 return None
-            return [TopicMessage(id=str(self.x), args={})]
+            return [TopicMessage(id=MessageId(str(self.x)), args={})]
 
         def publish_blocking(self, message: TopicMessage, wait: bool) -> bool:
             if message.args["block"]:
@@ -47,26 +48,32 @@ async def test_blocking_topic(event_loop: TimeForwardLoop) -> None:
     topic = FakeTopic()
 
     assert await alib.list(topic.run()) == [
-        TopicMessage(id="1", args={}),
-        TopicMessage(id="2", args={}),
+        TopicMessage(id=MessageId("1"), args={}),
+        TopicMessage(id=MessageId("2"), args={}),
     ]
 
-    assert await topic.publish(TopicMessage(id="1", args={"block": False}), wait=True)
-    assert await topic.publish(TopicMessage(id="2", args={"block": False}), wait=False)
+    assert await topic.publish(
+        TopicMessage(id=MessageId("1"), args={"block": False}), wait=True
+    )
+    assert await topic.publish(
+        TopicMessage(id=MessageId("2"), args={"block": False}), wait=False
+    )
     assert not await topic.publish(
-        TopicMessage(id="3", args={"block": True}), wait=False
+        TopicMessage(id=MessageId("3"), args={"block": True}), wait=False
     )
 
     async with event_loop.until_idle():
         publish_task1 = asyncio.create_task(
-            topic.publish(TopicMessage(id="4", args={"block": True}), wait=True)
+            topic.publish(
+                TopicMessage(id=MessageId("4"), args={"block": True}), wait=True
+            )
         )
 
     assert not await topic.publish(
-        TopicMessage(id="5", args={"block": False}), wait=False
+        TopicMessage(id=MessageId("5"), args={"block": False}), wait=False
     )
     publish_task2 = asyncio.create_task(
-        topic.publish(TopicMessage(id="6", args={"block": False}), wait=True)
+        topic.publish(TopicMessage(id=MessageId("6"), args={"block": False}), wait=True)
     )
 
     event.set()
@@ -89,10 +96,10 @@ async def test_blocking_topic_error(event_loop: TimeForwardLoop) -> None:
             item = self.items.pop(0)
             if isinstance(item, Exception):
                 raise item
-            return [TopicMessage(id=str(item), args={})]
+            return [TopicMessage(id=MessageId(str(item)), args={})]
 
     topic = FakeTopic()
     assert await alib.list(topic.run()) == [
-        TopicMessage(id="1", args={}),
-        TopicMessage(id="2", args={}),
+        TopicMessage(id=MessageId("1"), args={}),
+        TopicMessage(id=MessageId("2"), args={}),
     ]

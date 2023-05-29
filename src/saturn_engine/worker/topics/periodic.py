@@ -5,6 +5,7 @@ from collections.abc import AsyncGenerator
 
 from croniter import croniter
 
+from saturn_engine.core import MessageId
 from saturn_engine.core import TopicMessage
 
 from . import Topic
@@ -27,7 +28,7 @@ class PeriodicTopic(Topic):
             wait_time = next_tick - time.time()
             if wait_time > 0:
                 await asyncio.sleep(wait_time)
-            yield TopicMessage(id=str(next_tick), args={})
+            yield TopicMessage(id=MessageId(str(next_tick)), args={})
 
     async def publish(self, message: TopicMessage, wait: bool) -> bool:
         raise ValueError("Cannot publish on periodic topic")

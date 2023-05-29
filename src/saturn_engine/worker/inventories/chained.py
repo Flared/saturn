@@ -1,5 +1,7 @@
 from collections.abc import AsyncIterator
 
+from saturn_engine.core import Cursor
+
 from . import Inventory
 from .multi import MultiInventory
 from .multi import MultiItems
@@ -7,7 +9,7 @@ from .multi import MultiItems
 
 class ChainedInventory(MultiInventory):
     async def inventories_iterator(
-        self, *, inventories: list[tuple[str, Inventory]], after: dict[str, str]
+        self, *, inventories: list[tuple[str, Inventory]], after: dict[str, Cursor]
     ) -> AsyncIterator[MultiItems]:
         start_inventory = 0
         if after:

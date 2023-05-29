@@ -4,6 +4,8 @@ from datetime import timedelta
 
 import pytest
 
+from saturn_engine.core import Cursor
+from saturn_engine.core import MessageId
 from saturn_engine.utils import utcnow
 from saturn_engine.worker.inventory import Inventory
 from saturn_engine.worker.inventory import Item
@@ -20,9 +22,9 @@ class RetryingInventory(Inventory):
         self.retry_delay = retry_delay
         self.retrying_count = retrying_count
 
-    async def next_batch(self, after: t.Optional[str] = None) -> list[Item]:
+    async def next_batch(self, after: t.Optional[Cursor] = None) -> list[Item]:
         if self.retried == self.retrying_count:
-            return [Item(id="1", args={"x": 1})]
+            return [Item(id=MessageId("1"), args={"x": 1})]
         self.retried += 1
         raise RetryBatch(delay=self.retry_delay, max_retries=5)
 

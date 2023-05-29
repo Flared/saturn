@@ -1,6 +1,7 @@
 import asyncstdlib as alib
 import pytest
 
+from saturn_engine.core import Cursor
 from saturn_engine.worker.inventories.batching import BatchingInventory
 
 
@@ -33,7 +34,7 @@ async def test_batching_inventory() -> None:
         ),
     ]
 
-    items = await alib.list(inventory.iterate(after="4"))
+    items = await alib.list(inventory.iterate(after=Cursor("4")))
 
     assert [(i.id, i.args) for i in items] == [
         ("7", {"batch": [{"a": "5"}, {"a": "6"}, {"a": "7"}]}),

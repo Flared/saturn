@@ -2,6 +2,7 @@ from typing import Optional
 
 from pydantic import dataclasses
 
+from saturn_engine.core import Cursor
 from saturn_engine.utils.declarative_config import BaseObject
 from saturn_engine.worker.inventories import Item
 
@@ -16,7 +17,7 @@ class InventoryTestSpec:
     selector: InventorySelector
     items: list[Item]
     limit: Optional[int] = None
-    after: Optional[str] = None
+    after: Optional[Cursor] = None
 
 
 @dataclasses.dataclass

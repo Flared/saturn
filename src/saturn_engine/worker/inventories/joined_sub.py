@@ -5,6 +5,8 @@ import dataclasses
 import json
 from collections.abc import AsyncIterator
 
+from saturn_engine.core import Cursor
+from saturn_engine.core import MessageId
 from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.worker.services import Services
 
@@ -42,7 +44,7 @@ class JoinedSubInventory(IteratorInventory, abc.ABC):
             options.sub_inventory, services=services
         )
 
-    async def iterate(self, after: t.Optional[str] = None) -> AsyncIterator[Item]:
+    async def iterate(self, after: t.Optional[Cursor] = None) -> AsyncIterator[Item]:
         cursors = json.loads(after) if after else {}
         inventory_cursor = cursors.get(self.inventory_name)
         sub_inventory_cursor = cursors.get(self.sub_inventory_name)
@@ -67,25 +69,29 @@ class JoinedSubInventory(IteratorInventory, abc.ABC):
                     }
 
                 yield Item(
-                    id=json.dumps(
-                        {
-                            self.inventory_name: item.id,
-                            self.sub_inventory_name: sub_item.id,
-                        }
+                    id=MessageId(
+                        json.dumps(
+                            {
+                                self.inventory_name: item.id,
+                                self.sub_inventory_name: sub_item.id,
+                            }
+                        )
                     ),
-                    cursor=json.dumps(
-                        {
-                            **(
-                                {self.inventory_name: inventory_cursor}
-                                if inventory_cursor
-                                else {}
-                            ),
-                            **(
-                                {self.sub_inventory_name: sub_item.cursor}
-                                if sub_item.cursor
-                                else {}
-                            ),
-                        }
+                    cursor=Cursor(
+                        json.dumps(
+                            {
+                                **(
+                                    {self.inventory_name: inventory_cursor}
+                                    if inventory_cursor
+                                    else {}
+                                ),
+                                **(
+                                    {self.sub_inventory_name: sub_item.cursor}
+                                    if sub_item.cursor
+                                    else {}
+                                ),
+                            }
+                        )
                     ),
                     args=args,
                 )
