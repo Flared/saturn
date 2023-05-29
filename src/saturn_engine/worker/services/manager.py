@@ -44,7 +44,7 @@ class ServicesManager:
         if not self.is_opened:
             return
         for service in reversed(self.loaded_services):
-            await service.close()
+            await service.shutdown()
 
     def _load_service(self, service_cls: Type[TService]) -> TService:
         if service_cls.name in self.services:
@@ -74,7 +74,7 @@ class ServicesManager:
     async def _reload_service(self, service_cls: Type[TService]) -> TService:
         if old_service := self.services.pop(service_cls.name, None):
             self.loaded_services.remove(old_service)
-            await old_service.close()
+            await old_service.shutdown()
         return self._load_service(service_cls)
 
     def has_loaded(self, service_cls: Type[TService]) -> bool:

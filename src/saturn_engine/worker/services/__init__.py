@@ -1,3 +1,4 @@
+import asyncio
 import typing as t
 from typing import Any
 from typing import ClassVar
@@ -9,6 +10,7 @@ from typing import cast
 
 from saturn_engine.config import Config
 from saturn_engine.utils import Namespace
+from saturn_engine.utils.asyncutils import TasksGroupRunner
 from saturn_engine.utils import inspect as extra_inspect
 from saturn_engine.utils.config import Config as BaseConfig
 from saturn_engine.utils.config import LazyConfig
@@ -44,8 +46,11 @@ class Service(Generic[TServices, TOptions]):
     Services: Optional[Type[TServices]] = None
     Options: Optional[Type[TOptions]] = None
 
+    @t.final
     def __init__(self, services: TServices):
         self.services: TServices = services
+        self.tasks = TasksGroupRunner(name=f"service-{self.name}")
+        self.__task_runner: asyncio.Task = asyncio.create_task(self.tasks.run(), name=f"service-{self.name}.runner")
 
     @property
     def options(self) -> TOptions:
@@ -61,6 +66,12 @@ class Service(Generic[TServices, TOptions]):
 
     async def close(self) -> None:
         return None
+
+    @t.final
+    async def shutdown(self) -> None:
+        await self.close()
+        await self.tasks.close()
+        await self.__task_runner
 
 
 TService = TypeVar("TService", bound=Service)

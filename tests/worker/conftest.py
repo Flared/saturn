@@ -407,11 +407,8 @@ def fake_http_client() -> t.Any:
         class FakeHttpClient(MinimalService):
             name = "http_client"
 
-            def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
-                self.session = client_mock
-
             async def open(self) -> None:
-                pass
+                self.session = client_mock
 
             async def close(self) -> None:
                 pass
