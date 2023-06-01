@@ -12,6 +12,7 @@ class config(SaturnConfig):
         services: list[str] = [
             "saturn_engine.worker.services.tracing.Tracer",
             "saturn_engine.worker.services.metrics.Metrics",
+            "saturn_engine.worker.services.usage_metrics.UsageMetrics",
             "saturn_engine.worker.services.loggers.Logger",
         ]
 
