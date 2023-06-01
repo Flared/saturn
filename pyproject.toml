@@ -10,7 +10,8 @@ classifiers = [
   "Intended Audience :: Information Technology",
   "Intended Audience :: Developers",
   "Operating System :: POSIX :: Linux",
-  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
   "Topic :: Software Development :: Libraries :: Application Frameworks",
   "Topic :: System :: Distributed Computing",
 ]
@@ -20,7 +21,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 SQLAlchemy = {extras = ["mypy"], version = "^1.4.29"}
 aiosqlite = "^0.17.0"
 marshmallow = "^3.13.0"
