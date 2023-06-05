@@ -11,7 +11,7 @@ import asyncstdlib as alib
 import pytest
 
 from saturn_engine.core import TopicMessage
-from saturn_engine.core.api import TopicItem
+from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services import ServicesNamespace
 from saturn_engine.worker.services.manager import ServicesManager
@@ -26,7 +26,7 @@ async def test_batching_topic_batch_size() -> None:
 
     topic = BatchingTopic(
         options=BatchingTopic.Options(
-            topic=TopicItem(
+            topic=ComponentDefinition(
                 name="static-topic-with-infinite-messages",
                 type="StaticTopic",
                 options={
@@ -57,7 +57,7 @@ async def test_batching_topic_flush_timeout() -> None:
 
     topic = BatchingTopic(
         options=BatchingTopic.Options(
-            topic=TopicItem(
+            topic=ComponentDefinition(
                 name="periodic-topic",
                 type="PeriodicTopic",
                 options={
@@ -112,7 +112,7 @@ async def test_batching_topic_context_manager(
 ) -> None:
     topic = BatchingTopic(
         options=BatchingTopic.Options(
-            topic=TopicItem(
+            topic=ComponentDefinition(
                 name="nested-topic",
                 type="tests.worker.topics.test_batching_topic.NestedTestTopic",
                 options={},

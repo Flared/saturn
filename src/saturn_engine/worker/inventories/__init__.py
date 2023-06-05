@@ -1,5 +1,3 @@
-from typing import Type
-
 from ..inventory import BlockingInventory
 from ..inventory import BlockingSubInventory
 from ..inventory import Inventory
@@ -21,15 +19,11 @@ __all__ = (
     "BlockingInventory",
     "SubInventory",
     "BlockingSubInventory",
-    "BUILTINS",
+    "BatchingInventory",
+    "ChainedInventory",
+    "DummyInventory",
+    "JoinedInventory",
+    "JoinedSubInventory",
+    "PeriodicInventory",
+    "StaticInventory",
 )
-
-BUILTINS: dict[str, Type[Inventory]] = {
-    "DummyInventory": DummyInventory,
-    "StaticInventory": StaticInventory,
-    "JoinedInventory": JoinedInventory,
-    "JoinedSubInventory": JoinedSubInventory,
-    "ChainedInventory": ChainedInventory,
-    "PeriodicInventory": PeriodicInventory,
-    "BatchingInventory": BatchingInventory,
-}

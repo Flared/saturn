@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from datetime import timedelta
 
-from saturn_engine.core.api import Executor
+from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.core.api import LockInput
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import ResourceItem
@@ -66,7 +66,7 @@ def lock_jobs(
     static_definitions = static_definitions
     resources: dict[str, ResourceItem] = {}
     resources_providers: dict[str, ResourcesProviderItem] = {}
-    executors: dict[str, Executor] = {}
+    executors: dict[str, ComponentDefinition] = {}
     # Copy list since the iteration could drop items from assigned_items.
     for item in assigned_items.copy():
         # Collect resource for assigned work

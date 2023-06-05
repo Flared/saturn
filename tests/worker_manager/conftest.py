@@ -25,9 +25,9 @@ def queue_pipeline_maker(
 
 
 @pytest.fixture
-def topic_item_maker() -> t.Callable[..., api.TopicItem]:
-    def maker() -> api.TopicItem:
-        return api.TopicItem(name="test", type="test", options={})
+def topic_item_maker() -> t.Callable[..., api.ComponentDefinition]:
+    def maker() -> api.ComponentDefinition:
+        return api.ComponentDefinition(name="test", type="test", options={})
 
     return maker
 
@@ -35,8 +35,8 @@ def topic_item_maker() -> t.Callable[..., api.TopicItem]:
 @pytest.fixture
 def queue_item_maker(
     queue_pipeline_maker: t.Callable[..., api.QueuePipeline],
-    topic_item_maker: t.Callable[..., api.TopicItem],
-    fake_executor: api.Executor,
+    topic_item_maker: t.Callable[..., api.ComponentDefinition],
+    fake_executor: api.ComponentDefinition,
 ) -> t.Callable[..., api.QueueItem]:
     def maker() -> api.QueueItem:
         return api.QueueItem(
@@ -65,8 +65,8 @@ def static_definitions() -> t.Iterator[StaticDefinitions]:
 @pytest.fixture
 def fake_executor(
     static_definitions: StaticDefinitions,
-) -> api.Executor:
-    executor = api.Executor(name="default", type="ProcessExecutor")
+) -> api.ComponentDefinition:
+    executor = api.ComponentDefinition(name="default", type="ProcessExecutor")
     static_definitions.executors[executor.name] = executor
     return executor
 

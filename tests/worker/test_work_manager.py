@@ -2,15 +2,13 @@ from unittest.mock import Mock
 
 import pytest
 
-from saturn_engine.core.api import Executor
-from saturn_engine.core.api import InventoryItem
+from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import PipelineInfo
 from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import QueuePipeline
 from saturn_engine.core.api import ResourceItem
 from saturn_engine.core.api import ResourcesProviderItem
-from saturn_engine.core.api import TopicItem
 from saturn_engine.worker.work_manager import WorkManager
 from saturn_engine.worker.work_manager import WorkSync
 
@@ -36,7 +34,7 @@ async def test_sync(
         items=[
             QueueItem(
                 name="q1",
-                input=InventoryItem(
+                input=ComponentDefinition(
                     name="t1", type="DummyInventory", options={"count": 1000}
                 ),
                 pipeline=QueuePipeline(
@@ -49,7 +47,7 @@ async def test_sync(
             ),
             QueueItem(
                 name="q2",
-                input=TopicItem(
+                input=ComponentDefinition(
                     name="t2",
                     type="DummyTopic",
                 ),
@@ -63,7 +61,7 @@ async def test_sync(
             ),
             QueueItem(
                 name="q3",
-                input=TopicItem(
+                input=ComponentDefinition(
                     name="t3",
                     type="DummyTopic",
                 ),
@@ -95,8 +93,8 @@ async def test_sync(
             ),
         ],
         executors=[
-            Executor(name="e1", type="FakeExecutor", options={"foo": "bar"}),
-            Executor(name="e2", type="FakeExecutor", options={"foo": "bar"}),
+            ComponentDefinition(name="e1", type="FakeExecutor", options={"foo": "bar"}),
+            ComponentDefinition(name="e2", type="FakeExecutor", options={"foo": "bar"}),
         ],
     )
 
@@ -121,7 +119,7 @@ async def test_sync(
         items=[
             QueueItem(
                 name="q2",
-                input=TopicItem(
+                input=ComponentDefinition(
                     name="t2",
                     type="DummyTopic",
                 ),
@@ -135,7 +133,7 @@ async def test_sync(
             ),
             QueueItem(
                 name="q4",
-                input=TopicItem(
+                input=ComponentDefinition(
                     name="t4",
                     type="DummyTopic",
                 ),
@@ -160,7 +158,7 @@ async def test_sync(
             ),
         ],
         executors=[
-            Executor(name="e1", type="FakeExecutor", options={"foo": "bar"}),
+            ComponentDefinition(name="e1", type="FakeExecutor", options={"foo": "bar"}),
         ],
     )
 

@@ -11,7 +11,7 @@ import dataclasses
 import inspect
 
 from saturn_engine.utils import inspect as extra_inspect
-from saturn_engine.utils.options import schema_for
+from saturn_engine.utils.options import fromdict
 
 from .resource import Resource
 from .topic import TopicMessage
@@ -51,8 +51,7 @@ class PipelineInfo:
         target_type: Type[T],
     ) -> Union[T, dict[str, object]]:
         if dataclasses.is_dataclass(target_type):
-            schema = schema_for(target_type)
-            return schema.load(data)
+            return cast(T, fromdict(data, target_type))
         return data
 
     @classmethod

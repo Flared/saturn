@@ -10,7 +10,7 @@ import aiohttp
 
 from saturn_engine.config import Config
 from saturn_engine.core import TopicMessage
-from saturn_engine.core.api import TopicItem
+from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.core.api import TopicsResponse
 from saturn_engine.utils import LONG_TIMEOUT
 from saturn_engine.utils import MEDIUM_TIMEOUT
@@ -29,7 +29,7 @@ class SaturnClient:
         self,
         *,
         services_manager: ServicesManager,
-        topic_definitions: list[TopicItem],
+        topic_definitions: list[ComponentDefinition],
     ) -> None:
         self.services_manager = services_manager
         self.services = services_manager.services
@@ -73,7 +73,7 @@ class SaturnClient:
         *,
         http_client: aiohttp.ClientSession,
         base_url: str,
-    ) -> list[TopicItem]:
+    ) -> list[ComponentDefinition]:
         topic_definitions_url = urlcat(base_url, "api/topics")
         async with http_client.get(topic_definitions_url) as response:
             return fromdict(await response.json(), TopicsResponse).items

@@ -49,6 +49,8 @@ class RetryBatch(Exception):
 
 
 class Inventory(abc.ABC, OptionsSchema):
+    name: str
+
     @abc.abstractmethod
     async def next_batch(self, after: t.Optional[str] = None) -> list[Item]:
         """Returns a batch of item with id greater than `after`."""

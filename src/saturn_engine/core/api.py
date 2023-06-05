@@ -2,31 +2,24 @@ from typing import Any
 from typing import Generic
 from typing import Optional
 from typing import TypeVar
-from typing import Union
 
-import dataclasses
+from dataclasses import field
 from datetime import datetime
+
+from pydantic import BaseModel
+from pydantic import dataclasses
 
 from saturn_engine.core import PipelineInfo  # noqa: F401  # Reexport for public API
 from saturn_engine.core import QueuePipeline
-from saturn_engine.utils.options import ObjectUnion
-from saturn_engine.utils.options import field
 
 T = TypeVar("T")
 
 
 @dataclasses.dataclass
-class TopicItem:
+class ComponentDefinition:
     name: str
     type: str
-    options: dict[str, Any] = dataclasses.field(default_factory=dict)
-
-
-@dataclasses.dataclass
-class InventoryItem:
-    name: str
-    type: str
-    options: dict[str, Any] = dataclasses.field(default_factory=dict)
+    options: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclasses.dataclass
@@ -49,19 +42,17 @@ class ResourcesProviderItem:
     name: str
     type: str
     resource_type: str
-    options: dict[str, Any] = dataclasses.field(default_factory=dict)
+    options: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclasses.dataclass
 class QueueItem:
     name: str
     pipeline: QueuePipeline
-    output: dict[str, list[TopicItem]]
-    input: Union[TopicItem, InventoryItem] = field(
-        ObjectUnion(union={"topic": TopicItem, "inventory": InventoryItem})
-    )
-    config: dict[str, Any] = dataclasses.field(default_factory=dict)
-    labels: dict[str, str] = dataclasses.field(default_factory=dict)
+    output: dict[str, list[ComponentDefinition]]
+    input: ComponentDefinition
+    config: dict[str, Any] = field(default_factory=dict)
+    labels: dict[str, str] = field(default_factory=dict)
     executor: str = "default"
 
 
@@ -73,22 +64,14 @@ class JobDefinition:
 
 
 @dataclasses.dataclass
-class Executor:
-    name: str
-    type: str
-    options: dict[str, Any] = dataclasses.field(default_factory=dict)
-
-
-@dataclasses.dataclass
 class LockResponse:
     items: list[QueueItem]
     resources: list[ResourceItem]
     resources_providers: list[ResourcesProviderItem]
-    executors: list[Executor]
+    executors: list[ComponentDefinition]
 
 
-@dataclasses.dataclass
-class LockInput:
+class LockInput(BaseModel):
     worker_id: str
 
 
@@ -108,22 +91,22 @@ class JobDefinitionsResponse(ListResponse[JobDefinition]):
 
 
 @dataclasses.dataclass
-class TopicsResponse(ListResponse[TopicItem]):
-    items: list[TopicItem]
+class TopicsResponse(ListResponse[ComponentDefinition]):
+    items: list[ComponentDefinition]
 
 
 @dataclasses.dataclass
-class InventoriesResponse(ListResponse[InventoryItem]):
-    items: list[InventoryItem]
+class InventoriesResponse(ListResponse[ComponentDefinition]):
+    items: list[ComponentDefinition]
 
 
 @dataclasses.dataclass
 class JobItem:
     name: str
-    completed_at: Optional[datetime]
     started_at: datetime
-    cursor: Optional[str]
-    error: Optional[str]
+    completed_at: Optional[datetime] = None
+    cursor: Optional[str] = None
+    error: Optional[str] = None
 
 
 @dataclasses.dataclass

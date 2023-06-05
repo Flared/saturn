@@ -1,21 +1,21 @@
-from typing import Any
-from typing import Optional
-from typing import Type
-from typing import TypeVar
-from typing import cast
+import typing as t
 
 import dataclasses
-import functools
+import json
 from abc import abstractmethod
-from collections.abc import Hashable
-from collections.abc import Mapping
 from functools import cache
 
-import desert
-import marshmallow
+import pydantic
+import pydantic.json
 
-OptionsSchemaT = TypeVar("OptionsSchemaT", bound="OptionsSchema")
-T = TypeVar("T")
+OptionsSchemaT = t.TypeVar("OptionsSchemaT", bound="OptionsSchema")
+T = t.TypeVar("T")
+
+
+class SchemaModel(pydantic.BaseModel, t.Generic[T]):
+    @classmethod
+    def parse_obj(cls, /, obj: dict[str, t.Any]) -> T:  # type: ignore
+        ...
 
 
 class OptionsSchema:
@@ -28,70 +28,33 @@ class OptionsSchema:
         ...
 
     @classmethod
-    @functools.cache
-    def options_schema(cls, **meta: Any) -> marshmallow.Schema:
-        return desert.schema(cls.Options, meta=meta)
-
-    @classmethod
     def from_options(
-        cls: Type[OptionsSchemaT], options_dict: dict, *args: object, **kwargs: object
+        cls: t.Type[OptionsSchemaT], options_dict: dict, *args: object, **kwargs: object
     ) -> OptionsSchemaT:
-        options_schema = cls.options_schema(unknown=marshmallow.EXCLUDE)
-        options: OptionsSchema.Options = options_schema.load(options_dict)
+        options: OptionsSchema.Options = fromdict(options_dict, cls.Options)
         return cls(*args, options=options, **kwargs)
 
 
 @cache
-def schema_for(klass: Type[T], **meta: Any) -> marshmallow.Schema:
-    return desert.schema(klass, meta=meta)
+def schema_for(klass: t.Type[T]) -> t.Type[SchemaModel[T]]:
+    if issubclass(klass, pydantic.BaseModel):
+        return klass  # type: ignore[return-value]
+    if pydantic.dataclasses.is_builtin_dataclass(klass):
+        return pydantic.dataclasses.dataclass(klass)  # type: ignore[return-value]
+    if dataclasses.is_dataclass(klass):
+        return klass  # type: ignore[return-value]
+    raise ValueError(f"Cannot get shema for {klass}")
 
 
-def asdict(o: Any) -> dict[str, Any]:
-    return schema_for(o.__class__).dump(o)
+def asdict(o: t.Any) -> dict[str, t.Any]:
+    return pydantic.json.pydantic_encoder(o)
 
 
-def fromdict(d: dict[str, Any], klass: Type[T], **meta: Any) -> T:
-    return schema_for(cast(Hashable, klass), **meta).load(d)
+def json_serializer(*args: t.Any, **kwargs: t.Any) -> str:
+    return json.dumps(*args, default=pydantic.json.pydantic_encoder, **kwargs)
 
 
-class ObjectUnion(marshmallow.fields.Field):
-    def __init__(self, *args: Any, union: dict[str, Type], **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-        self.class_to_name = {v: k for k, v in union.items()}
-        self.name_to_schemas = {
-            name: schema_for(cast(Hashable, klass)) for name, klass in union.items()
-        }
-
-    def _serialize(
-        self, value: Any, attr: Optional[str], obj: Any, **kwargs: Any
-    ) -> dict:
-        klass = value.__class__
-        name = self.class_to_name.get(klass)
-        if name is None:
-            raise marshmallow.ValidationError(
-                f"{klass.__name__} is not part of the union"
-            )
-        return {name: self.name_to_schemas[name].dump(value)}
-
-    def _deserialize(
-        self,
-        value: dict,
-        attr: Optional[str],
-        data: Optional[Mapping[str, Any]],
-        **kwargs: Any,
-    ) -> Any:
-        keys = value.keys()
-        if len(keys) != 1:
-            raise marshmallow.ValidationError(
-                f"Union must have a single value: {len(keys)} found"
-            )
-        name = next(iter(keys))
-        schema = self.name_to_schemas.get(name)
-        if schema is None:
-            raise marshmallow.ValidationError(f"{name} is not part of the union")
-        return schema.load(value[name])
-
-
-# Fix typing issue with desert.field
-def field(marshmallow_field: marshmallow.fields.Field, **kwargs: Any) -> Any:
-    return desert.field(marshmallow_field, **kwargs)
+def fromdict(
+    d: dict[str, t.Any], klass: t.Type[T], *, config: t.Optional[dict] = None
+) -> T:
+    return schema_for(t.cast(t.Hashable, klass))(**d)  # type: ignore[return-value]

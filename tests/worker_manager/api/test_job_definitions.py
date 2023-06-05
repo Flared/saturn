@@ -69,11 +69,9 @@ spec:
                 "name": "test-job-definition",
                 "template": {
                     "input": {
-                        "inventory": {
-                            "name": "test-inventory",
-                            "options": {},
-                            "type": "testtype",
-                        },
+                        "name": "test-inventory",
+                        "options": {},
+                        "type": "testtype",
                     },
                     "name": "test-job-definition",
                     "executor": "default",

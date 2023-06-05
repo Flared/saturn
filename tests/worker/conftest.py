@@ -21,9 +21,9 @@ from saturn_engine.core import PipelineInfo
 from saturn_engine.core import QueuePipeline
 from saturn_engine.core import Resource
 from saturn_engine.core import TopicMessage
+from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import QueueItem
-from saturn_engine.core.api import TopicItem
 from saturn_engine.worker.broker import Broker
 from saturn_engine.worker.broker import WorkManagerInit
 from saturn_engine.worker.executors import Executor
@@ -179,7 +179,7 @@ def fake_queue_item(
         ),
         labels={"owner": "team-saturn"},
         output={},
-        input=TopicItem(
+        input=ComponentDefinition(
             name="fake-topic",
             type="MemoryTopic",
         ),
@@ -229,7 +229,7 @@ def fake_executable_maker_with_output(
         message: t.Optional[TopicMessage] = None,
         parker: t.Optional[Parkers] = None,
         pipeline_info: PipelineInfo = fake_pipeline_info,
-        output: t.Optional[dict[str, list[TopicItem]]] = None,
+        output: t.Optional[dict[str, list[ComponentDefinition]]] = None,
     ) -> ExecutableMessage:
         queue_item = QueueItem(
             name="fake-failing-queue",
@@ -239,7 +239,7 @@ def fake_executable_maker_with_output(
             ),
             labels={"owner": "team-saturn"},
             output=output or {},
-            input=TopicItem(
+            input=ComponentDefinition(
                 name="fake-topic",
                 type="MemoryTopic",
             ),

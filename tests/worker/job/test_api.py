@@ -1,4 +1,6 @@
 import asyncio
+from datetime import datetime
+from datetime import timezone
 
 import pytest
 
@@ -61,7 +63,7 @@ async def test_api_jobstore(
     http_client_mock.put("/api/jobs/test").assert_called_once_with(
         json={
             "cursor": "40",
-            "completed_at": "2018-01-02T00:00:02.200000+00:00",
+            "completed_at": datetime(2018, 1, 2, 0, 0, 2, 200000, tzinfo=timezone.utc),
             "error": None,
         }
     )
@@ -75,7 +77,7 @@ async def test_api_jobstore(
     http_client_mock.put("/api/jobs/test").assert_called_once_with(
         json={
             "cursor": "50",
-            "completed_at": "2018-01-02T00:00:03.300000+00:00",
+            "completed_at": datetime(2018, 1, 2, 0, 0, 3, 300000, tzinfo=timezone.utc),
             "error": "ValueError('test')",
         }
     )

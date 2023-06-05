@@ -1,6 +1,8 @@
 import typing as t
 
-import dataclasses
+from dataclasses import field
+
+from pydantic import dataclasses
 
 from saturn_engine.core import api
 from saturn_engine.utils.declarative_config import BaseObject
@@ -12,8 +14,8 @@ DEFAULT_INPUT_NAME: t.Final[str] = "default"
 
 @dataclasses.dataclass
 class JobInput:
-    inventory: t.Optional[str]
-    topic: t.Optional[str]
+    inventory: t.Optional[str] = None
+    topic: t.Optional[str] = None
 
     def __post_init__(self) -> None:
         if not self.inventory and not self.topic:
@@ -24,7 +26,7 @@ class JobInput:
     def to_core_object(
         self,
         static_definitions: StaticDefinitions,
-    ) -> t.Union[api.InventoryItem, api.TopicItem]:
+    ) -> t.Union[api.ComponentDefinition, api.ComponentDefinition]:
         if self.inventory:
             return static_definitions.inventories[self.inventory]
         elif self.topic:
@@ -40,7 +42,7 @@ class JobOutput:
     def to_core_object(
         self,
         static_definitions: StaticDefinitions,
-    ) -> api.TopicItem:
+    ) -> api.ComponentDefinition:
         return static_definitions.topics[self.topic]
 
 
@@ -48,9 +50,9 @@ class JobOutput:
 class JobSpec:
     pipeline: PipelineInfo
     input: t.Optional[JobInput] = None
-    inputs: dict[str, JobInput] = dataclasses.field(default_factory=dict)
-    output: dict[str, list[JobOutput]] = dataclasses.field(default_factory=dict)
-    config: dict[str, t.Any] = dataclasses.field(default_factory=dict)
+    inputs: dict[str, JobInput] = field(default_factory=dict)
+    output: dict[str, list[JobOutput]] = field(default_factory=dict)
+    config: dict[str, t.Any] = field(default_factory=dict)
     executor: str = "default"
 
     def to_core_objects(

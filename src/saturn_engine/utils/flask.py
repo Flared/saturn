@@ -8,7 +8,7 @@ from typing import TypeVar
 from typing import cast
 
 import flask
-import marshmallow
+import pydantic
 from flask import Flask
 from flask import abort as flask_abort
 from werkzeug.exceptions import HTTPException
@@ -31,12 +31,12 @@ def jsonify(item: T) -> Json[T]:
 def marshall_request(klass: Type[T]) -> T:
     try:
         return fromdict(flask.request.json or {}, klass)
-    except marshmallow.ValidationError as validation_error:
+    except pydantic.ValidationError as validation_error:
         abort(
             http_code=400,
             error_code="INVALID_INPUT",
             message="Invalid input",
-            data=validation_error.messages,
+            data=validation_error.errors(),
         )
 
 

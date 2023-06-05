@@ -28,7 +28,7 @@ class Executor(ABC, OptionsSchema):
 
 
 def build_executor(
-    executor_definition: api.Executor, *, services: Services
+    executor_definition: api.ComponentDefinition, *, services: Services
 ) -> Executor:
     klass = BUILTINS.get(executor_definition.type)
     if klass is None:

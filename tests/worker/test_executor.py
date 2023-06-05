@@ -10,7 +10,7 @@ from saturn_engine.core import PipelineInfo
 from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResults
 from saturn_engine.core import TopicMessage
-from saturn_engine.core.api import TopicItem
+from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.core.error import ErrorMessageArgs
 from saturn_engine.worker.executors import Executor
 from saturn_engine.worker.executors.executable import ExecutableMessage
@@ -219,7 +219,7 @@ async def test_executor_error_handler(
     output_queue = get_queue("q1", maxsize=1)
     output_topics = {
         "error:TEST_EXCEPTION:Exception": [
-            TopicItem(
+            ComponentDefinition(
                 "q1",
                 "MemoryTopic",
             )

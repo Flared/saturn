@@ -155,7 +155,7 @@ def test_jobs_sync(
     static_definitions: StaticDefinitions,
     session: Session,
     frozen_time: FreezeTime,
-    fake_executor: api.Executor,
+    fake_executor: api.ComponentDefinition,
 ) -> None:
     new_definitions_str: str = """
 apiVersion: saturn.flared.io/v1alpha1
@@ -373,7 +373,7 @@ def test_failed_jobs(
     client: FlaskClient,
     session: Session,
     static_definitions: StaticDefinitions,
-    fake_executor: api.Executor,
+    fake_executor: api.ComponentDefinition,
     frozen_time: FreezeTime,
 ) -> None:
     # Add a job
