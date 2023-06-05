@@ -10,7 +10,7 @@ from datetime import datetime
 from datetime import timedelta
 
 from saturn_engine.client.worker_manager import WorkerManagerClient
-from saturn_engine.core.api import Executor
+from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import ResourceItem
@@ -41,7 +41,7 @@ class WorkSync:
     queues: ItemsSync[ExecutableQueue]
     resources: ItemsSync[ResourceData]
     resources_providers: ItemsSync[ResourcesProvider]
-    executors: ItemsSync[Executor]
+    executors: ItemsSync[ComponentDefinition]
 
     @classmethod
     def empty(cls: Type["WorkSync"]) -> "WorkSync":
@@ -69,7 +69,7 @@ class WorkManager:
         self.worker_items: WorkerItems = {}
         self.worker_resources: dict[str, ResourceData] = {}
         self.worker_resources_providers: dict[str, ResourcesProvider] = {}
-        self.worker_executors: dict[str, Executor] = {}
+        self.worker_executors: dict[str, ComponentDefinition] = {}
         self.last_sync_at: Optional[datetime] = None
         self.sync_period = timedelta(seconds=60)
         self.services = services
@@ -176,7 +176,9 @@ class WorkManager:
 
         return ItemsSync(add=add_items, drop=drop_items)
 
-    async def load_executors(self, lock_response: LockResponse) -> ItemsSync[Executor]:
+    async def load_executors(
+        self, lock_response: LockResponse
+    ) -> ItemsSync[ComponentDefinition]:
         current_items = set(self.worker_executors.keys())
         sync_items = {item.name: item for item in lock_response.executors}
         sync_items_ids = set(sync_items.keys())

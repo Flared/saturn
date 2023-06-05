@@ -10,7 +10,7 @@ from datetime import datetime
 from datetime import timedelta
 
 from saturn_engine.core import TopicMessage
-from saturn_engine.core.api import TopicItem
+from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.utils.asyncutils import TasksGroup
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.topic import TopicOutput
@@ -26,7 +26,7 @@ class BatchMessage:
 class BatchingTopic(Topic):
     @dataclasses.dataclass
     class Options:
-        topic: TopicItem
+        topic: ComponentDefinition
         batch_size: int = 10
         flush_timeout: timedelta = timedelta(seconds=10)
 

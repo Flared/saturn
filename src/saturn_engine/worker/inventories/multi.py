@@ -7,7 +7,7 @@ import dataclasses
 import json
 from collections.abc import AsyncIterator
 
-from saturn_engine.core.api import InventoryItem
+from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.worker.services import Services
 
 from . import Inventory
@@ -24,7 +24,7 @@ class MultiItems(NamedTuple):
 class MultiInventory(IteratorInventory, abc.ABC):
     @dataclasses.dataclass
     class Options:
-        inventories: list[InventoryItem]
+        inventories: list[ComponentDefinition]
         batch_size: int = 10
         flatten: bool = False
         alias: Optional[str] = None

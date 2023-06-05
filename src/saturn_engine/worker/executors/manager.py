@@ -43,7 +43,7 @@ class ExecutorsManager:
             return
         await executor.remove_schedulable(queue)
 
-    def add_executor(self, executor_definition: api.Executor) -> None:
+    def add_executor(self, executor_definition: api.ComponentDefinition) -> None:
         if executor_definition.name in self.executors:
             raise ValueError("Executor already defined")
 
@@ -57,7 +57,9 @@ class ExecutorsManager:
             asyncio.create_task(executor.run(), name=f"executor-worker({name})")
         )
 
-    async def remove_executor(self, executor_definition: api.Executor) -> None:
+    async def remove_executor(
+        self, executor_definition: api.ComponentDefinition
+    ) -> None:
         executor = self.executors.pop(executor_definition.name, None)
         if not executor:
             raise ValueError("Executor missing")
@@ -81,7 +83,7 @@ class ExecutorWorker:
     @classmethod
     def from_item(
         cls,
-        executor_definition: api.Executor,
+        executor_definition: api.ComponentDefinition,
         *,
         services: Services,
     ) -> "ExecutorWorker":

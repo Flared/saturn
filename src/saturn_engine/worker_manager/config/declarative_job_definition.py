@@ -1,6 +1,6 @@
 import typing as t
 
-import dataclasses
+from pydantic import dataclasses
 
 from saturn_engine.core import api
 from saturn_engine.utils.declarative_config import BaseObject

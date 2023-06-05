@@ -1,5 +1,3 @@
-from typing import Type
-
 from ..topic import BlockingTopic
 from ..topic import Topic
 from ..topic import TopicOutput
@@ -18,18 +16,14 @@ __all__ = (
     "Topic",
     "TopicOutput",
     "BlockingTopic",
-    "BUILTINS",
+    "BatchingTopic",
+    "DelayedTopic",
+    "DummyTopic",
+    "FileTopic",
+    "LoggingTopic",
+    "MemoryTopic",
+    "NullTopic",
+    "PeriodicTopic",
+    "RabbitMQTopic",
+    "StaticTopic",
 )
-
-BUILTINS: dict[str, Type[Topic]] = {
-    "DelayedTopic": DelayedTopic,
-    "DummyTopic": DummyTopic,
-    "FileTopic": FileTopic,
-    "LoggingTopic": LoggingTopic,
-    "MemoryTopic": MemoryTopic,
-    "PeriodicTopic": PeriodicTopic,
-    "RabbitMQTopic": RabbitMQTopic,
-    "StaticTopic": StaticTopic,
-    "BatchingTopic": BatchingTopic,
-    "NullTopic": NullTopic,
-}

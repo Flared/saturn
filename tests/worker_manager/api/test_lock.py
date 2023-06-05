@@ -28,7 +28,13 @@ def test_api_lock_bad_input(client: FlaskClient) -> None:
         "error": {
             "code": "INVALID_INPUT",
             "message": "Invalid input",
-            "data": {"worker_id": ["Missing data for required field."]},
+            "data": [
+                {
+                    "loc": ["worker_id"],
+                    "msg": "field required",
+                    "type": "value_error.missing",
+                }
+            ],
         },
     }
 
@@ -261,7 +267,7 @@ def test_executors(
     assert not resp.json["executors"]
 
     # Add executor to the static definitions.
-    static_definitions.executors["ray-executor"] = api.Executor(
+    static_definitions.executors["ray-executor"] = api.ComponentDefinition(
         name="ray-executor", type="RayExecutor"
     )
 

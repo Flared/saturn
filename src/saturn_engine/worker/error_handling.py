@@ -8,7 +8,7 @@ from functools import lru_cache
 from textwrap import dedent
 from types import TracebackType
 
-from saturn_engine.core.api import TopicItem
+from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.core.error import ErrorMessageArgs
 from saturn_engine.core.pipeline import PipelineOutput
 from saturn_engine.core.pipeline import PipelineResults
@@ -36,7 +36,7 @@ class ExceptionFilter:
 
 
 def process_pipeline_exception(
-    outputs: dict[str, list[TopicItem]],
+    outputs: dict[str, list[ComponentDefinition]],
     exc_value: BaseException,
     exc_traceback: TracebackType,
 ) -> Optional[PipelineResults]:

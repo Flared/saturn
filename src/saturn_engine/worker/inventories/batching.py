@@ -5,7 +5,7 @@ import dataclasses
 
 import asyncstdlib as alib
 
-from saturn_engine.core.api import InventoryItem
+from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.worker.services import Services
 
 from . import Inventory
@@ -15,7 +15,7 @@ from . import Item
 class BatchingInventory(Inventory):
     @dataclasses.dataclass
     class Options:
-        inventory: InventoryItem
+        inventory: ComponentDefinition
         batch_size: int = 10
 
     def __init__(

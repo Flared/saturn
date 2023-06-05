@@ -1,13 +1,23 @@
 from typing import Any
 from typing import cast
 
+import pydantic.json
 from flask import Flask
 from flask import current_app as _current_app
+from flask.json.provider import DefaultJSONProvider
 
 from saturn_engine.worker_manager.context import WorkerManagerContext
 
 
+class JSONProvider(DefaultJSONProvider):
+    @staticmethod
+    def default(o: Any) -> Any:
+        return pydantic.json.pydantic_encoder(o)
+
+
 class SaturnApp(Flask):
+    json_provider_class = JSONProvider
+
     def __init__(
         self,
         worker_manager_context: WorkerManagerContext,

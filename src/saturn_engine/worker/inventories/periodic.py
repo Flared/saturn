@@ -24,10 +24,10 @@ class PeriodicInventory(IteratorInventory):
 
     @dataclasses.dataclass
     class Options:
-        start_date: Optional[datetime.datetime]
-        end_date: Optional[datetime.datetime]
         interval: str
-        batch_size: Optional[int]
+        start_date: Optional[datetime.datetime] = None
+        end_date: Optional[datetime.datetime] = None
+        batch_size: int = 1
 
     def __init__(self, options: Options, **kwargs: object) -> None:
         super().__init__(

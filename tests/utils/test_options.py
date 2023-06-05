@@ -1,11 +1,9 @@
-from typing import Union
-
 import dataclasses
+from datetime import datetime
 
-from saturn_engine.utils.options import ObjectUnion
+from saturn_engine.utils.options import OptionsSchema
 from saturn_engine.utils.options import asdict
-from saturn_engine.utils.options import field
-from saturn_engine.utils.options import fromdict
+from saturn_engine.utils.options import json_serializer
 
 
 @dataclasses.dataclass
@@ -20,21 +18,29 @@ class NestedObjectB:
 
 @dataclasses.dataclass
 class Object:
-    nested: Union[NestedObjectA, NestedObjectB] = field(
-        ObjectUnion(union={"a": NestedObjectA, "b": NestedObjectB})
-    )
+    x: str
+    y: datetime
 
 
-def test_object_union() -> None:
-    assert asdict(Object(nested=NestedObjectA(fielda="a"))) == {
-        "nested": {"a": {"fielda": "a"}}
+class FromObject(OptionsSchema):
+    class Options(Object):
+        pass
+
+    def __init__(self, options: Options) -> None:
+        self.options = options
+
+
+def test_from_as_dict() -> None:
+    assert asdict(
+        FromObject.from_options({"x": "123", "y": "2023-01-01T10:10:10"}).options
+    ) == {
+        "x": "123",
+        "y": datetime(2023, 1, 1, 10, 10, 10),
     }
-    assert asdict(Object(nested=NestedObjectB(fieldb="b"))) == {
-        "nested": {"b": {"fieldb": "b"}}
-    }
-    assert fromdict({"nested": {"a": {"fielda": "a"}}}, Object) == Object(
-        nested=NestedObjectA(fielda="a")
-    )
-    assert fromdict({"nested": {"b": {"fieldb": "b"}}}, Object) == Object(
-        nested=NestedObjectB(fieldb="b")
+
+
+def test_json_serializer() -> None:
+    assert (
+        json_serializer({"x": datetime(2023, 1, 1, 10, 10, 10)})
+        == '{"x": "2023-01-01T10:10:10"}'
     )

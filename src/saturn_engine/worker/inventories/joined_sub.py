@@ -5,7 +5,7 @@ import dataclasses
 import json
 from collections.abc import AsyncIterator
 
-from saturn_engine.core.api import InventoryItem
+from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.worker.services import Services
 
 from . import Item
@@ -15,8 +15,8 @@ from . import IteratorInventory
 class JoinedSubInventory(IteratorInventory, abc.ABC):
     @dataclasses.dataclass
     class Options:
-        inventory: InventoryItem
-        sub_inventory: InventoryItem
+        inventory: ComponentDefinition
+        sub_inventory: ComponentDefinition
         batch_size: int = 10
         flatten: bool = False
         alias: t.Optional[str] = None

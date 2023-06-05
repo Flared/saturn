@@ -1,16 +1,16 @@
-import dataclasses
 import os
+from dataclasses import field
 
-import marshmallow
 import yaml
+from pydantic import dataclasses
 
-from saturn_engine.utils.options import schema_for
+from saturn_engine.utils.options import fromdict
 
 
 @dataclasses.dataclass
 class ObjectMetadata:
     name: str
-    labels: dict[str, str] = dataclasses.field(default_factory=dict)
+    labels: dict[str, str] = field(default_factory=dict)
 
 
 @dataclasses.dataclass
@@ -35,10 +35,7 @@ def load_uncompiled_objects_from_str(definitions: str) -> list[UncompiledObject]
         if not yaml_object:
             continue
 
-        base_object: BaseObject = schema_for(BaseObject).load(
-            data=yaml_object,
-            unknown=marshmallow.EXCLUDE,
-        )
+        base_object: BaseObject = fromdict(yaml_object, BaseObject)
 
         if base_object.apiVersion != "saturn.flared.io/v1alpha1":
             raise Exception(

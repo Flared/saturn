@@ -7,7 +7,7 @@ import pytest
 from saturn_engine.config import Config
 from saturn_engine.core import PipelineResults
 from saturn_engine.core import api
-from saturn_engine.core.api import InventoryItem
+from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import PipelineInfo
 from saturn_engine.core.api import QueueItem
@@ -90,7 +90,7 @@ async def test_broker_dummy(
         items=[
             QueueItem(
                 name="j1",
-                input=InventoryItem(
+                input=ComponentDefinition(
                     name="dummy", type="DummyInventory", options={"count": 10000}
                 ),
                 pipeline=QueuePipeline(
@@ -118,7 +118,7 @@ async def test_broker_dummy(
             )
         ],
         executors=[
-            api.Executor(
+            api.ComponentDefinition(
                 name="e1", type=get_import_name(FakeExecutor), options={"ok": True}
             ),
         ],

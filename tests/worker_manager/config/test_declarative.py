@@ -2,10 +2,9 @@ import os
 
 import pytest
 
-from saturn_engine.core.api import InventoryItem
+from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.core.api import JobDefinition
 from saturn_engine.core.api import ResourceItem
-from saturn_engine.core.api import TopicItem
 from saturn_engine.worker_manager.config.declarative import filter_with_jobs_selector
 from saturn_engine.worker_manager.config.declarative import load_definitions_from_paths
 from saturn_engine.worker_manager.config.declarative import load_definitions_from_str
@@ -89,8 +88,10 @@ spec:
         == "@weekly"
     )
 
-    assert isinstance(static_definitions.inventories["test-inventory"], InventoryItem)
-    assert isinstance(static_definitions.topics["test-topic"], TopicItem)
+    assert isinstance(
+        static_definitions.inventories["test-inventory"], ComponentDefinition
+    )
+    assert isinstance(static_definitions.topics["test-topic"], ComponentDefinition)
     assert isinstance(
         static_definitions.job_definitions["test-job-definition"], JobDefinition
     )
