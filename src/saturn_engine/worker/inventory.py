@@ -28,6 +28,21 @@ class Item:
     tags: dict[str, str] = dataclasses.field(default_factory=dict)
     metadata: dict[str, t.Any] = dataclasses.field(default_factory=dict)
 
+    # Hack to allow building object with `str` instead of new types `MessageId`
+    # and `Cursor`.
+    if t.TYPE_CHECKING:
+
+        def __init__(
+            self,
+            *,
+            args: dict[str, t.Any],
+            id: str = None,  # type: ignore[assignment]
+            cursor: t.Optional[str] = None,
+            tags: dict[str, str] = None,  # type: ignore[assignment]
+            metadata: dict[str, t.Any] = None,  # type: ignore[assignment]
+        ) -> None:
+            ...
+
     def __post_init__(self) -> None:
         if self.cursor is MISSING:
             self.cursor = Cursor(self.id)
