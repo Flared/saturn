@@ -1,5 +1,4 @@
-from typing import Any
-from typing import Optional
+import typing as t
 
 import dataclasses
 import uuid
@@ -10,7 +9,7 @@ from .types import MessageId
 @dataclasses.dataclass
 class TopicMessage:
     #: Message arguments used to call the pipeline.
-    args: dict[str, Optional[Any]]
+    args: dict[str, t.Optional[t.Any]]
 
     #: Unique message id.
     id: MessageId = dataclasses.field(
@@ -21,14 +20,29 @@ class TopicMessage:
     tags: dict[str, str] = dataclasses.field(default_factory=dict)
 
     #: Service-specific configuration overriding the job or global config.
-    config: dict[str, dict[str, Optional[Any]]] = dataclasses.field(
+    config: dict[str, dict[str, t.Optional[t.Any]]] = dataclasses.field(
         default_factory=dict
     )
 
     #: Service-specific data used in the message lifecycle.
-    metadata: dict[str, dict[str, Optional[Any]]] = dataclasses.field(
+    metadata: dict[str, dict[str, t.Optional[t.Any]]] = dataclasses.field(
         default_factory=dict
     )
+
+    # Hack to allow building object with `str` instead of new types `MessageId`
+    # and `Cursor`.
+    if t.TYPE_CHECKING:
+
+        def __init__(
+            self,
+            args: dict[str, t.Any],
+            *,
+            id: str = None,  # type: ignore[assignment]
+            tags: dict[str, str] = None,  # type: ignore[assignment]
+            config: dict[str, dict[str, t.Optional[t.Any]]] = None,  # type: ignore[assignment]
+            metadata: dict[str, dict[str, t.Optional[t.Any]]] = None,  # type: ignore[assignment]
+        ) -> None:
+            ...
 
     def extend(self, args: dict[str, object]) -> "TopicMessage":
         return dataclasses.replace(self, args=args | self.args)

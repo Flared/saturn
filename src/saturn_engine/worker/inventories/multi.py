@@ -8,7 +8,6 @@ import json
 from collections.abc import AsyncIterator
 
 from saturn_engine.core import Cursor
-from saturn_engine.core import MessageId
 from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.worker.services import Services
 
@@ -66,8 +65,8 @@ class MultiInventory(IteratorInventory, abc.ABC):
                     self.alias: args,
                 }
             yield Item(
-                id=MessageId(json.dumps(item.ids)),
-                cursor=Cursor(json.dumps(item.cursors)),
+                id=json.dumps(item.ids),
+                cursor=json.dumps(item.cursors),
                 args=args,
             )
 
