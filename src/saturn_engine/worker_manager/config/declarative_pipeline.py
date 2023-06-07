@@ -1,6 +1,5 @@
+import dataclasses
 from dataclasses import field
-
-from pydantic import dataclasses
 
 from saturn_engine.core import api
 

@@ -1,8 +1,7 @@
 import typing as t
 
+import dataclasses
 from enum import Enum
-
-from pydantic import dataclasses
 
 
 class Env(Enum):

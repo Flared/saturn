@@ -12,12 +12,6 @@ OptionsSchemaT = t.TypeVar("OptionsSchemaT", bound="OptionsSchema")
 T = t.TypeVar("T")
 
 
-class SchemaModel(pydantic.BaseModel, t.Generic[T]):
-    @classmethod
-    def parse_obj(cls, /, obj: dict[str, t.Any]) -> T:  # type: ignore
-        ...
-
-
 class OptionsSchema:
     @dataclasses.dataclass
     class Options:
@@ -36,13 +30,11 @@ class OptionsSchema:
 
 
 @cache
-def schema_for(klass: t.Type[T]) -> t.Type[SchemaModel[T]]:
+def schema_for(klass: t.Type) -> t.Type[pydantic.BaseModel]:
     if issubclass(klass, pydantic.BaseModel):
-        return klass  # type: ignore[return-value]
-    if pydantic.dataclasses.is_builtin_dataclass(klass):
-        return pydantic.dataclasses.dataclass(klass)  # type: ignore[return-value]
+        return klass
     if dataclasses.is_dataclass(klass):
-        return klass  # type: ignore[return-value]
+        return pydantic.dataclasses.create_pydantic_model_from_dataclass(klass)  # type: ignore[arg-type]
     raise ValueError(f"Cannot get shema for {klass}")
 
 
@@ -57,4 +49,8 @@ def json_serializer(*args: t.Any, **kwargs: t.Any) -> str:
 def fromdict(
     d: dict[str, t.Any], klass: t.Type[T], *, config: t.Optional[dict] = None
 ) -> T:
-    return schema_for(t.cast(t.Hashable, klass))(**d)  # type: ignore[return-value]
+    schema = schema_for(t.cast(t.Hashable, klass))
+    obj: pydantic.BaseModel = schema.parse_obj(d)
+    if dataclasses.is_dataclass(klass):
+        return t.cast(T, klass(**obj.dict()))
+    return t.cast(T, obj)

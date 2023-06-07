@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import dataclasses
+import dataclasses
 
 from saturn_engine.utils.declarative_config import BaseObject
 

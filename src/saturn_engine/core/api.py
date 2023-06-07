@@ -3,11 +3,9 @@ from typing import Generic
 from typing import Optional
 from typing import TypeVar
 
+import dataclasses
 from dataclasses import field
 from datetime import datetime
-
-from pydantic import BaseModel
-from pydantic import dataclasses
 
 from .pipeline import PipelineInfo  # noqa: F401  # Reexport for public API
 from .pipeline import QueuePipeline
@@ -73,7 +71,8 @@ class LockResponse:
     executors: list[ComponentDefinition]
 
 
-class LockInput(BaseModel):
+@dataclasses.dataclass
+class LockInput:
     worker_id: str
 
 
