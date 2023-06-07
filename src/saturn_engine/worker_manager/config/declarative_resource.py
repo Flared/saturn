@@ -1,7 +1,7 @@
 from typing import Any
 from typing import Optional
 
-from pydantic import dataclasses
+import dataclasses
 
 from saturn_engine.core import api
 from saturn_engine.utils.declarative_config import BaseObject
