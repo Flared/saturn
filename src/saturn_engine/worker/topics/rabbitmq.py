@@ -246,7 +246,7 @@ class RabbitMQTopic(Topic):
         serialized_message_len = len(serialized_message)
         if (
             self.options.log_above_size
-            and self.options.log_above_size > serialized_message_len
+            and self.options.log_above_size < serialized_message_len
         ):
             self.logger.warning(
                 "Sending large message",
