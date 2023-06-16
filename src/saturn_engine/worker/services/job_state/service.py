@@ -1,6 +1,7 @@
 import dataclasses
-from saturn_engine.utils.asyncutils import DelayedThrottle
 from datetime import datetime
+
+from saturn_engine.utils.asyncutils import DelayedThrottle
 
 from .. import BaseServices
 from .. import Service
@@ -10,9 +11,10 @@ from ..http_client import HttpClient
 class Services(BaseServices):
     http_client: HttpClient
 
+
 @dataclasses.dataclass
 class Options:
-    flush_delay: float = 1
+    flush_delay: float = 1.0
 
 
 class JobStateService(Service[Services, Options]):
@@ -20,7 +22,6 @@ class JobStateService(Service[Services, Options]):
 
     Services = Services
     Options = Options
-
 
     async def open(self) -> None:
         self.delayed_flush = DelayedThrottle(self.flush, delay=self.options.flush_delay)

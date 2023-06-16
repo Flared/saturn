@@ -7,10 +7,10 @@ import dataclasses
 from dataclasses import field
 from datetime import datetime
 
-from saturn_engine.core.pipeline import PipelineInfo  # noqa: F401  # Reexport for public API
-from saturn_engine.core.pipeline import QueuePipeline
-from saturn_engine.core import Cursor
-from saturn_engine.core import JobId
+from .pipeline import PipelineInfo  # noqa: F401  # Reexport for public API
+from .pipeline import QueuePipeline
+from .types import Cursor
+from .types import JobId
 
 T = TypeVar("T")
 

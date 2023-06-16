@@ -1,4 +1,3 @@
-import asyncio
 import typing as t
 from typing import Any
 from typing import ClassVar
@@ -8,10 +7,14 @@ from typing import Type
 from typing import TypeVar
 from typing import cast
 
+import asyncio
+from collections.abc import Coroutine
+from functools import cached_property
+
 from saturn_engine.config import Config
 from saturn_engine.utils import Namespace
-from saturn_engine.utils.asyncutils import TasksGroupRunner
 from saturn_engine.utils import inspect as extra_inspect
+from saturn_engine.utils.asyncutils import TasksGroupRunner
 from saturn_engine.utils.config import Config as BaseConfig
 from saturn_engine.utils.config import LazyConfig
 from saturn_engine.worker.resources.manager import ResourcesManager
@@ -49,8 +52,7 @@ class Service(Generic[TServices, TOptions]):
     @t.final
     def __init__(self, services: TServices):
         self.services: TServices = services
-        self.tasks = TasksGroupRunner(name=f"service-{self.name}")
-        self.__task_runner: asyncio.Task = asyncio.create_task(self.tasks.run(), name=f"service-{self.name}.runner")
+        self.__task_runner: t.Optional[asyncio.Task] = None
 
     @property
     def options(self) -> TOptions:
@@ -67,11 +69,28 @@ class Service(Generic[TServices, TOptions]):
     async def close(self) -> None:
         return None
 
+    @cached_property
+    def tasks(self) -> TasksGroupRunner:
+        tasks = TasksGroupRunner(name=f"service-{self.name}")
+        self.__task_runner = asyncio.create_task(
+            self.tasks.run(), name=f"service-{self.name}.runner"
+        )
+        return tasks
+
+    async def _stop_tasks(self) -> None:
+        if "tasks" in self.__dict__:
+            await self.tasks.close()
+            del self.tasks
+        if self.__task_runner:
+            await self.__task_runner
+
+    def create_task(self, coroutine: Coroutine, **kwargs: t.Any) -> asyncio.Task:
+        return self.tasks.create_task(coroutine, **kwargs)
+
     @t.final
-    async def shutdown(self) -> None:
+    async def _shutdown(self) -> None:
         await self.close()
-        await self.tasks.close()
-        await self.__task_runner
+        await self._stop_tasks()
 
 
 TService = TypeVar("TService", bound=Service)
