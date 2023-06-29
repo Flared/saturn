@@ -1,6 +1,4 @@
-from typing import Any
-from typing import Optional
-from typing import Type
+import typing as t
 
 import logging
 import os
@@ -26,18 +24,43 @@ from saturn_engine.worker.services.hooks import MessagePublished
 from .. import BaseServices
 from .. import Service
 
-Event = dict[str, Any]
-Hint = dict[str, Any]
+Event = dict[str, t.Any]
+Hint = dict[str, t.Any]
 ExcInfo = tuple[
-    Optional[Type[BaseException]], Optional[BaseException], Optional[TracebackType]
+    t.Optional[t.Type[BaseException]],
+    t.Optional[BaseException],
+    t.Optional[TracebackType],
 ]
+
+
+def set_event_tags_from_queue(event: dict, *, queue: QueueItem) -> None:
+    tags = event.setdefault("tags", {})
+    tags["saturn.job.name"] = queue.name
+    for k, v in queue.labels.items():
+        tags[f"saturn.job.labels.{k}"] = v
+
+
+def set_event_tags_from_xmsg(event: dict, *, xmsg: ExecutableMessage) -> None:
+    tags = event.setdefault("tags", {})
+    tags["saturn.message.id"] = xmsg.id
+    tags["saturn.pipeline.name"] = xmsg.message.info.name
+    for k, v in xmsg.message.message.tags.items():
+        tags[f"saturn.message.tags.{k}"] = v
+    set_event_tags_from_queue(event, queue=xmsg.queue.definition)
+
+
+def queue_data(queue: QueueItem) -> dict[str, t.Any]:
+    return {
+        "name": queue.name,
+        "labels": queue.labels,
+    }
 
 
 class Sentry(Service[BaseServices, "Sentry.Options"]):
     name = "sentry"
 
     class Options:
-        dsn: Optional[str] = None
+        dsn: t.Optional[str] = None
 
     async def open(self) -> None:
         self.logger = logging.getLogger("saturn.extras.sentry")
@@ -52,7 +75,7 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
         self.services.hooks.message_executed.register(self.on_message_executed)
         self.services.hooks.message_published.register(self.on_message_published)
 
-    def on_before_send(self, event: Event, hint: Hint) -> Optional[Event]:
+    def on_before_send(self, event: Event, hint: Hint) -> t.Optional[Event]:
         exc_info = hint.get("exc_info")
         # RemoteException should have been unwrapped in one of the hooks,
         # but some exception might have been catched by other integration such
@@ -78,10 +101,10 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
 
             def _event_processor(event: Event, hint: Hint) -> Event:
                 with capture_internal_exceptions():
-                    tags = event.setdefault("tags", {})
-                    tags["saturn_queue"] = item.name
-                    extra = event.setdefault("extra", {})
-                    extra["saturn-queue"] = asdict(item)
+                    set_event_tags_from_queue(event, queue=item)
+                    extra = event.setdefault("extra", {}).setdefault("saturn", {})
+                    extra["job"] = queue_data(item)
+
                 return event
 
             scope.add_event_processor(_event_processor)
@@ -98,11 +121,10 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
 
             def _event_processor(event: Event, hint: Hint) -> Event:
                 with capture_internal_exceptions():
-                    tags = event.setdefault("tags", {})
-                    tags["saturn_message"] = xmsg.id
-                    tags["saturn_pipeline"] = message.info.name
-                    extra = event.setdefault("extra", {})
-                    extra["saturn-pipeline-message"] = asdict(message)
+                    set_event_tags_from_xmsg(event, xmsg=xmsg)
+                    extra = event.setdefault("extra", {}).setdefault("saturn", {})
+                    extra["pipeline_message"] = asdict(message)
+                    extra["job"] = queue_data(xmsg.queue.definition)
                 return event
 
             scope.add_event_processor(_event_processor)
@@ -118,13 +140,12 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
 
             def _event_processor(event: Event, hint: Hint) -> Event:
                 with capture_internal_exceptions():
-                    tags = event.setdefault("tags", {})
-                    tags["saturn_message"] = publish.output.message.id
-                    tags["saturn_channel"] = publish.output.channel
-                    tags["saturn_pipeline"] = publish.xmsg.message.info.name
-                    extra = event.setdefault("extra", {})
-                    extra["saturn-message"] = asdict(publish.output.message)
-                    extra["saturn-pipeline-message"] = asdict(publish.xmsg.message)
+                    set_event_tags_from_xmsg(event, xmsg=publish.xmsg)
+                    event["tags"]["saturn.channel.name"] = publish.output.channel
+                    extra = event.setdefault("extra", {}).setdefault("saturn", {})
+                    extra["output_message"] = asdict(publish.output.message)
+                    extra["pipeline_message"] = asdict(publish.xmsg.message)
+                    extra["job"] = queue_data(publish.xmsg.queue.definition)
                 return event
 
             scope.add_event_processor(_event_processor)
@@ -155,7 +176,9 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
         hub.capture_event(event, hint=hint)
 
     @staticmethod
-    def _sanitize_message_resources(pipeline_message: dict[str, Any]) -> dict[str, Any]:
+    def _sanitize_message_resources(
+        pipeline_message: dict[str, t.Any]
+    ) -> dict[str, t.Any]:
         for resource_arg in pipeline_message.get("info", {}).get("resources", {}):
             resource = (
                 pipeline_message.get("message", {}).get("args", {}).get(resource_arg)
@@ -168,7 +191,7 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
 
 # Following functions are adapted from Sentry-sdk to support
 # TracebackData instead of regular Traceback.
-def walk_traceback_chain(cause: Optional[TracebackData]) -> Iterator[TracebackData]:
+def walk_traceback_chain(cause: t.Optional[TracebackData]) -> Iterator[TracebackData]:
     while cause:
         yield cause
 
@@ -181,10 +204,10 @@ def walk_traceback_chain(cause: Optional[TracebackData]) -> Iterator[TracebackDa
 def serialize_frame(
     frame: FrameData,
     with_locals: bool = True,
-) -> dict[str, Any]:
+) -> dict[str, t.Any]:
     abs_path = frame.filename
 
-    rv: dict[str, Any] = {
+    rv: dict[str, t.Any] = {
         "filename": abs_path,
         "abs_path": os.path.abspath(abs_path) if abs_path else None,
         "function": frame.name or "<unknown>",
@@ -202,9 +225,9 @@ def serialize_frame(
 
 def single_exception_from_remote_error_tuple(
     tb: TracebackData,
-    client_options: Optional[dict[str, Any]] = None,
-    mechanism: Optional[dict[str, Any]] = None,
-) -> dict[str, Any]:
+    client_options: t.Optional[dict[str, t.Any]] = None,
+    mechanism: t.Optional[dict[str, t.Any]] = None,
+) -> dict[str, t.Any]:
     if client_options is None:
         with_locals = True
     else:
@@ -227,9 +250,9 @@ def single_exception_from_remote_error_tuple(
 
 def exceptions_from_traceback(
     tb_exc: TracebackData,
-    client_options: Optional[dict[str, Any]] = None,
-    mechanism: Optional[dict[str, Any]] = None,
-) -> list[dict[str, Any]]:
+    client_options: t.Optional[dict[str, t.Any]] = None,
+    mechanism: t.Optional[dict[str, t.Any]] = None,
+) -> list[dict[str, t.Any]]:
     rv = []
     for tb in walk_traceback_chain(tb_exc):
         rv.append(
@@ -243,8 +266,8 @@ def exceptions_from_traceback(
 
 def event_from_remote_exception(
     exc: RemoteException,
-    client_options: Optional[dict[str, Any]] = None,
-    mechanism: Optional[dict[str, Any]] = None,
+    client_options: t.Optional[dict[str, t.Any]] = None,
+    mechanism: t.Optional[dict[str, t.Any]] = None,
 ) -> tuple[Event, Hint]:
     return (
         {

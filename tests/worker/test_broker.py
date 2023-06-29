@@ -66,7 +66,6 @@ def config(config: Config) -> Config:
         {
             "services_manager": {
                 "services": [
-                    "saturn_engine.worker.services.labels_propagator.LabelsPropagator",
                     "saturn_engine.worker.services.tracing.Tracer",
                     "saturn_engine.worker.services.metrics.Metrics",
                 ]
@@ -155,11 +154,16 @@ async def test_broker_dummy(
     assert exported_traces[0].otel_span.attributes
     assert exported_traces[0].otel_span.attributes["saturn.message.id"] == "0"
     assert (
-        exported_traces[0].otel_span.attributes["saturn.labels.owner"] == "team-saturn"
+        exported_traces[0].otel_span.attributes["saturn.job.labels.owner"]
+        == "team-saturn"
     )
 
     # Test metrics
-    pipeline_params = {"pipeline": pipeline_info.name}
+    pipeline_params = {
+        "saturn.job.name": "j1",
+        "pipeline": "tests.worker.test_broker.pipeline",
+        "saturn.job.labels.owner": "team-saturn",
+    }
     metrics_capture.assert_metric_expected(
         "saturn.pipeline.message",
         [

@@ -12,6 +12,13 @@ from saturn_engine.worker.topic import Topic
 from . import MinimalService
 
 
+def executable_params(xmsg: ExecutableMessage) -> dict:
+    return {
+        "saturn.job.name": xmsg.queue.definition.name,
+        "pipeline": xmsg.message.info.name,
+    } | {f"saturn.job.labels.{k}": v for k, v in xmsg.queue.definition.labels.items()}
+
+
 class Metrics(MinimalService):
     name = "metrics"
 
@@ -61,22 +68,21 @@ class Metrics(MinimalService):
         self.services.hooks.output_blocked.register(self.on_output_blocked)
 
     async def on_message_polled(self, xmsg: ExecutableMessage) -> None:
-        params = {"pipeline": xmsg.message.info.name}
+        params = executable_params(xmsg)
         self.message_counter.add(1, params | {"state": "polled"})
 
     async def on_message_scheduled(self, xmsg: ExecutableMessage) -> None:
-        params = {"pipeline": xmsg.message.info.name}
+        params = executable_params(xmsg)
         self.message_counter.add(1, params | {"state": "scheduled"})
 
     async def on_message_submitted(self, xmsg: ExecutableMessage) -> None:
-        params = {"pipeline": xmsg.message.info.name}
+        params = executable_params(xmsg)
         self.message_counter.add(1, params | {"state": "submitted"})
 
     async def on_message_executed(
         self, xmsg: ExecutableMessage
     ) -> AsyncGenerator[None, PipelineResults]:
-        message = xmsg.message
-        params = {"pipeline": message.info.name}
+        params = executable_params(xmsg)
         self.message_counter.add(1, params | {"state": "executing"})
         try:
             with get_timer(self.message_duration).time(params):
@@ -96,7 +102,7 @@ class Metrics(MinimalService):
     async def on_message_published(
         self, event: MessagePublished
     ) -> AsyncGenerator[None, None]:
-        params = {"pipeline": event.xmsg.message.info.name, "topic": event.topic.name}
+        params = executable_params(event.xmsg) | {"topic": event.topic.name}
         self.publish_counter.add(1, params | {"state": "before"})
         try:
             yield

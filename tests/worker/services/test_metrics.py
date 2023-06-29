@@ -16,8 +16,14 @@ async def test_message_metrics(
     services_manager: ServicesManager, metrics_capture: MetricsCapture
 ) -> None:
     data = Mock()
+    data.queue.definition.name = "test-job"
+    data.queue.definition.labels = {"k": "v"}
     data.message.info.name = "test.fake.pipeline"
-    pipeline_params = {"pipeline": data.message.info.name}
+    pipeline_params = {
+        "pipeline": data.message.info.name,
+        "saturn.job.name": "test-job",
+        "saturn.job.labels.k": "v",
+    }
     metric = services_manager.services.cast_service(Metrics)
     await metric.on_message_polled(data)
     await metric.on_message_scheduled(data)
@@ -47,8 +53,14 @@ async def test_metrics_message_executed(
     services_manager: ServicesManager, metrics_capture: MetricsCapture
 ) -> None:
     data = Mock()
+    data.queue.definition.name = "test-job"
+    data.queue.definition.labels = {"k": "v"}
     data.message.info.name = "test.fake.pipeline"
-    pipeline_params = {"pipeline": data.message.info.name}
+    pipeline_params = {
+        "pipeline": data.message.info.name,
+        "saturn.job.name": "test-job",
+        "saturn.job.labels.k": "v",
+    }
     metric = services_manager.services.cast_service(Metrics)
 
     results = PipelineResults(
@@ -115,8 +127,14 @@ async def test_metrics_message_execute_failed(
     services_manager: ServicesManager, metrics_capture: MetricsCapture
 ) -> None:
     data = Mock()
+    data.queue.definition.name = "test-job"
+    data.queue.definition.labels = {"k": "v"}
     data.message.info.name = "test.fake.pipeline"
-    pipeline_params = {"pipeline": data.message.info.name}
+    pipeline_params = {
+        "pipeline": data.message.info.name,
+        "saturn.job.name": "test-job",
+        "saturn.job.labels.k": "v",
+    }
     metric = services_manager.services.cast_service(Metrics)
 
     hook_generator = metric.on_message_executed(data)
@@ -158,9 +176,16 @@ async def test_metrics_message_published(
     services_manager: ServicesManager, metrics_capture: MetricsCapture
 ) -> None:
     data = Mock()
-    data.message.info.name = "test.fake.pipeline"
+    data.xmsg.queue.definition.name = "test-job"
+    data.xmsg.queue.definition.labels = {"k": "v"}
+    data.xmsg.message.info.name = "test.fake.pipeline"
     data.topic.name = "test.fake.topic"
-    params = {"pipeline": data.xmsg.message.info.name, "topic": data.topic.name}
+    params = {
+        "pipeline": "test.fake.pipeline",
+        "topic": "test.fake.topic",
+        "saturn.job.name": "test-job",
+        "saturn.job.labels.k": "v",
+    }
     metric = services_manager.services.cast_service(Metrics)
 
     hook_generator = metric.on_message_published(data)
@@ -188,9 +213,16 @@ async def test_metrics_message_publish_failed(
     services_manager: ServicesManager, metrics_capture: MetricsCapture
 ) -> None:
     data = Mock()
-    data.message.info.name = "test.fake.pipeline"
+    data.xmsg.queue.definition.name = "test-job"
+    data.xmsg.queue.definition.labels = {"k": "v"}
+    data.xmsg.message.info.name = "test.fake.pipeline"
     data.topic.name = "test.fake.topic"
-    params = {"pipeline": data.xmsg.message.info.name, "topic": data.topic.name}
+    params = {
+        "pipeline": "test.fake.pipeline",
+        "topic": "test.fake.topic",
+        "saturn.job.name": "test-job",
+        "saturn.job.labels.k": "v",
+    }
     metric = services_manager.services.cast_service(Metrics)
 
     hook_generator = metric.on_message_published(data)
