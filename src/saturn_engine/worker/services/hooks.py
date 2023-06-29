@@ -37,6 +37,8 @@ class Hooks:
     work_queue_built: AsyncContextHook["QueueItem", "ExecutableQueue"]
     executor_initialized: EventHook["PipelineBootstrap"]
 
+    state_flush: EventHook["JobsStates"]
+
     def __init__(self) -> None:
         self.hook_failed = AsyncEventHook()
         self.work_queue_built = AsyncContextHook(error_handler=self.hook_failed.emit)
