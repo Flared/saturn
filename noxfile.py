@@ -22,6 +22,7 @@ tests_packages = [
     "pytest-mock",
     "freezegun",
     "opentelemetry-sdk",
+    "sentry-sdk",
 ]
 mypy_packages = [
     "pytest",

@@ -18,7 +18,6 @@ def config(config: Config) -> Config:
         {
             "services_manager": {
                 "services": [
-                    "saturn_engine.worker.services.labels_propagator.LabelsPropagator",
                     "saturn_engine.worker.services.tracing.Tracer",
                 ]
             }
@@ -50,8 +49,8 @@ async def test_trace_message_executed(
     assert traces[0].otel_span.name == "worker executing"
     assert traces[0].otel_span.attributes == {
         "saturn.job.name": "fake-queue",
+        "saturn.job.labels.owner": "team-saturn",
         "saturn.input.name": "fake-topic",
-        "saturn.labels.owner": "team-saturn",
         "saturn.resources.names": (),
         "saturn.message.id": xmsg.id,
         "saturn.pipeline.name": "tests.conftest.pipeline",
@@ -63,6 +62,5 @@ async def test_trace_message_executed(
     assert traces[0].children[0].otel_span.attributes == {
         "saturn.resources.names": (),
         "saturn.message.id": xmsg.id,
-        "saturn.labels.owner": "team-saturn",
         "saturn.pipeline.name": "tests.conftest.pipeline",
     }

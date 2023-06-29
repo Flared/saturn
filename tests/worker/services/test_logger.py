@@ -6,7 +6,6 @@ from datetime import timedelta
 
 import pytest
 
-from saturn_engine.config import Config
 from saturn_engine.core import MessageId
 from saturn_engine.core import PipelineInfo
 from saturn_engine.core import PipelineOutput
@@ -29,19 +28,6 @@ def fake_pipeline(x: int, r: FakeResource) -> None:
     pass
 
 
-@pytest.fixture
-def config(config: Config) -> Config:
-    return config.load_object(
-        {
-            "services_manager": {
-                "services": [
-                    "saturn_engine.worker.services.labels_propagator.LabelsPropagator",
-                ]
-            }
-        }
-    )
-
-
 @pytest.mark.asyncio
 async def test_logger_message_executed(
     services_manager: ServicesManager,
@@ -49,8 +35,7 @@ async def test_logger_message_executed(
     frozen_time: FreezeTime,
     executable_maker: t.Callable[..., ExecutableMessage],
 ) -> None:
-    logger = services_manager._load_service(Logger)
-    await logger.open()
+    logger = services_manager.services.cast_service(Logger)
 
     pipeline_info = PipelineInfo.from_pipeline(fake_pipeline)
     xmsg = executable_maker(pipeline_info=pipeline_info)
