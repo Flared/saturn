@@ -92,7 +92,7 @@ class JobState:
 
 @dataclasses.dataclass
 class JobsStates:
-    jobs: dict[JobId, JobState] = dataclasses.field(default_factory=dict)
+    jobs: t.Mapping[JobId, JobState] = dataclasses.field(default_factory=dict)
 
 
 @dataclasses.dataclass

@@ -67,7 +67,7 @@ class SymbolName(t.Generic[T]):
         yield self.load_symbol
 
     @classmethod
-    def load_symbol(cls, v: object, field: pydantic.fields.ModelField) -> T:
+    def load_symbol(cls, v: object, field: pydantic.fields.ModelField) -> "SymbolName[T]":
         if isinstance(v, str):
             v = import_name(v)
 
@@ -77,6 +77,6 @@ class SymbolName(t.Generic[T]):
             v, error = field.validate(v, {}, loc="type")
 
         if error:
-            raise pydantic.ValidationError([error], cls)
+            raise pydantic.ValidationError([error], cls)  # type: ignore
 
-        return cls(v)
+        return cls(t.cast(T, v))

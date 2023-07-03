@@ -79,7 +79,7 @@ class FooBar:
 
 
 def foobar(x: int) -> FooBar:
-    ...
+    return FooBar(1)
 
 
 def test_symbol_name() -> None:
@@ -98,19 +98,19 @@ def test_symbol_name() -> None:
         x: SymbolName[t.Type[Object]]
 
     with pytest.raises(pydantic.ValidationError):
-        x = fromdict({"x": "builtins.int"}, ObjectWithTypedSymbol)
+        fromdict({"x": "builtins.int"}, ObjectWithTypedSymbol)
 
-    x = fromdict({"x": get_import_name(Object)}, ObjectWithTypedSymbol)
-    assert x.x is Object
+    y = fromdict({"x": get_import_name(Object)}, ObjectWithTypedSymbol)
+    assert y.x is Object
 
     @dataclasses.dataclass
     class ObjectWithCallable:
         x: SymbolName[t.Callable[[int], FooBar]]
 
     with pytest.raises(pydantic.ValidationError):
-        x = fromdict({"x": "builtins.False"}, ObjectWithCallable)
+        fromdict({"x": "builtins.False"}, ObjectWithCallable)
 
-    x = fromdict({"x": get_import_name(FooBar)}, ObjectWithCallable)
-    assert x.x is FooBar
-    x = fromdict({"x": get_import_name(foobar)}, ObjectWithCallable)
-    assert x.x is foobar
+    z = fromdict({"x": get_import_name(FooBar)}, ObjectWithCallable)
+    assert z.x is FooBar
+    z = fromdict({"x": get_import_name(foobar)}, ObjectWithCallable)
+    assert z.x is foobar
