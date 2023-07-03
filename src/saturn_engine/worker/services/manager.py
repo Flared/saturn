@@ -1,5 +1,7 @@
 from typing import Type
 
+from itertools import chain
+
 from saturn_engine.utils import inspect as extra_inspect
 
 from ..resources.manager import ResourcesManager
@@ -24,12 +26,10 @@ class ServicesManager:
         self.loaded_services: list[Service] = []
         self.is_opened = False
 
-        # Some services are required for saturn to work at all.
-        for service_cls in BASE_SERVICES:
-            self._load_service(service_cls)
-
         # Load optional services based on config.
-        for service_cls_path in config.c.services_manager.services:
+        for service_cls_path in chain(
+            BASE_SERVICES, config.c.services_manager.services
+        ):
             service_cls = extra_inspect.import_name(service_cls_path)
             self._load_service(service_cls)
 
@@ -75,18 +75,17 @@ class ServicesManager:
         if old_service := self.services.pop(service_cls.name, None):
             self.loaded_services.remove(old_service)
             await old_service._shutdown()
-        return self._load_service(service_cls)
+        service = self._load_service(service_cls)
+        await service.open()
+        return service
 
     def has_loaded(self, service_cls: Type[TService]) -> bool:
         return service_cls.name in self.services
 
 
-from .http_client import HttpClient
-from .job_store import JobStoreService
-from .tasks_runner import TasksRunnerService
-
-BASE_SERVICES: list[Type[Service]] = [
-    HttpClient,
-    JobStoreService,
-    TasksRunnerService,
+BASE_SERVICES: list[str] = [
+    "saturn_engine.worker.services.http_client.HttpClient",
+    "saturn_engine.worker.services.api_client.ApiClient",
+    "saturn_engine.worker.services.tasks_runner.TasksRunnerService",
+    "saturn_engine.worker.services.job_state.service.JobStateService",
 ]

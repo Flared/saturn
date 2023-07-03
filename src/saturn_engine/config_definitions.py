@@ -53,6 +53,7 @@ class ServicesManagerConfig:
 class SaturnConfig:
     env: Env
     # Worker Manager URL used by clients and workers.
+    worker_id: str
     worker_manager_url: str
     services_manager: ServicesManagerConfig
     worker: WorkerConfig

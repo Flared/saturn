@@ -1,13 +1,14 @@
-import abc
-import pytest
-import pydantic
-from saturn_engine.utils.inspect import get_import_name
 import typing as t
+
 import dataclasses
 from datetime import datetime
 
-from saturn_engine.utils.options import SymbolName
+import pydantic
+import pytest
+
+from saturn_engine.utils.inspect import get_import_name
 from saturn_engine.utils.options import OptionsSchema
+from saturn_engine.utils.options import SymbolName
 from saturn_engine.utils.options import asdict
 from saturn_engine.utils.options import fromdict
 from saturn_engine.utils.options import json_serializer
@@ -68,10 +69,17 @@ def test_inheritance() -> None:
         x="foo", y=datetime(2020, 1, 1, 1, 1, 1), z=NestedObjectA(fielda="foo")
     )
 
+
 class FooBar:
-    def __init__(self, x: int) -> None: ...
-    def biz(self) -> None: ...
-def foobar(x: int) -> FooBar: ...
+    def __init__(self, x: int) -> None:
+        ...
+
+    def biz(self) -> None:
+        ...
+
+
+def foobar(x: int) -> FooBar:
+    ...
 
 
 def test_symbol_name() -> None:

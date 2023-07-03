@@ -1,4 +1,3 @@
-from saturn_engine.utils.inspect import import_name
 import typing as t
 
 import dataclasses
@@ -8,6 +7,8 @@ from functools import cache
 
 import pydantic
 import pydantic.json
+
+from saturn_engine.utils.inspect import import_name
 
 OptionsSchemaT = t.TypeVar("OptionsSchemaT", bound="OptionsSchema")
 T = t.TypeVar("T")
@@ -56,6 +57,7 @@ def fromdict(
         return t.cast(T, klass(**obj.dict()))
     return t.cast(T, obj)
 
+
 class SymbolName(t.Generic[T]):
     def __init__(self, obj: T) -> None:
         self.object = obj
@@ -78,5 +80,3 @@ class SymbolName(t.Generic[T]):
             raise pydantic.ValidationError([error], cls)
 
         return cls(v)
-
-

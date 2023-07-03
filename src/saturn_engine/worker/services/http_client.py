@@ -1,11 +1,11 @@
-import typing as t
+
+
 import aiohttp
-from saturn_engine.client.worker_manager import WorkerManagerClient
 
 from saturn_engine.utils.options import json_serializer
 
-import dataclasses
 from . import MinimalService
+
 
 class HttpClient(MinimalService):
     name = "http_client"

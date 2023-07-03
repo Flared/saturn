@@ -12,7 +12,6 @@ from .pipeline import PipelineInfo  # noqa: F401  # Reexport for public API
 from .pipeline import QueuePipeline
 from .types import Cursor
 from .types import JobId
-from .types import MessageId
 
 T = TypeVar("T")
 
@@ -77,28 +76,34 @@ class LockResponse:
 class LockInput:
     worker_id: str
 
+
 @dataclasses.dataclass
-class Completion:
+class JobCompletion:
     completed_at: datetime
     error: t.Optional[str] = None
+
 
 @dataclasses.dataclass
 class JobState:
     cursor: t.Optional[Cursor] = None
-    items_cursors: dict[MessageId, Cursor] = dataclasses.field(default_factory=dict)
-    completion: t.Optional[Completion] = None
+    cursors_states: dict[Cursor, str] = dataclasses.field(default_factory=dict)
+    completion: t.Optional[JobCompletion] = None
+
 
 @dataclasses.dataclass
 class JobsStates:
     jobs: dict[JobId, JobState] = dataclasses.field(default_factory=dict)
 
+
 @dataclasses.dataclass
 class SyncInput:
-    State: JobsStates
+    state: JobsStates
+
 
 @dataclasses.dataclass
 class SyncResponse:
     pass
+
 
 @dataclasses.dataclass
 class ListResponse(Generic[T]):

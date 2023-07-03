@@ -1,32 +1,29 @@
-from saturn_engine.core.api import SyncInput
-from saturn_engine.core.api import SyncResponse
-from saturn_engine.utils import urlcat
-from saturn_engine.utils.options import asdict
-from saturn_engine.utils.options import fromdict
+import typing as t
+
+import abc
+import dataclasses
+
 from saturn_engine.core import Cursor
 from saturn_engine.core import JobId
-import abc
-import typing as t
-import dataclasses
-from datetime import datetime
-
+from saturn_engine.core.api import SyncInput
 from saturn_engine.utils.asyncutils import DelayedThrottle
-from saturn_engine.utils.options import SymbolName
 
 from .. import BaseServices
 from .. import Service
 from ..api_client import ApiClient
-from .store import JobsStatesSyncStore, JobsStates
+from .store import JobsStates
+from .store import JobsStatesSyncStore
 
 
 class Services(BaseServices):
-    http_client: HttpClient
+    api_client: ApiClient
 
 
 class StateFlusher(abc.ABC):
     @abc.abstractmethod
     async def flush(self, state: t.Any) -> None:
         pass
+
 
 @dataclasses.dataclass
 class Options:
@@ -44,7 +41,9 @@ class JobStateService(Service[Services, Options]):
 
     async def open(self) -> None:
         self._store = JobsStatesSyncStore()
-        self._delayed_flush = DelayedThrottle(self.flush, delay=self.options.flush_delay)
+        self._delayed_flush = DelayedThrottle(
+            self.flush, delay=self.options.flush_delay
+        )
 
     def set_job_cursor(self, job_name: JobId, cursor: Cursor) -> None:
         self._store.set_job_cursor(job_name, cursor)
@@ -54,16 +53,31 @@ class JobStateService(Service[Services, Options]):
         self._store.set_job_completed(job_name)
         self._delayed_flush()
 
-    def set_job_failed(
-        self, job_name: JobId, *, error: Exception
+    def set_job_failed(self, job_name: JobId, *, error: Exception) -> None:
+        self._store.set_job_failed(job_name, f"{type(error).__name__}: {error}")
+        self._delayed_flush()
+
+    def set_job_cursor_state(
+        self,
+        job_name: JobId,
+        *,
+        cursor: Cursor,
+        cursor_state: str,
     ) -> None:
-        self._store.set_job_failed(job_name, str(error))
+        self._store.set_job_cursor_state(
+            job_name, cursor=cursor, cursor_state=cursor_state
+        )
         self._delayed_flush()
 
     async def flush(self) -> None:
         with self._store.flush() as state:
-            await self.flush_state(state)
+            if not state.is_empty:
+                await self.flush_state(state)
 
     async def flush_state(self, state: JobsStates) -> None:
+        # Have to cast the job states to dict since defaultdict break dataclasses.
+        state = dataclasses.replace(state, jobs=dict(state.jobs))
         await self.services.api_client.client.sync(SyncInput(state=state))
 
+    async def close(self) -> None:
+        await self._delayed_flush.flush()

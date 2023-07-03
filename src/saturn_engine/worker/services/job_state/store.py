@@ -3,35 +3,29 @@ import typing as t
 import contextlib
 import dataclasses
 from collections import defaultdict
-from datetime import datetime
 
 from saturn_engine.core import Cursor
 from saturn_engine.core import JobId
-from saturn_engine.core import MessageId
+from saturn_engine.core import api
 from saturn_engine.utils import utcnow
 
 
 @dataclasses.dataclass
-class Completion:
-    completed_at: datetime
-    error: t.Optional[str] = None
-
-    def merge(self, other: "Completion") -> "Completion":
+class JobCompletion(api.JobCompletion):
+    def merge(self, other: "JobCompletion") -> "JobCompletion":
         self.completed_at = other.completed_at
         self.error = other.error
         return self
 
 
 @dataclasses.dataclass
-class JobState:
-    cursor: t.Optional[Cursor] = None
-    items_cursors: dict[MessageId, Cursor] = dataclasses.field(default_factory=dict)
-    completion: t.Optional[Completion] = None
+class JobState(api.JobState):
+    completion: t.Optional[JobCompletion] = None
 
     def merge(self, other: "JobState") -> "JobState":
         if other.cursor:
             self.cursor = other.cursor
-        self.items_cursors.update(other.items_cursors)
+        self.cursors_states.update(other.cursors_states)
         if other.completion:
             completion = other.completion
             if self.completion:
@@ -41,7 +35,7 @@ class JobState:
 
 
 @dataclasses.dataclass
-class JobsStates:
+class JobsStates(api.JobsStates):
     jobs: dict[JobId, JobState] = dataclasses.field(
         default_factory=lambda: defaultdict(JobState)
     )
@@ -68,15 +62,24 @@ class JobsStatesSyncStore:
         self._current_state.jobs[job_name].cursor = cursor
 
     def set_job_completed(self, job_name: JobId) -> None:
-        self._current_state.jobs[job_name].completion = Completion(
+        self._current_state.jobs[job_name].completion = JobCompletion(
             completed_at=utcnow(),
         )
 
     def set_job_failed(self, job_name: JobId, error: str) -> None:
-        self._current_state.jobs[job_name].completion = Completion(
+        self._current_state.jobs[job_name].completion = JobCompletion(
             completed_at=utcnow(),
             error=error,
         )
+
+    def set_job_cursor_state(
+        self,
+        job_name: JobId,
+        *,
+        cursor: Cursor,
+        cursor_state: str,
+    ) -> None:
+        self._current_state.jobs[job_name].cursors_states[cursor] = cursor_state
 
     @contextlib.contextmanager
     def flush(self) -> t.Iterator[JobsStates]:

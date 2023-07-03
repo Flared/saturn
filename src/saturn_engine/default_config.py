@@ -1,6 +1,7 @@
 import typing as t
 
 import os
+import socket
 
 from .config import Env
 from .config import RabbitMQConfig
@@ -13,6 +14,7 @@ from .config import WorkerManagerConfig
 
 class config(SaturnConfig):
     env = Env(os.environ.get("SATURN_ENV", "development"))
+    worker_id = socket.gethostname()
     worker_manager_url = os.environ.get(
         "SATURN_WORKER_MANAGER_URL", "http://127.0.0.1:5000"
     )
