@@ -22,7 +22,7 @@ from saturn_engine.worker.resources.manager import ResourceData
 from saturn_engine.worker.resources.manager import ResourceRateLimit
 from saturn_engine.worker.resources.provider import ResourcesProvider
 from saturn_engine.worker.services import Services
-from saturn_engine.worker.services.http_client import HttpClient
+from saturn_engine.worker.services.api_client import ApiClient
 
 T = TypeVar("T")
 
@@ -62,11 +62,7 @@ class WorkManager:
         self, *, services: Services, client: Optional[WorkerManagerClient] = None
     ) -> None:
         self.logger = getLogger(__name__, self)
-        http_client = services.cast_service(HttpClient)
-        self.client: WorkerManagerClient = client or WorkerManagerClient(
-            http_client=http_client.session,
-            base_url=services.s.config.c.worker_manager_url,
-        )
+        self.client = client or services.cast_service(ApiClient).client
         self.worker_items: WorkerItems = {}
         self.worker_resources: dict[str, ResourceData] = {}
         self.worker_resources_providers: dict[str, ResourcesProvider] = {}
