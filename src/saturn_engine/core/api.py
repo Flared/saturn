@@ -8,6 +8,8 @@ import dataclasses
 from dataclasses import field
 from datetime import datetime
 
+from saturn_engine.utils import utcnow
+
 from .pipeline import PipelineInfo  # noqa: F401  # Reexport for public API
 from .pipeline import QueuePipeline
 from .types import Cursor
@@ -56,6 +58,20 @@ class QueueItem:
     labels: dict[str, str] = field(default_factory=dict)
     executor: str = "default"
 
+    def with_state(self, state: "QueueItemState") -> "QueueItemWithState":
+        return QueueItemWithState(**self.__dict__, state=state)
+
+
+@dataclasses.dataclass
+class QueueItemState:
+    cursor: t.Optional[Cursor] = None
+    started_at: datetime = field(default_factory=utcnow)
+
+
+@dataclasses.dataclass
+class QueueItemWithState(QueueItem):
+    state: QueueItemState = field(default_factory=QueueItemState)
+
 
 @dataclasses.dataclass
 class JobDefinition:
@@ -66,7 +82,7 @@ class JobDefinition:
 
 @dataclasses.dataclass
 class LockResponse:
-    items: list[QueueItem]
+    items: list[QueueItemWithState]
     resources: list[ResourceItem]
     resources_providers: list[ResourcesProviderItem]
     executors: list[ComponentDefinition]

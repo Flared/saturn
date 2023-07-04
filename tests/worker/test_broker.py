@@ -11,7 +11,7 @@ from saturn_engine.core import api
 from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import PipelineInfo
-from saturn_engine.core.api import QueueItem
+from saturn_engine.core.api import QueueItemWithState
 from saturn_engine.core.api import QueuePipeline
 from saturn_engine.core.api import ResourceItem
 from saturn_engine.core.api import ResourcesProviderItem
@@ -88,7 +88,7 @@ async def test_broker_dummy(
     pipeline_info = PipelineInfo.from_pipeline(pipeline)
     worker_manager_client.lock.return_value = LockResponse(
         items=[
-            QueueItem(
+            QueueItemWithState(
                 name=JobId("j1"),
                 input=ComponentDefinition(
                     name="dummy", type="DummyInventory", options={"count": 10000}

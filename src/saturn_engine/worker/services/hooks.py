@@ -9,7 +9,7 @@ from saturn_engine.utils.hooks import EventHook
 if t.TYPE_CHECKING:
     from saturn_engine.core import PipelineOutput
     from saturn_engine.core import PipelineResults
-    from saturn_engine.core.api import QueueItem
+    from saturn_engine.core.api import QueueItemWithState
     from saturn_engine.worker.executors.bootstrap import PipelineBootstrap
     from saturn_engine.worker.executors.executable import ExecutableMessage
     from saturn_engine.worker.executors.executable import ExecutableQueue
@@ -34,7 +34,7 @@ class Hooks:
     message_published: AsyncContextHook["MessagePublished", None]
     output_blocked: AsyncContextHook["Topic", None]
 
-    work_queue_built: AsyncContextHook["QueueItem", "ExecutableQueue"]
+    work_queue_built: AsyncContextHook["QueueItemWithState", "ExecutableQueue"]
     executor_initialized: EventHook["PipelineBootstrap"]
 
     def __init__(self) -> None:
