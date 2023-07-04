@@ -3,7 +3,6 @@ from .config_definitions import RabbitMQConfig
 from .config_definitions import RedisConfig
 from .config_definitions import SaturnConfig
 from .config_definitions import ServicesManagerConfig
-from .config_definitions import WorkerConfig
 from .config_definitions import WorkerManagerConfig
 from .default_config import client_config as default_client_config
 from .default_config import config as default_config
@@ -31,7 +30,6 @@ def default_client_config_with_env() -> Config:
 __all__ = (
     "Config",
     "SaturnConfig",
-    "WorkerConfig",
     "WorkerManagerConfig",
     "RabbitMQConfig",
     "RedisConfig",

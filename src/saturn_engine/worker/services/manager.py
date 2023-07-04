@@ -87,5 +87,5 @@ BASE_SERVICES: list[str] = [
     "saturn_engine.worker.services.http_client.HttpClient",
     "saturn_engine.worker.services.api_client.ApiClient",
     "saturn_engine.worker.services.tasks_runner.TasksRunnerService",
-    "saturn_engine.worker.services.job_store.JobStoreService",
+    "saturn_engine.worker.services.job_state.service.JobStateService",
 ]

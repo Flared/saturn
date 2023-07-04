@@ -11,11 +11,6 @@ class Env(Enum):
 
 
 @dataclasses.dataclass
-class WorkerConfig:
-    job_store_cls: str
-
-
-@dataclasses.dataclass
 class WorkerManagerConfig:
     flask_host: str
     flask_port: int
@@ -52,11 +47,10 @@ class ServicesManagerConfig:
 @dataclasses.dataclass
 class SaturnConfig:
     env: Env
-    worker_id: str
     # Worker Manager URL used by clients and workers.
+    worker_id: str
     worker_manager_url: str
     services_manager: ServicesManagerConfig
-    worker: WorkerConfig
     worker_manager: WorkerManagerConfig
     rabbitmq: RabbitMQConfig
     redis: RedisConfig
