@@ -36,13 +36,16 @@ from saturn_engine.worker.executors.process import ProcessExecutor
 from saturn_engine.worker.executors.queue import ExecutorQueue
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources.provider import ResourcesProvider
+from saturn_engine.worker.services import MinimalService
 from saturn_engine.worker.services import Services
+from saturn_engine.worker.services.api_client import ApiClient
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.services.rabbitmq import RabbitMQService
 from saturn_engine.worker.topics import MemoryTopic
 from saturn_engine.worker.topics import Topic
 from saturn_engine.worker.topics.memory import reset as reset_memory_queues
 from saturn_engine.worker.work_manager import WorkManager
+from tests.utils import HttpClientMock
 from tests.utils import TimeForwardLoop
 from tests.utils.metrics import MetricsCapture
 from tests.utils.span_exporter import InMemorySpanExporter
@@ -401,3 +404,21 @@ async def executor(services_manager: ServicesManager) -> AsyncIterator[Executor]
     )
     yield executor
     await executor.close()
+
+
+@pytest.fixture
+async def fake_http_client_service(
+    http_client_mock: HttpClientMock,
+    services_manager: ServicesManager,
+) -> t.Any:
+    class FakeHttpClient(MinimalService):
+        name = "http_client"
+
+        async def open(self) -> None:
+            self.session = http_client_mock.client()
+
+        async def close(self) -> None:
+            pass
+
+    await services_manager._reload_service(FakeHttpClient)
+    await services_manager._reload_service(ApiClient)

@@ -18,3 +18,6 @@ class config(SaturnConfig):
 
     class worker(WorkerConfig):
         job_store_cls = "MemoryJobStore"
+
+    class job_state:
+        auto_flush = False

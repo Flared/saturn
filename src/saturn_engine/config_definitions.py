@@ -52,6 +52,7 @@ class ServicesManagerConfig:
 @dataclasses.dataclass
 class SaturnConfig:
     env: Env
+    worker_id: str
     # Worker Manager URL used by clients and workers.
     worker_manager_url: str
     services_manager: ServicesManagerConfig
