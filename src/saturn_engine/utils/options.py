@@ -67,9 +67,7 @@ class SymbolName(t.Generic[T]):
         yield cls.load_symbol
 
     @classmethod
-    def load_symbol(
-        cls, v: object, field: pydantic.fields.ModelField
-    ) -> T:
+    def load_symbol(cls, v: object, field: pydantic.fields.ModelField) -> T:
         if isinstance(v, str):
             v = import_name(v)
 

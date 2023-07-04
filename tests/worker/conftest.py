@@ -17,10 +17,11 @@ from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
 from saturn_engine.client.worker_manager import WorkerManagerClient
 from saturn_engine.config import Config
+from saturn_engine.core import JobId
 from saturn_engine.core import PipelineInfo
 from saturn_engine.core import QueuePipeline
 from saturn_engine.core import Resource
-from saturn_engine.core import TopicMessage, JobId
+from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import QueueItemWithState
@@ -175,7 +176,7 @@ def fake_queue_item(
     fake_pipeline_info: PipelineInfo,
 ) -> QueueItemWithState:
     return QueueItemWithState(
-        name="fake-queue",
+        name=JobId("fake-queue"),
         pipeline=QueuePipeline(
             info=fake_pipeline_info,
             args={},
@@ -196,7 +197,9 @@ def fake_topic() -> MemoryTopic:
 
 @pytest.fixture
 def executable_queue_maker(
-    fake_queue_item: QueueItemWithState, fake_topic: Topic, services_manager: ServicesManager
+    fake_queue_item: QueueItemWithState,
+    fake_topic: Topic,
+    services_manager: ServicesManager,
 ) -> t.Callable[..., ExecutableQueue]:
     def maker(
         *,

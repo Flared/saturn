@@ -14,7 +14,6 @@ from .inventories import Inventory
 from .inventories import SubInventory
 from .job import Job
 from .services import Services
-from .services.job_state.service import JobStateService
 from .topics import Topic
 
 

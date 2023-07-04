@@ -1,5 +1,4 @@
-from typing import AsyncContextManager
-from typing import Optional
+import typing as t
 
 import asyncio
 import contextlib
@@ -26,7 +25,7 @@ class ExecutableMessage:
         message: PipelineMessage,
         parker: Parkers,
         output: dict[str, list[Topic]],
-        message_context: Optional[AsyncContextManager] = None,
+        message_context: t.Optional[t.AsyncContextManager] = None,
     ):
         self.message = message
         self._context = contextlib.AsyncExitStack()
@@ -84,7 +83,7 @@ class ExecutableQueue:
         services: Services,
     ):
         self.definition = definition
-        self.name = definition.name
+        self.name: str = definition.name
         self.pipeline = definition.pipeline
         self.executor = definition.executor
 
@@ -103,7 +102,7 @@ class ExecutableQueue:
         try:
             async for message in self.topic.run():
                 context = None
-                if isinstance(message, AsyncContextManager):
+                if isinstance(message, t.AsyncContextManager):
                     context = message
                     message = await message.__aenter__()
 
@@ -120,10 +119,10 @@ class ExecutableQueue:
                 )
                 await self.services.s.hooks.message_polled.emit(executable_message)
                 await self.parkers.wait()
-                executable_message._context.enter_context(self.pending_context())
-                yield executable_message
+                with self.pending_context() as message_context:
+                    executable_message._context.enter_context(message_context())
+                    yield executable_message
         finally:
-            breakpoint()
             await self.close()
 
     async def close(self) -> None:
@@ -145,14 +144,39 @@ class ExecutableQueue:
             await self.done.wait()
 
     @contextlib.contextmanager
-    def pending_context(self) -> Iterator[None]:
+    def pending_context(self) -> Iterator[t.Callable[[], t.ContextManager]]:
+        # Yield a new contextmanager to be attached to the message.
+        # This allow tracking when all message from this job have been processed
+        # so we can properly clean the jobs resources afterward. We need to yield
+        # the context from a context so that if the job's yield has an exception
+        # in the case of cancellation we won't to mark the pending message as not
+        # being pending anymore.
         self.pending_messages_count += 1
+        processed = False
+
+        @contextlib.contextmanager
+        def message_context() -> Iterator[None]:
+            nonlocal processed
+
+            try:
+                yield
+            finally:
+                if not processed:
+                    self.message_processed()
+                processed = True
+
         try:
-            yield
-        finally:
-            self.pending_messages_count -= 1
-            if self.is_closed and self.pending_messages_count == 0:
-                self.done.set()
+            yield message_context
+        except BaseException:
+            if not processed:
+                self.message_processed()
+            processed = True
+            raise
+
+    def message_processed(self) -> None:
+        self.pending_messages_count -= 1
+        if self.is_closed and self.pending_messages_count == 0:
+            self.done.set()
 
     @cached_property
     def config(self) -> LazyConfig:

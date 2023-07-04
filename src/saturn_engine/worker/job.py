@@ -1,13 +1,13 @@
 from collections.abc import AsyncGenerator
-from saturn_engine.core.api import QueueItemWithState
 
 import asyncstdlib as alib
 
 from saturn_engine.core import MessageId
 from saturn_engine.core import TopicMessage
+from saturn_engine.core.api import QueueItemWithState
 from saturn_engine.utils.log import getLogger
-from saturn_engine.worker.services.job_state.service import JobStateService
 from saturn_engine.worker.services import Services
+from saturn_engine.worker.services.job_state.service import JobStateService
 
 from .inventories import Inventory
 from .topics import Topic
@@ -15,7 +15,13 @@ from .topics import TopicOutput
 
 
 class Job(Topic):
-    def __init__(self, *, inventory: Inventory, queue_item: QueueItemWithState, services: Services) -> None:
+    def __init__(
+        self,
+        *,
+        inventory: Inventory,
+        queue_item: QueueItemWithState,
+        services: Services
+    ) -> None:
         self.logger = getLogger(__name__, self)
         self.inventory = inventory
         self.services = services
@@ -46,9 +52,10 @@ class Job(Topic):
                             yield message
                     finally:
                         if not done and cursor is not None:
-                            self.state_service.set_job_cursor(self.queue_item.name, cursor=cursor)
+                            self.state_service.set_job_cursor(
+                                self.queue_item.name, cursor=cursor
+                            )
 
-            breakpoint()
             self.state_service.set_job_completed(self.queue_item.name)
         except Exception as e:
             self.logger.exception("Exception raised from job")

@@ -1,7 +1,6 @@
 import typing as t
 
 import asyncio
-import contextlib
 import dataclasses
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
@@ -23,6 +22,7 @@ class ScheduleSlot(t.Generic[T]):
     generator: AsyncGenerator[T, None]
     task: asyncio.Task
     order: int = 0
+    is_running: bool = True
 
 
 class Scheduler(t.Generic[T]):
@@ -45,28 +45,26 @@ class Scheduler(t.Generic[T]):
         self.tasks[task] = item
         self.tasks_group.add(task)
 
-
     async def remove(self, item: Schedulable[T]) -> None:
-        if self._remove_slot(item):
-            await self.stop_slot(schedule_slot)
-
-    def _remove_slot(self, item: Schedulable[T]) -> bool:
-        schedule_slot = self.schedule_slots.pop(item, None)
-        return schedule_slot is not None
+        schedule_slot = self.schedule_slots.get(item)
+        if schedule_slot:
+            self.stop_slot(schedule_slot)
 
     async def close(self) -> None:
         self.is_running = False
-        cleanup_tasks = []
 
         await self.tasks_group.close()
         for item in self.schedule_slots.values():
-            cleanup_tasks.append(self.stop_slot(item))
+            self.stop_slot(item)
 
-        await asyncio.gather(*cleanup_tasks)
+    def stop_slot(self, schedule_slot: ScheduleSlot[T]) -> None:
+        schedule_slot.is_running = False
+        if not schedule_slot.task.done():
+            schedule_slot.task.cancel()
 
-    async def stop_slot(self, schedule_slot: ScheduleSlot[T]) -> None:
+    async def close_slot(self, schedule_slot: ScheduleSlot[T]) -> None:
         try:
-            self.logger.debug("stop_slot: %s", schedule_slot.task.get_name())
+            self.logger.debug("Closing slot: %s", schedule_slot)
             await schedule_slot.generator.aclose()
         except Exception:
             self.logger.exception("Failed to close item: %s", schedule_slot)
@@ -100,12 +98,11 @@ class Scheduler(t.Generic[T]):
             if exception is None:
                 yield task.result()
             elif isinstance(exception, StopAsyncIteration):
-                self._remove_slot(item)
+                self.schedule_slots.pop(item, None)
                 return
             elif isinstance(exception, asyncio.CancelledError):
                 pass
             elif exception:
-                breakpoint()
                 self.logger.error(
                     "Exception raised from schedulable item",
                     extra={"data": {"queue_name": item.name}},
@@ -121,15 +118,18 @@ class Scheduler(t.Generic[T]):
             raise
         else:
             # Requeue the __anext__ task to process next item.
-            self._requeue_task(item)
+            await self._requeue_task(item)
 
-    def _requeue_task(self, item: Schedulable[T]) -> None:
+    async def _requeue_task(self, item: Schedulable[T]) -> None:
         schedule_slot = self.schedule_slots.get(item)
         if schedule_slot is None:
             return
 
-        if not schedule_slot.task.done():
-            breakpoint()
+        if not schedule_slot.is_running:
+            del self.schedule_slots[item]
+            await self.close_slot(schedule_slot)
+            return
+
         name = f"scheduler.anext({item.name})"
         anext = t.cast(Coroutine[t.Any, t.Any, T], schedule_slot.generator.__anext__())
         new_task = asyncio.create_task(anext, name=name)

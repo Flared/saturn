@@ -1,9 +1,8 @@
-from saturn_engine.utils.log import getLogger
-import logging
 import asyncio
 
 from saturn_engine.core import api
 from saturn_engine.utils.asyncutils import TasksGroupRunner
+from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.services import Services
 
 from . import Executor

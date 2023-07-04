@@ -70,7 +70,7 @@ class JobStateService(Service[Services, Options]):
         )
         self._maybe_flush()
 
-    def _maybe_flush(self):
+    def _maybe_flush(self) -> None:
         if self.options.auto_flush:
             self._delayed_flush()
 

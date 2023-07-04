@@ -2,14 +2,16 @@ from unittest.mock import Mock
 
 import pytest
 
-from saturn_engine.core.api import ComponentDefinition, QueueItemState
+from saturn_engine.core import Cursor
+from saturn_engine.core import JobId
+from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import PipelineInfo
+from saturn_engine.core.api import QueueItemState
 from saturn_engine.core.api import QueueItemWithState
 from saturn_engine.core.api import QueuePipeline
 from saturn_engine.core.api import ResourceItem
 from saturn_engine.core.api import ResourcesProviderItem
-from saturn_engine.core import JobId, Cursor
 from saturn_engine.worker.work_manager import WorkManager
 from saturn_engine.worker.work_manager import WorkSync
 
@@ -45,7 +47,7 @@ async def test_sync(
                 labels={"owner": "team-saturn"},
                 output={},
                 executor="e1",
-                state=QueueItemState(cursor=Cursor("1"))
+                state=QueueItemState(cursor=Cursor("1")),
             ),
             QueueItemWithState(
                 name=JobId("q2"),
@@ -110,8 +112,8 @@ async def test_sync(
     assert work_sync.resources_providers.drop == []
     assert work_sync.executors.drop == []
 
-    q2_work = work_manager.work_queue_by_name("q1")
-    q3_work = work_manager.work_queue_by_name("q3")
+    q2_work = work_manager.work_queue_by_name(JobId("q1"))
+    q3_work = work_manager.work_queue_by_name(JobId("q3"))
     r2_resource = work_manager.worker_resources["r2"]
     rp2_resource_provider = work_manager.worker_resources_providers["rp2"]
     e2_executor = work_manager.worker_executors["e2"]

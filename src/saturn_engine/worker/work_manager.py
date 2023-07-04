@@ -10,6 +10,7 @@ from datetime import datetime
 from datetime import timedelta
 
 from saturn_engine.client.worker_manager import WorkerManagerClient
+from saturn_engine.core import JobId
 from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import QueueItemWithState
@@ -53,7 +54,7 @@ class WorkSync:
         )
 
 
-WorkerItems = dict[str, ExecutableQueue]
+WorkerItems = dict[JobId, ExecutableQueue]
 
 
 class WorkManager:
@@ -114,7 +115,7 @@ class WorkManager:
 
         return ItemsSync(add=add_items, drop=drop_items)
 
-    def work_queue_by_name(self, name: str) -> Optional[ExecutableQueue]:
+    def work_queue_by_name(self, name: JobId) -> Optional[ExecutableQueue]:
         return self.worker_items.get(name)
 
     async def build_queues_for_worker_items(
