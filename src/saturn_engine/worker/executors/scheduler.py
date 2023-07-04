@@ -1,7 +1,6 @@
 import typing as t
 
 import asyncio
-import contextlib
 import dataclasses
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
@@ -23,6 +22,7 @@ class ScheduleSlot(t.Generic[T]):
     generator: AsyncGenerator[T, None]
     task: asyncio.Task
     order: int = 0
+    is_running: bool = True
 
 
 class Scheduler(t.Generic[T]):
@@ -34,6 +34,7 @@ class Scheduler(t.Generic[T]):
         self.schedule_slots = {}
         self.tasks = {}
         self.tasks_group = TasksGroup()
+        self.is_running = False
 
     def add(self, item: Schedulable[T]) -> None:
         generator = t.cast(AsyncGenerator[T, None], item.iterable.__aiter__())
@@ -44,39 +45,33 @@ class Scheduler(t.Generic[T]):
         self.tasks[task] = item
         self.tasks_group.add(task)
 
-    async def remove(self, item: Schedulable[T]) -> None:
-        schedule_slot = self.schedule_slots.pop(item, None)
-        if schedule_slot is None:
-            return
-        await self.stop_slot(schedule_slot)
+    def remove(self, item: Schedulable[T]) -> None:
+        schedule_slot = self.schedule_slots.get(item)
+        if schedule_slot:
+            self.stop_slot(schedule_slot)
 
     async def close(self) -> None:
-        cleanup_tasks = []
+        self.is_running = False
 
         await self.tasks_group.close()
         for item in self.schedule_slots.values():
-            cleanup_tasks.append(self.stop_slot(item))
+            self.stop_slot(item)
 
-        await asyncio.gather(*cleanup_tasks)
-        self.schedule_slots.clear()
-        self.tasks.clear()
-
-    async def stop_slot(self, schedule_slot: ScheduleSlot[T]) -> None:
+    def stop_slot(self, schedule_slot: ScheduleSlot[T]) -> None:
+        schedule_slot.is_running = False
         if not schedule_slot.task.done():
-            try:
-                schedule_slot.task.cancel()
-                with contextlib.suppress(asyncio.CancelledError):
-                    await schedule_slot.task
-            except Exception:
-                self.logger.exception("Failed to cancel item: %s", schedule_slot)
+            schedule_slot.task.cancel()
 
+    async def stop_slot_generator(self, schedule_slot: ScheduleSlot[T]) -> None:
         try:
+            self.logger.debug("Closing slot: %s", schedule_slot)
             await schedule_slot.generator.aclose()
         except Exception:
             self.logger.exception("Failed to close item: %s", schedule_slot)
 
     async def run(self) -> AsyncIterator[T]:
-        while True:
+        self.is_running = True
+        while self.is_running or self.tasks_group.tasks:
             done = await self.tasks_group.wait()
             if not done:
                 continue
@@ -103,7 +98,7 @@ class Scheduler(t.Generic[T]):
             if exception is None:
                 yield task.result()
             elif isinstance(exception, StopAsyncIteration):
-                await self.remove(item)
+                self.remove(item)
             elif isinstance(exception, asyncio.CancelledError):
                 pass
             elif exception:
@@ -122,13 +117,17 @@ class Scheduler(t.Generic[T]):
             raise
         else:
             # Requeue the __anext__ task to process next item.
-            self._requeue_task(item)
+            schedule_slot = self.schedule_slots.get(item)
+            if schedule_slot:
+                if not schedule_slot.is_running:
+                    del self.schedule_slots[item]
+                    await self.stop_slot_generator(schedule_slot)
+                else:
+                    await self._requeue_task(item=item, schedule_slot=schedule_slot)
 
-    def _requeue_task(self, item: Schedulable[T]) -> None:
-        schedule_slot = self.schedule_slots.get(item)
-        if schedule_slot is None:
-            return
-
+    async def _requeue_task(
+        self, *, item: Schedulable[T], schedule_slot: ScheduleSlot[T]
+    ) -> None:
         name = f"scheduler.anext({item.name})"
         anext = t.cast(Coroutine[t.Any, t.Any, T], schedule_slot.generator.__anext__())
         new_task = asyncio.create_task(anext, name=name)
