@@ -5,9 +5,9 @@ from sqlalchemy import select
 from sqlalchemy import update
 from sqlalchemy.orm import joinedload
 
-from saturn_engine.database import AnySession
-from saturn_engine.database import AnySyncSession
 from saturn_engine.models import Queue
+from saturn_engine.utils.sqlalchemy import AnySession
+from saturn_engine.utils.sqlalchemy import AnySyncSession
 
 
 def create_queue(

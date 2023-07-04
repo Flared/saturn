@@ -3,6 +3,7 @@ import typing as t
 import dataclasses
 from dataclasses import field
 
+from saturn_engine.core import JobId
 from saturn_engine.core import api
 from saturn_engine.utils.declarative_config import BaseObject
 from saturn_engine.worker_manager.config.declarative_pipeline import PipelineInfo
@@ -73,7 +74,7 @@ class JobSpec:
                 queue_item_name = f"{name}-{job_input_name}"
 
             yield api.QueueItem(
-                name=queue_item_name,
+                name=JobId(queue_item_name),
                 input=job_input.to_core_object(static_definitions),
                 output={
                     key: [t.to_core_object(static_definitions) for t in topics]

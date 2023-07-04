@@ -84,7 +84,7 @@ class ExecutableQueue:
         services: Services,
     ):
         self.definition = definition
-        self.name = definition.name
+        self.name: str = definition.name
         self.pipeline = definition.pipeline
         self.executor = definition.executor
 
