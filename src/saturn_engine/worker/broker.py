@@ -94,7 +94,7 @@ class Broker:
             for resource in work_sync.resources.drop:
                 await self.resources_manager.remove(resource.key)
             for queue in work_sync.queues.drop:
-                await self.executors_manager.remove_queue(queue)
+                self.executors_manager.remove_queue(queue)
             for executor in work_sync.executors.drop:
                 await self.executors_manager.remove_executor(executor)
 
