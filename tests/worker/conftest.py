@@ -17,6 +17,7 @@ from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
 from saturn_engine.client.worker_manager import WorkerManagerClient
 from saturn_engine.config import Config
+from saturn_engine.core import JobId
 from saturn_engine.core import PipelineInfo
 from saturn_engine.core import QueuePipeline
 from saturn_engine.core import Resource
@@ -172,7 +173,7 @@ def fake_queue_item(
     fake_pipeline_info: PipelineInfo,
 ) -> QueueItem:
     return QueueItem(
-        name="fake-queue",
+        name=JobId("fake-queue"),
         pipeline=QueuePipeline(
             info=fake_pipeline_info,
             args={},
@@ -232,7 +233,7 @@ def fake_executable_maker_with_output(
         output: t.Optional[dict[str, list[ComponentDefinition]]] = None,
     ) -> ExecutableMessage:
         queue_item = QueueItem(
-            name="fake-failing-queue",
+            name=JobId("fake-failing-queue"),
             pipeline=QueuePipeline(
                 info=fake_pipeline_info,
                 args={},

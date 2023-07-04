@@ -4,6 +4,8 @@ import socket
 
 import aiohttp
 
+from saturn_engine.core.api import JobsStatesSyncInput
+from saturn_engine.core.api import JobsStatesSyncResponse
 from saturn_engine.core.api import LockInput
 from saturn_engine.core.api import LockResponse
 from saturn_engine.utils import urlcat
@@ -27,3 +29,9 @@ class WorkerManagerClient:
         json = asdict(LockInput(worker_id=self.worker_id))
         async with self.http_client.post(lock_url, json=json) as response:
             return fromdict(await response.json(), LockResponse)
+
+    async def sync(self, sync: JobsStatesSyncInput) -> JobsStatesSyncResponse:
+        state_url = urlcat(self.base_url, "api/jobs/_states")
+        json = asdict(sync)
+        async with self.http_client.put(state_url, json=json) as response:
+            return fromdict(await response.json(), JobsStatesSyncResponse)

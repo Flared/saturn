@@ -1,3 +1,4 @@
+import typing as t
 from typing import Any
 from typing import Generic
 from typing import Optional
@@ -47,7 +48,7 @@ class ResourcesProviderItem:
 
 @dataclasses.dataclass
 class QueueItem:
-    name: str
+    name: JobId
     pipeline: QueuePipeline
     output: dict[str, list[ComponentDefinition]]
     input: ComponentDefinition
@@ -74,6 +75,34 @@ class LockResponse:
 @dataclasses.dataclass
 class LockInput:
     worker_id: str
+
+
+@dataclasses.dataclass
+class JobCompletion:
+    completed_at: datetime
+    error: t.Optional[str] = None
+
+
+@dataclasses.dataclass
+class JobState:
+    cursor: t.Optional[Cursor] = None
+    cursors_states: dict[Cursor, dict] = dataclasses.field(default_factory=dict)
+    completion: t.Optional[JobCompletion] = None
+
+
+@dataclasses.dataclass
+class JobsStates:
+    jobs: t.Mapping[JobId, JobState] = dataclasses.field(default_factory=dict)
+
+
+@dataclasses.dataclass
+class JobsStatesSyncInput:
+    state: JobsStates
+
+
+@dataclasses.dataclass
+class JobsStatesSyncResponse:
+    pass
 
 
 @dataclasses.dataclass

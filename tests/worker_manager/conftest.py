@@ -5,6 +5,7 @@ from flask.testing import FlaskClient
 from sqlalchemy.orm import Session
 
 from saturn_engine import database
+from saturn_engine.core import JobId
 from saturn_engine.core import api
 from saturn_engine.models import Base
 from saturn_engine.worker_manager import server as worker_manager_server
@@ -40,7 +41,7 @@ def queue_item_maker(
 ) -> t.Callable[..., api.QueueItem]:
     def maker() -> api.QueueItem:
         return api.QueueItem(
-            name="test",
+            name=JobId("test"),
             pipeline=queue_pipeline_maker(),
             input=topic_item_maker(),
             output={"default": [topic_item_maker()]},

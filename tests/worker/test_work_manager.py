@@ -2,6 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from saturn_engine.core import JobId
 from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import PipelineInfo
@@ -33,7 +34,7 @@ async def test_sync(
     worker_manager_client.lock.return_value = LockResponse(
         items=[
             QueueItem(
-                name="q1",
+                name=JobId("q1"),
                 input=ComponentDefinition(
                     name="t1", type="DummyInventory", options={"count": 1000}
                 ),
@@ -46,7 +47,7 @@ async def test_sync(
                 executor="e1",
             ),
             QueueItem(
-                name="q2",
+                name=JobId("q2"),
                 input=ComponentDefinition(
                     name="t2",
                     type="DummyTopic",
@@ -60,7 +61,7 @@ async def test_sync(
                 executor="e1",
             ),
             QueueItem(
-                name="q3",
+                name=JobId("q3"),
                 input=ComponentDefinition(
                     name="t3",
                     type="DummyTopic",
@@ -108,8 +109,8 @@ async def test_sync(
     assert work_sync.resources_providers.drop == []
     assert work_sync.executors.drop == []
 
-    q2_work = work_manager.work_queue_by_name("q1")
-    q3_work = work_manager.work_queue_by_name("q3")
+    q2_work = work_manager.work_queue_by_name(JobId("q1"))
+    q3_work = work_manager.work_queue_by_name(JobId("q3"))
     r2_resource = work_manager.worker_resources["r2"]
     rp2_resource_provider = work_manager.worker_resources_providers["rp2"]
     e2_executor = work_manager.worker_executors["e2"]
@@ -118,7 +119,7 @@ async def test_sync(
     worker_manager_client.lock.return_value = LockResponse(
         items=[
             QueueItem(
-                name="q2",
+                name=JobId("q2"),
                 input=ComponentDefinition(
                     name="t2",
                     type="DummyTopic",
@@ -132,7 +133,7 @@ async def test_sync(
                 executor="e1",
             ),
             QueueItem(
-                name="q4",
+                name=JobId("q4"),
                 input=ComponentDefinition(
                     name="t4",
                     type="DummyTopic",
