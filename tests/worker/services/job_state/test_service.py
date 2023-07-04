@@ -33,13 +33,13 @@ async def test_job_state_update(
     job_state_service.set_job_completed(job_name=JobId("job-3"))
 
     job_state_service.set_job_cursor_state(
-        job_name=JobId("job-3"), cursor_state="1", cursor=Cursor("a")
+        job_name=JobId("job-3"), cursor_state={"x": "1"}, cursor=Cursor("a")
     )
     job_state_service.set_job_cursor_state(
-        job_name=JobId("job-3"), cursor_state="2", cursor=Cursor("b")
+        job_name=JobId("job-3"), cursor_state={"x": "2"}, cursor=Cursor("b")
     )
     job_state_service.set_job_cursor_state(
-        job_name=JobId("job-3"), cursor_state="3", cursor=Cursor("c")
+        job_name=JobId("job-3"), cursor_state={"x": "3"}, cursor=Cursor("c")
     )
     await job_state_service.flush()
     http_client_mock.put(
@@ -63,9 +63,9 @@ async def test_job_state_update(
                             "completed_at": utcnow(),
                         },
                         "cursors_states": {
-                            "a": "1",
-                            "b": "2",
-                            "c": "3",
+                            "a": {"x": "1"},
+                            "b": {"x": "2"},
+                            "c": {"x": "3"},
                         },
                         "cursor": None,
                     },

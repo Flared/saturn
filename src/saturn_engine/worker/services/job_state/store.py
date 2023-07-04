@@ -77,7 +77,7 @@ class JobsStatesSyncStore:
         job_name: JobId,
         *,
         cursor: Cursor,
-        cursor_state: str,
+        cursor_state: dict,
     ) -> None:
         self._current_state.jobs[job_name].cursors_states[cursor] = cursor_state
 

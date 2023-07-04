@@ -5,7 +5,7 @@ import dataclasses
 
 from saturn_engine.core import Cursor
 from saturn_engine.core import JobId
-from saturn_engine.core.api import SyncInput
+from saturn_engine.core.api import JobsStatesSyncInput
 from saturn_engine.utils.asyncutils import DelayedThrottle
 
 from .. import BaseServices
@@ -63,7 +63,7 @@ class JobStateService(Service[Services, Options]):
         job_name: JobId,
         *,
         cursor: Cursor,
-        cursor_state: str,
+        cursor_state: dict,
     ) -> None:
         self._store.set_job_cursor_state(
             job_name, cursor=cursor, cursor_state=cursor_state
@@ -82,7 +82,7 @@ class JobStateService(Service[Services, Options]):
     async def flush_state(self, state: JobsStates) -> None:
         # Have to cast the job states to dict since defaultdict break dataclasses.
         state = dataclasses.replace(state, jobs=dict(state.jobs))
-        await self.services.api_client.client.sync(SyncInput(state=state))
+        await self.services.api_client.client.sync(JobsStatesSyncInput(state=state))
 
     async def close(self) -> None:
         await self._delayed_flush.flush()

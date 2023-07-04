@@ -1,17 +1,39 @@
 import time
 from datetime import timedelta
 
+import pytest
 import werkzeug.test
 from flask.testing import FlaskClient
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from saturn_engine.core import api
+from saturn_engine.models import Job
+from saturn_engine.models import JobCursorState
 from saturn_engine.stores import jobs_store
 from saturn_engine.stores import queues_store
 from saturn_engine.utils import utcnow
 from saturn_engine.worker_manager.config.declarative import StaticDefinitions
 from saturn_engine.worker_manager.config.declarative import load_definitions_from_str
 from tests.conftest import FreezeTime
+
+
+@pytest.fixture
+def fake_job(
+    session: Session,
+    fake_job_definition: api.JobDefinition,
+    frozen_time: FreezeTime,
+) -> Job:
+    queue = queues_store.create_queue(session=session, name="test")
+    session.flush()
+    job = jobs_store.create_job(
+        name=queue.name,
+        session=session,
+        queue_name=queue.name,
+        job_definition_name=fake_job_definition.name,
+    )
+    session.commit()
+    return job
 
 
 def ids(response: werkzeug.test.TestResponse) -> set[str]:
@@ -93,35 +115,19 @@ def test_api_job(
 
 def test_api_update_job(
     client: FlaskClient,
-    session: Session,
-    fake_job_definition: api.JobDefinition,
+    fake_job: Job,
     frozen_time: FreezeTime,
 ) -> None:
-    # Empty
-    resp = client.put("/api/job/1")
-    assert resp.status_code == 404
-
-    # Add a job
-    queue = queues_store.create_queue(session=session, name="test")
-    session.flush()
-    job = jobs_store.create_job(
-        name=queue.name,
-        session=session,
-        queue_name=queue.name,
-        job_definition_name=fake_job_definition.name,
-    )
-    session.commit()
-
     # Update the job
-    resp = client.put(f"/api/jobs/{job.name}", json={"cursor": "1"})
+    resp = client.put(f"/api/jobs/{fake_job.name}", json={"cursor": "1"})
     assert resp.status_code == 200
 
     # Get the job
-    resp = client.get(f"/api/jobs/{job.name}")
+    resp = client.get(f"/api/jobs/{fake_job.name}")
     assert resp.status_code == 200
     assert resp.json == {
         "data": {
-            "name": job.name,
+            "name": fake_job.name,
             "completed_at": None,
             "cursor": "1",
             "error": None,
@@ -131,17 +137,17 @@ def test_api_update_job(
 
     # Complete the job
     resp = client.put(
-        f"/api/jobs/{job.name}",
+        f"/api/jobs/{fake_job.name}",
         json={"cursor": "2", "completed_at": "2018-01-02T00:00:00+00:00"},
     )
     assert resp.status_code == 200
 
     # Get the job
-    resp = client.get(f"/api/jobs/{job.name}")
+    resp = client.get(f"/api/jobs/{fake_job.name}")
     assert resp.status_code == 200
     assert resp.json == {
         "data": {
-            "name": job.name,
+            "name": fake_job.name,
             "completed_at": "2018-01-02T00:00:00+00:00",
             "cursor": "2",
             "error": None,
@@ -527,3 +533,79 @@ spec:
             }
         ]
     }
+
+
+def test_sync_states(
+    client: FlaskClient,
+    session: Session,
+    fake_job: Job,
+    fake_job_definition: api.JobDefinition,
+    frozen_time: FreezeTime,
+) -> None:
+    resp = client.post(
+        "/api/jobs/_states",
+        json={
+            "state": {
+                "jobs": {
+                    fake_job.name: {
+                        "cursor": "1",
+                        "cursors_states": {
+                            "a": {"x": 1},
+                            "b": {"x": 2},
+                        },
+                        "completion": {
+                            "completed_at": "2020-01-01T01:02:03+04:00",
+                            "error": "ValueError: boo",
+                        },
+                    }
+                }
+            }
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json == {}
+
+    # Create a new job instance from the same job.
+    queue = queues_store.create_queue(session=session, name="test-2")
+    new_job = jobs_store.create_job(
+        name=queue.name,
+        session=session,
+        queue_name=queue.name,
+        job_definition_name=fake_job_definition.name,
+    )
+    queue = queues_store.create_queue(session=session, name="test-3")
+    orphan_job = jobs_store.create_job(
+        name=queue.name,
+        session=session,
+        queue_name=queue.name,
+    )
+    session.commit()
+
+    resp = client.post(
+        "/api/jobs/_states",
+        json={
+            "state": {
+                "jobs": {
+                    new_job.name: {
+                        "cursors_states": {
+                            "b": {"x": 3},
+                        },
+                    },
+                    orphan_job.name: {"cursors_states": {"a": {"x": 1}}},
+                }
+            }
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json == {}
+
+    database_state = session.scalars(
+        select(JobCursorState).order_by(JobCursorState.job, JobCursorState.cursor)
+    ).all()
+    assert [
+        {"job": r.job, "cursor": r.cursor, "state": r.state} for r in database_state
+    ] == [
+        {"job": "test", "cursor": "a", "state": {"x": 1}},
+        {"job": "test", "cursor": "b", "state": {"x": 3}},
+        {"job": "test-3", "cursor": "a", "state": {"x": 1}},
+    ]

@@ -2,11 +2,11 @@ from typing import Any
 from typing import Callable
 from typing import Iterator
 from typing import Optional
-from typing import Union
 
 from contextlib import contextmanager
 
 import sqlalchemy.orm
+from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine import create_engine
 from sqlalchemy.orm import Session
@@ -16,26 +16,9 @@ from sqlalchemy.orm import sessionmaker
 from saturn_engine.models import Base
 from saturn_engine.utils import lazy
 from saturn_engine.utils.inspect import import_name
+from saturn_engine.utils.sqlalchemy import AnySyncSession
+from saturn_engine.utils.sqlalchemy import is_sqlite3_connection
 from saturn_engine.worker_manager.app import current_app
-
-AnySyncSession = Union[Session, _sqlalchemy_scoped_session]
-AnySession = AnySyncSession
-
-import sqlite3
-
-from sqlalchemy import event
-
-
-def is_sqlite3_connection(connection: Any) -> bool:
-    from sqlalchemy.dialects.sqlite import aiosqlite  # type: ignore
-
-    return isinstance(
-        connection,
-        (
-            aiosqlite.AsyncAdapt_aiosqlite_connection,
-            sqlite3.Connection,
-        ),
-    )
 
 
 @event.listens_for(Engine, "connect")
