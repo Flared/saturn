@@ -141,7 +141,11 @@ async def test_scheduler_close_error(scheduler: Scheduler) -> None:
 
     schedulable = make_schedulable(iterable=error_close())
     scheduler.add(schedulable)
-    async for item in alib.islice(scheduler.run(), 10):
-        pass
-    await scheduler.close()
+    async with alib.scoped_iter(scheduler.run()) as generator:
+        async for item in alib.islice(generator, 10):
+            pass
+        await scheduler.close()
+        async for item in generator:
+            raise AssertionError()
+
     close_mock.assert_called_once()

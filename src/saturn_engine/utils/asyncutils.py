@@ -69,6 +69,8 @@ class TasksGroup:
         return done
 
     async def wait_all(self) -> set[asyncio.Task]:
+        if not self.tasks:
+            return set()
         done, _ = await asyncio.wait(self.tasks)
         self.tasks.difference_update(done)
         return done
