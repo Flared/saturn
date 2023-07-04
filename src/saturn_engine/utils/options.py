@@ -8,6 +8,8 @@ from functools import cache
 import pydantic
 import pydantic.json
 
+from saturn_engine.utils.inspect import import_name
+
 OptionsSchemaT = t.TypeVar("OptionsSchemaT", bound="OptionsSchema")
 T = t.TypeVar("T")
 
@@ -54,3 +56,27 @@ def fromdict(
     if dataclasses.is_dataclass(klass):
         return t.cast(T, klass(**obj.dict()))
     return t.cast(T, obj)
+
+
+class SymbolName(t.Generic[T]):
+    def __init__(self, obj: T) -> None:
+        self.object = obj
+
+    @classmethod
+    def __get_validators__(cls) -> t.Iterator[t.Callable]:
+        yield cls.load_symbol
+
+    @classmethod
+    def load_symbol(cls, v: object, field: pydantic.fields.ModelField) -> T:
+        if isinstance(v, str):
+            v = import_name(v)
+
+        error = None
+        if field.sub_fields:
+            field = field.sub_fields[0]
+            v, error = field.validate(v, {}, loc="type")
+
+        if error:
+            raise pydantic.ValidationError([error], cls)  # type: ignore
+
+        return t.cast(T, v)
