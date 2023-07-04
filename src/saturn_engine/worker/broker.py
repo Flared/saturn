@@ -78,7 +78,7 @@ class Broker:
         """
         while self.is_running:
             work_sync = await self.work_manager.sync()
-            self.logger.info("Worker sync", extra={"data": {"work": str(work_sync)}})
+            #self.logger.info("Worker sync", extra={"data": {"work": str(work_sync)}})
 
             for executor in work_sync.executors.add:
                 self.executors_manager.add_executor(executor)

@@ -8,7 +8,6 @@ from .config import RabbitMQConfig
 from .config import RedisConfig
 from .config import SaturnConfig
 from .config import ServicesManagerConfig
-from .config import WorkerConfig
 from .config import WorkerManagerConfig
 
 
@@ -27,9 +26,6 @@ class config(SaturnConfig):
             "saturn_engine.worker.services.rabbitmq.RabbitMQService",
         ]
         strict_services = True
-
-    class worker(WorkerConfig):
-        job_store_cls = "ApiJobStore"
 
     class rabbitmq(RabbitMQConfig):
         url = os.environ.get("SATURN_AMQP_URL", "amqp://127.0.0.1/")

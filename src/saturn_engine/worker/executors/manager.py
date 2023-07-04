@@ -1,3 +1,5 @@
+from saturn_engine.utils.log import getLogger
+import logging
 import asyncio
 
 from saturn_engine.core import api
@@ -21,15 +23,18 @@ class ExecutorsManager:
         self.services = services
         self.executors: dict[str, ExecutorWorker] = {}
         self.executors_tasks_group = TasksGroupRunner(name="executors")
+        self.logger = getLogger(__name__, self)
 
     def start(self) -> None:
         self.executors_tasks_group.start()
 
     async def close(self) -> None:
+        self.logger.debug("Closing executors")
         await asyncio.gather(
             *[executor.close() for executor in self.executors.values()]
         )
-        await self.executors_tasks_group.close()
+        self.logger.debug("Stopping executors tasks")
+        await self.executors_tasks_group.close(wait_all=True)
 
     def add_queue(self, queue: ExecutableQueue) -> None:
         executor = self.executors.get(queue.executor)
@@ -79,6 +84,7 @@ class ExecutorWorker:
             services=services,
         )
         self.scheduler: Scheduler[ExecutableMessage] = Scheduler()
+        self.logger = getLogger(__name__, self)
 
     @classmethod
     def from_item(
@@ -104,9 +110,12 @@ class ExecutorWorker:
         async for message in self.scheduler.run():
             await self.services.s.hooks.message_scheduled.emit(message)
             await self.executor_queue.submit(message)
+        self.logger.debug("Executor worker done")
 
     async def close(self) -> None:
+        self.logger.debug("Closing scheduler")
         await self.scheduler.close()
+        self.logger.debug("Closing executor queue")
         await self.executor_queue.close()
 
     def add_schedulable(self, schedulable: ExecutableQueue) -> None:

@@ -48,13 +48,21 @@ class ResourcesProviderItem:
 
 @dataclasses.dataclass
 class QueueItem:
-    name: str
+    name: JobId
     pipeline: QueuePipeline
     output: dict[str, list[ComponentDefinition]]
     input: ComponentDefinition
     config: dict[str, Any] = field(default_factory=dict)
     labels: dict[str, str] = field(default_factory=dict)
     executor: str = "default"
+
+@dataclasses.dataclass
+class QueueItemState:
+    cursor: t.Optional[Cursor] = None
+
+@dataclasses.dataclass
+class QueueItemWithState(QueueItem):
+    state: QueueItemState = field(default_factory=QueueItemState)
 
 
 @dataclasses.dataclass
@@ -66,7 +74,7 @@ class JobDefinition:
 
 @dataclasses.dataclass
 class LockResponse:
-    items: list[QueueItem]
+    items: list[QueueItemWithState]
     resources: list[ResourceItem]
     resources_providers: list[ResourcesProviderItem]
     executors: list[ComponentDefinition]

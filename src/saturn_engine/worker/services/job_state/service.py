@@ -27,7 +27,8 @@ class StateFlusher(abc.ABC):
 
 @dataclasses.dataclass
 class Options:
-    flush_delay: float = 1.0
+    flush_delay: float = 10.0
+    auto_flush: bool = True
 
 
 class JobStateService(Service[Services, Options]):
@@ -45,17 +46,17 @@ class JobStateService(Service[Services, Options]):
             self.flush, delay=self.options.flush_delay
         )
 
-    def set_job_cursor(self, job_name: JobId, cursor: Cursor) -> None:
+    def set_job_cursor(self, job_name: JobId, *, cursor: Cursor) -> None:
         self._store.set_job_cursor(job_name, cursor)
-        self._delayed_flush()
+        self._maybe_flush()
 
     def set_job_completed(self, job_name: JobId) -> None:
         self._store.set_job_completed(job_name)
-        self._delayed_flush()
+        self._maybe_flush()
 
     def set_job_failed(self, job_name: JobId, *, error: Exception) -> None:
         self._store.set_job_failed(job_name, f"{type(error).__name__}: {error}")
-        self._delayed_flush()
+        self._maybe_flush()
 
     def set_job_cursor_state(
         self,
@@ -67,7 +68,11 @@ class JobStateService(Service[Services, Options]):
         self._store.set_job_cursor_state(
             job_name, cursor=cursor, cursor_state=cursor_state
         )
-        self._delayed_flush()
+        self._maybe_flush()
+
+    def _maybe_flush(self):
+        if self.options.auto_flush:
+            self._delayed_flush()
 
     async def flush(self) -> None:
         with self._store.flush() as state:

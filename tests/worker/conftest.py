@@ -20,10 +20,10 @@ from saturn_engine.config import Config
 from saturn_engine.core import PipelineInfo
 from saturn_engine.core import QueuePipeline
 from saturn_engine.core import Resource
-from saturn_engine.core import TopicMessage
+from saturn_engine.core import TopicMessage, JobId
 from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.core.api import LockResponse
-from saturn_engine.core.api import QueueItem
+from saturn_engine.core.api import QueueItemWithState
 from saturn_engine.worker.broker import Broker
 from saturn_engine.worker.broker import WorkManagerInit
 from saturn_engine.worker.executors import Executor
@@ -173,8 +173,8 @@ def message_maker(fake_pipeline_info: PipelineInfo) -> t.Callable[..., PipelineM
 @pytest.fixture
 def fake_queue_item(
     fake_pipeline_info: PipelineInfo,
-) -> QueueItem:
-    return QueueItem(
+) -> QueueItemWithState:
+    return QueueItemWithState(
         name="fake-queue",
         pipeline=QueuePipeline(
             info=fake_pipeline_info,
@@ -196,11 +196,11 @@ def fake_topic() -> MemoryTopic:
 
 @pytest.fixture
 def executable_queue_maker(
-    fake_queue_item: QueueItem, fake_topic: Topic, services_manager: ServicesManager
+    fake_queue_item: QueueItemWithState, fake_topic: Topic, services_manager: ServicesManager
 ) -> t.Callable[..., ExecutableQueue]:
     def maker(
         *,
-        definition: QueueItem = fake_queue_item,
+        definition: QueueItemWithState = fake_queue_item,
         topic: Topic = fake_topic,
         output: t.Union[dict, None] = None,
     ) -> ExecutableQueue:
@@ -234,8 +234,8 @@ def fake_executable_maker_with_output(
         pipeline_info: PipelineInfo = fake_pipeline_info,
         output: t.Optional[dict[str, list[ComponentDefinition]]] = None,
     ) -> ExecutableMessage:
-        queue_item = QueueItem(
-            name="fake-failing-queue",
+        queue_item = QueueItemWithState(
+            name=JobId("fake-failing-queue"),
             pipeline=QueuePipeline(
                 info=fake_pipeline_info,
                 args={},

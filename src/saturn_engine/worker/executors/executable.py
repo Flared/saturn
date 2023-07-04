@@ -123,6 +123,7 @@ class ExecutableQueue:
                 executable_message._context.enter_context(self.pending_context())
                 yield executable_message
         finally:
+            breakpoint()
             await self.close()
 
     async def close(self) -> None:

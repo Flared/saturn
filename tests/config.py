@@ -1,7 +1,6 @@
 from saturn_engine.config import Env
 from saturn_engine.config import SaturnConfig
 from saturn_engine.config import ServicesManagerConfig
-from saturn_engine.config import WorkerConfig
 
 
 class config(SaturnConfig):
@@ -16,5 +15,5 @@ class config(SaturnConfig):
             "saturn_engine.worker.services.loggers.Logger",
         ]
 
-    class worker(WorkerConfig):
-        job_store_cls = "MemoryJobStore"
+    class job_state:
+        auto_flush = False

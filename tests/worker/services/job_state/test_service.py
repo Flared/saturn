@@ -1,6 +1,5 @@
 import typing as t
 
-
 import pytest
 
 from saturn_engine.core import Cursor

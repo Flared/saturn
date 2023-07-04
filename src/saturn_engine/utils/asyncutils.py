@@ -68,6 +68,11 @@ class TasksGroup:
 
         return done
 
+    async def wait_all(self) -> set[asyncio.Task]:
+        done, _ = await asyncio.wait(self.tasks)
+        self.tasks.difference_update(done)
+        return done
+
     async def close(self, timeout: t.Optional[float] = None) -> None:
         # Cancel the update event task.
         self.updated_task.cancel()
@@ -90,6 +95,7 @@ class TasksGroup:
         done, pending = await asyncio.wait(self.tasks, timeout=timeout)
         for task in done:
             if not task.cancelled() and isinstance(task.exception(), Exception):
+                breakpoint()
                 self.logger.error(
                     "Task '%s' cancelled with error", task, exc_info=task.exception()
                 )
@@ -120,7 +126,7 @@ class TasksGroupRunner(TasksGroup):
         self.is_running = False
         self.notify()
 
-    async def close(self, timeout: t.Optional[float] = None) -> None:
+    async def close(self, wait_all: bool=False, timeout: t.Optional[float] = None) -> None:
         if self.is_running:
             # Stop the runner.
             self.stop()
@@ -128,17 +134,24 @@ class TasksGroupRunner(TasksGroup):
             if self._runner_task:
                 await self._runner_task
 
+        if wait_all:
+            tasks = await asyncio.wait_for(self.wait_all(), timeout=timeout)
+            self._log_tasks(tasks)
+
         # Clean the tasks.
         await super().close(timeout=timeout)
 
     async def run(self) -> None:
         while self.is_running:
             done = await self.wait()
-            for task in done:
-                if not task.cancelled() and isinstance(task.exception(), Exception):
-                    self.logger.error(
-                        "Task '%s' failed", task, exc_info=task.exception()
-                    )
+            self._log_tasks(done)
+
+    def _log_tasks(self, tasks: set[asyncio.Task]) -> None:
+        for task in tasks:
+            if not task.cancelled() and isinstance(task.exception(), Exception):
+                self.logger.error(
+                    "Task '%s' failed", task, exc_info=task.exception()
+                )
 
 
 class DelayedThrottle(t.Generic[AsyncFNone]):

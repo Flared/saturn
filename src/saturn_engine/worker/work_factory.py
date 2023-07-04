@@ -1,7 +1,7 @@
 import typing as t
 
 from saturn_engine.core.api import ComponentDefinition
-from saturn_engine.core.api import QueueItem
+from saturn_engine.core.api import QueueItemWithState
 from saturn_engine.core.api import ResourcesProviderItem
 from saturn_engine.utils import inspect as extra_inspect
 from saturn_engine.worker.resources.provider import (
@@ -14,11 +14,11 @@ from .inventories import Inventory
 from .inventories import SubInventory
 from .job import Job
 from .services import Services
-from .services.job_store import JobStoreService
+from .services.job_state.service import JobStateService
 from .topics import Topic
 
 
-def build(queue_item: QueueItem, *, services: Services) -> ExecutableQueue:
+def build(queue_item: QueueItemWithState, *, services: Services) -> ExecutableQueue:
     input_ = build_item(queue_item.input, services=services)
     if isinstance(input_, Inventory):
         input_ = build_inventory_job(input_, queue_item=queue_item, services=services)
@@ -74,10 +74,9 @@ def build_inventory(
 
 
 def build_inventory_job(
-    inventory: Inventory, *, queue_item: QueueItem, services: Services
+    inventory: Inventory, *, queue_item: QueueItemWithState, services: Services
 ) -> Job:
-    store = services.cast_service(JobStoreService).for_queue(queue_item)
-    return Job(inventory=inventory, store=store)
+    return Job(inventory=inventory, queue_item=queue_item, services=services)
 
 
 def build_sub_inventory(

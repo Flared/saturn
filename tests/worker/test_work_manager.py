@@ -2,13 +2,14 @@ from unittest.mock import Mock
 
 import pytest
 
-from saturn_engine.core.api import ComponentDefinition
+from saturn_engine.core.api import ComponentDefinition, QueueItemState
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import PipelineInfo
-from saturn_engine.core.api import QueueItem
+from saturn_engine.core.api import QueueItemWithState
 from saturn_engine.core.api import QueuePipeline
 from saturn_engine.core.api import ResourceItem
 from saturn_engine.core.api import ResourcesProviderItem
+from saturn_engine.core import JobId, Cursor
 from saturn_engine.worker.work_manager import WorkManager
 from saturn_engine.worker.work_manager import WorkSync
 
@@ -32,8 +33,8 @@ async def test_sync(
     # Sync add 3 new items.
     worker_manager_client.lock.return_value = LockResponse(
         items=[
-            QueueItem(
-                name="q1",
+            QueueItemWithState(
+                name=JobId("q1"),
                 input=ComponentDefinition(
                     name="t1", type="DummyInventory", options={"count": 1000}
                 ),
@@ -44,9 +45,10 @@ async def test_sync(
                 labels={"owner": "team-saturn"},
                 output={},
                 executor="e1",
+                state=QueueItemState(cursor=Cursor("1"))
             ),
-            QueueItem(
-                name="q2",
+            QueueItemWithState(
+                name=JobId("q2"),
                 input=ComponentDefinition(
                     name="t2",
                     type="DummyTopic",
@@ -59,8 +61,8 @@ async def test_sync(
                 output={},
                 executor="e1",
             ),
-            QueueItem(
-                name="q3",
+            QueueItemWithState(
+                name=JobId("q3"),
                 input=ComponentDefinition(
                     name="t3",
                     type="DummyTopic",
@@ -117,8 +119,8 @@ async def test_sync(
     # New sync add 1 and drop 2 items.
     worker_manager_client.lock.return_value = LockResponse(
         items=[
-            QueueItem(
-                name="q2",
+            QueueItemWithState(
+                name=JobId("q2"),
                 input=ComponentDefinition(
                     name="t2",
                     type="DummyTopic",
@@ -131,8 +133,8 @@ async def test_sync(
                 output={},
                 executor="e1",
             ),
-            QueueItem(
-                name="q4",
+            QueueItemWithState(
+                name=JobId("q4"),
                 input=ComponentDefinition(
                     name="t4",
                     type="DummyTopic",

@@ -63,11 +63,13 @@ class SymbolName(t.Generic[T]):
         self.object = obj
 
     @classmethod
-    def __get_validators__(self) -> t.Iterator[t.Callable]:
-        yield self.load_symbol
+    def __get_validators__(cls) -> t.Iterator[t.Callable]:
+        yield cls.load_symbol
 
     @classmethod
-    def load_symbol(cls, v: object, field: pydantic.fields.ModelField) -> "SymbolName[T]":
+    def load_symbol(
+        cls, v: object, field: pydantic.fields.ModelField
+    ) -> T:
         if isinstance(v, str):
             v = import_name(v)
 
@@ -79,4 +81,4 @@ class SymbolName(t.Generic[T]):
         if error:
             raise pydantic.ValidationError([error], cls)  # type: ignore
 
-        return cls(t.cast(T, v))
+        return t.cast(T, v)

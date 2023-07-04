@@ -180,3 +180,6 @@ class ExecutorQueue:
         await self.consuming_tasks.close(timeout=self.CLOSE_TIMEOUT.total_seconds())
 
         await self.executor.close()
+
+    async def cancel_message(self, message: ExecutableMessage) -> None:
+        pass
