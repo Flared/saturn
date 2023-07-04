@@ -13,7 +13,7 @@ from saturn_engine.client.worker_manager import WorkerManagerClient
 from saturn_engine.core import JobId
 from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.core.api import LockResponse
-from saturn_engine.core.api import QueueItem
+from saturn_engine.core.api import QueueItemWithState
 from saturn_engine.core.api import ResourceItem
 from saturn_engine.utils.log import getLogger
 from saturn_engine.worker import work_factory
@@ -119,7 +119,7 @@ class WorkManager:
         return self.worker_items.get(name)
 
     async def build_queues_for_worker_items(
-        self, items: Iterator[QueueItem]
+        self, items: Iterator[QueueItemWithState]
     ) -> WorkerItems:
         return {
             item.name: queue
@@ -128,12 +128,12 @@ class WorkManager:
         }
 
     async def build_queue_for_worker_item(
-        self, item: QueueItem
+        self, item: QueueItemWithState
     ) -> Optional[ExecutableQueue]:
         try:
 
             @self.services.s.hooks.work_queue_built.emit
-            async def scope(item: QueueItem) -> ExecutableQueue:
+            async def scope(item: QueueItemWithState) -> ExecutableQueue:
                 return work_factory.build(item, services=self.services)
 
             return await scope(item)

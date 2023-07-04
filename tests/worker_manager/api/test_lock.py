@@ -65,6 +65,13 @@ def test_api_lock(
     for i in range(13):
         create_job(f"job-{i}")
 
+    # Set progress on a job
+    jobs_store.update_job(
+        session=session,
+        name="job-0",
+        cursor="1",
+    )
+
     # Create a completed job
     i = i + 1
     create_job(f"job-{i}")
@@ -100,7 +107,9 @@ def test_api_lock(
     # Get items
     resp = client.post("/api/lock", json={"worker_id": "worker-1"})
     assert resp.status_code == 200
+    assert resp.json
     assert ids(resp) == expected_items_worker1
+    assert resp.json["items"][0]["state"]["cursor"] == "1"
 
     resp = client.post("/api/lock", json={"worker_id": "worker-2"})
     assert resp.status_code == 200
