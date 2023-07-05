@@ -1,3 +1,4 @@
+import typing as t
 from typing import AsyncContextManager
 from typing import Optional
 from typing import Union
@@ -37,6 +38,8 @@ class BlockingTopic(Topic, abc.ABC):
         self,
         max_concurrency: int = 1,
         sleep_time: Optional[timedelta] = None,
+        *args: t.Any,
+        **kwargs: t.Any,
     ):
         self.logger = getLogger(__name__, self)
         self.semaphore = asyncio.Semaphore(max_concurrency)
