@@ -1,5 +1,7 @@
 from flask import Blueprint
 
+from saturn_engine.core.api import FetchCursorsStatesInput
+from saturn_engine.core.api import FetchCursorsStatesResponse
 from saturn_engine.core.api import JobInput
 from saturn_engine.core.api import JobResponse
 from saturn_engine.core.api import JobsResponse
@@ -16,7 +18,6 @@ from saturn_engine.utils.flask import jsonify
 from saturn_engine.utils.flask import marshall_request
 from saturn_engine.worker_manager.app import current_app
 from saturn_engine.worker_manager.services.sync import sync_jobs
-from saturn_engine.worker_manager.services.sync import sync_jobs_states
 
 bp = Blueprint("jobs", __name__, url_prefix="/api/jobs")
 
@@ -75,8 +76,20 @@ def post_sync_jobs_states() -> Json[JobsStatesSyncResponse]:
     """Sync jobs states to the database in batch."""
     sync_input = marshall_request(JobsStatesSyncInput)
     with session_scope() as session:
-        sync_jobs_states(
+        jobs_store.sync_jobs_states(
             state=sync_input.state,
             session=session,
         )
     return jsonify(JobsStatesSyncResponse())
+
+
+@bp.route("/_states/fetch", methods=("POST",))
+def post_fetch_states() -> Json[FetchCursorsStatesResponse]:
+    """Fetch cursors states."""
+    cursors_input = marshall_request(FetchCursorsStatesInput)
+    with session_scope() as session:
+        cursors = jobs_store.fetch_cursors_states(
+            cursors_input.cursors,
+            session=session,
+        )
+    return jsonify(FetchCursorsStatesResponse(cursors=cursors))

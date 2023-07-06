@@ -94,6 +94,16 @@ class LockInput:
 
 
 @dataclasses.dataclass
+class FetchCursorsStatesInput:
+    cursors: dict[JobId, list[Cursor]]
+
+
+@dataclasses.dataclass
+class FetchCursorsStatesResponse:
+    cursors: dict[JobId, dict[Cursor, t.Optional[dict]]]
+
+
+@dataclasses.dataclass
 class JobCompletion:
     completed_at: datetime
     error: t.Optional[str] = None
