@@ -4,6 +4,8 @@ import socket
 
 import aiohttp
 
+from saturn_engine.core.api import FetchCursorsStatesInput
+from saturn_engine.core.api import FetchCursorsStatesResponse
 from saturn_engine.core.api import JobsStatesSyncInput
 from saturn_engine.core.api import JobsStatesSyncResponse
 from saturn_engine.core.api import LockInput
@@ -35,3 +37,11 @@ class WorkerManagerClient:
         json = asdict(sync)
         async with self.http_client.put(state_url, json=json) as response:
             return fromdict(await response.json(), JobsStatesSyncResponse)
+
+    async def fetch_cursors_states(
+        self, cursors: FetchCursorsStatesInput
+    ) -> FetchCursorsStatesResponse:
+        state_url = urlcat(self.base_url, "api/jobs/_states/cursors")
+        json = asdict(cursors)
+        async with self.http_client.put(state_url, json=json) as response:
+            return fromdict(await response.json(), FetchCursorsStatesResponse)

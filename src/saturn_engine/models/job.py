@@ -22,7 +22,7 @@ from .types import UTCDateTime
 
 class JobCursorState(Base):
     __tablename__ = "job_cursor_states"
-    job: Mapped[str] = Column(Text, ForeignKey("jobs.name"), primary_key=True)
+    job_definition_name: Mapped[str] = Column(Text, primary_key=True)
     cursor: Mapped[str] = Column(Text, primary_key=True)
     state: Mapped[dict] = Column(JSON, nullable=False)
 

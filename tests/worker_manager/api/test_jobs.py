@@ -24,13 +24,45 @@ def fake_job(
     fake_job_definition: api.JobDefinition,
     frozen_time: FreezeTime,
 ) -> Job:
-    queue = queues_store.create_queue(session=session, name="test")
+    queue = queues_store.create_queue(session=session, name="test-1")
     session.flush()
     job = jobs_store.create_job(
         name=queue.name,
         session=session,
         queue_name=queue.name,
         job_definition_name=fake_job_definition.name,
+    )
+    session.commit()
+    return job
+
+
+@pytest.fixture
+def new_job(
+    fake_job: Job,
+    session: Session,
+    frozen_time: FreezeTime,
+) -> Job:
+    queue = queues_store.create_queue(session=session, name="test-2")
+    job = jobs_store.create_job(
+        name=queue.name,
+        session=session,
+        queue_name=queue.name,
+        job_definition_name=fake_job.job_definition_name,
+    )
+    session.commit()
+    return job
+
+
+@pytest.fixture
+def orphan_job(
+    session: Session,
+    frozen_time: FreezeTime,
+) -> Job:
+    queue = queues_store.create_queue(session=session, name="orphan-test")
+    job = jobs_store.create_job(
+        name=queue.name,
+        session=session,
+        queue_name=queue.name,
     )
     session.commit()
     return job
@@ -539,6 +571,8 @@ def test_sync_states(
     client: FlaskClient,
     session: Session,
     fake_job: Job,
+    new_job: Job,
+    orphan_job: Job,
     fake_job_definition: api.JobDefinition,
     frozen_time: FreezeTime,
 ) -> None:
@@ -565,22 +599,6 @@ def test_sync_states(
     assert resp.status_code == 200
     assert resp.json == {}
 
-    # Create a new job instance from the same job.
-    queue = queues_store.create_queue(session=session, name="test-2")
-    new_job = jobs_store.create_job(
-        name=queue.name,
-        session=session,
-        queue_name=queue.name,
-        job_definition_name=fake_job_definition.name,
-    )
-    queue = queues_store.create_queue(session=session, name="test-3")
-    orphan_job = jobs_store.create_job(
-        name=queue.name,
-        session=session,
-        queue_name=queue.name,
-    )
-    session.commit()
-
     resp = client.post(
         "/api/jobs/_states",
         json={
@@ -600,12 +618,61 @@ def test_sync_states(
     assert resp.json == {}
 
     database_state = session.scalars(
-        select(JobCursorState).order_by(JobCursorState.job, JobCursorState.cursor)
+        select(JobCursorState).order_by(
+            JobCursorState.job_definition_name, JobCursorState.cursor
+        )
     ).all()
     assert [
-        {"job": r.job, "cursor": r.cursor, "state": r.state} for r in database_state
+        {"job": r.job_definition_name, "cursor": r.cursor, "state": r.state}
+        for r in database_state
     ] == [
         {"job": "test", "cursor": "a", "state": {"x": 1}},
         {"job": "test", "cursor": "b", "state": {"x": 3}},
-        {"job": "test-3", "cursor": "a", "state": {"x": 1}},
     ]
+
+
+def test_fetch_cursors_states(
+    client: FlaskClient,
+    fake_job: Job,
+    new_job: Job,
+    orphan_job: Job,
+) -> None:
+    resp = client.post(
+        "/api/jobs/_states",
+        json={
+            "state": {
+                "jobs": {
+                    fake_job.name: {
+                        "cursors_states": {
+                            "a": {"x": 1},
+                            "b": {"x": 2},
+                        },
+                    }
+                }
+            }
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json == {}
+
+    resp = client.post(
+        "/api/jobs/_states/fetch",
+        json={
+            "cursors": {
+                new_job.name: ["a", "c"],
+                orphan_job.name: ["a"],
+                "do-not-exist": ["a"],
+            }
+        },
+    )
+    assert resp.status_code == 200
+    assert resp.json == {
+        "cursors": {
+            new_job.name: {
+                "a": {"x": 1},
+                "c": None,
+            },
+            orphan_job.name: {"a": None},
+            "do-not-exist": {"a": None},
+        }
+    }

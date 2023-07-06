@@ -1,16 +1,23 @@
+import typing as t
 from typing import Optional
 
 from datetime import datetime
 
 from sqlalchemy import select
+from sqlalchemy import union_all
 from sqlalchemy import update
 from sqlalchemy.orm import joinedload
 
+from saturn_engine.core import Cursor
+from saturn_engine.core import JobId
+from saturn_engine.core.api import JobsStates
 from saturn_engine.models import Job
+from saturn_engine.models.job import JobCursorState
 from saturn_engine.stores import queues_store
 from saturn_engine.utils import utcnow
 from saturn_engine.utils.sqlalchemy import AnySession
 from saturn_engine.utils.sqlalchemy import AnySyncSession
+from saturn_engine.utils.sqlalchemy import upsert
 
 
 def create_job(
@@ -94,3 +101,98 @@ def set_failed(
     if completed_at is None:
         completed_at = utcnow()
     update_job(name, session=session, error=error, completed_at=completed_at)
+
+
+def sync_jobs_states(
+    state: JobsStates,
+    session: AnySyncSession,
+) -> None:
+    # Batch load all job definition name for cursors state.
+    job_with_cursors_states = [
+        job_id for job_id, job_state in state.jobs.items() if job_state.cursors_states
+    ]
+    jobs_definitions = session.execute(
+        select(Job.name, Job.job_definition_name).where(
+            Job.name.in_(job_with_cursors_states)
+        )
+    )
+    job_definition_by_name = {j.name: j.job_definition_name for j in jobs_definitions}
+
+    jobs_values = []
+    jobs_cursors = []
+
+    for job_id, job_state in state.jobs.items():
+        job_values: dict[str, t.Any] = {}
+        job_cursors: list[dict[str, t.Any]] = []
+
+        if job_state.cursor:
+            job_values["cursor"] = job_state.cursor
+        if job_state.completion:
+            job_values["completed_at"] = job_state.completion.completed_at
+            if (error := job_state.completion.error) is not None:
+                job_values["error"] = error
+        for cursor, cursor_state in job_state.cursors_states.items():
+            job_definition_name = job_definition_by_name.get(job_id)
+            if job_definition_name:
+                job_cursors.append(
+                    {
+                        "job_definition_name": job_definition_name,
+                        "cursor": cursor,
+                        "state": cursor_state,
+                    }
+                )
+
+        if job_values:
+            job_values["name"] = job_id
+            jobs_values.append(job_values)
+        if job_cursors:
+            jobs_cursors.extend(job_cursors)
+
+    if jobs_cursors:
+        cursors_stmt = upsert(session)(JobCursorState).values(jobs_cursors)
+        cursors_stmt = cursors_stmt.on_conflict_do_update(
+            index_elements=[
+                JobCursorState.job_definition_name,
+                JobCursorState.cursor,
+            ],
+            set_={JobCursorState.state: cursors_stmt.excluded.state},
+        )
+        session.execute(cursors_stmt)
+
+    if jobs_values:
+        session.bulk_update_mappings(Job, jobs_values)
+
+
+CursorsStates = dict[JobId, dict[Cursor, t.Optional[dict]]]
+
+
+def fetch_cursors_states(
+    query: dict[JobId, list[Cursor]],
+    session: AnySyncSession,
+) -> CursorsStates:
+    # Generate a query for each jobs so we can UNION them.
+    fetch_stmts = []
+    for job, cursors in query.items():
+        fetch_stmts.append(
+            select(Job.name, JobCursorState)
+            .join(
+                JobCursorState,
+                Job.job_definition_name == JobCursorState.job_definition_name,
+            )
+            .where(
+                Job.name == job,
+                JobCursorState.cursor.in_(cursors),
+            )
+        )
+
+    # Create a default state with every cursor default to None
+    states: CursorsStates = {
+        job: {c: None for c in cursors} for job, cursors in query.items()
+    }
+
+    # Fill the states with DB values.
+    rows = session.execute(union_all(*fetch_stmts)).all()
+    for row in rows:
+        states[row.name][row.cursor] = row.state
+
+    return states
