@@ -41,7 +41,7 @@ class WorkerManagerClient:
     async def fetch_cursors_states(
         self, cursors: FetchCursorsStatesInput
     ) -> FetchCursorsStatesResponse:
-        state_url = urlcat(self.base_url, "api/jobs/_states/cursors")
+        state_url = urlcat(self.base_url, "api/jobs/_states/fetch")
         json = asdict(cursors)
-        async with self.http_client.put(state_url, json=json) as response:
+        async with self.http_client.post(state_url, json=json) as response:
             return fromdict(await response.json(), FetchCursorsStatesResponse)
