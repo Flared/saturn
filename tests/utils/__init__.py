@@ -253,3 +253,11 @@ def register_hooks_handler(services: Services) -> AsyncMock:
         async_context_mock_handler(_hooks_handler.message_published)
     )
     return _hooks_handler
+
+
+class EqualAnyOrder:
+    def __init__(self, expected: t.Iterable):
+        self.expected = expected
+
+    def __eq__(self, other: t.Any) -> bool:
+        return list(sorted(self.expected)) == list(sorted(other))

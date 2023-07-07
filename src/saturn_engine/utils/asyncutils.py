@@ -14,7 +14,7 @@ T = t.TypeVar("T")
 K = t.TypeVar("K")
 V = t.TypeVar("V")
 
-AsyncFNone = t.TypeVar("AsyncFNone", bound=t.Callable[..., Awaitable[None]])
+AsyncFNone = t.TypeVar("AsyncFNone", bound=t.Callable[..., Awaitable])
 
 
 async def aiter2agen(iterator: AsyncIterator[T]) -> AsyncGenerator[T, None]:
@@ -168,6 +168,8 @@ class DelayedThrottle(t.Generic[AsyncFNone]):
             tuple[tuple[t.Any, ...], dict[str, t.Any]]
         ] = None
 
+        self._call_fut: t.Optional[asyncio.Future] = None
+
     @property
     def is_idle(self) -> bool:
         return self.delayed_task is None
@@ -180,32 +182,53 @@ class DelayedThrottle(t.Generic[AsyncFNone]):
     def is_running(self) -> bool:
         return not self.is_idle and not self.is_waiting
 
-    def __call__(self, *args: t.Any, **kwargs: t.Any) -> None:
+    def call_nowait(self, *args: t.Any, **kwargs: t.Any) -> None:
         self.delayed_params = (args, kwargs)
 
         if self.is_idle:
             name = f"{self.func.__qualname__}.delayed"
             self.delayed_task = asyncio.create_task(self._delay_call(), name=name)
 
+    def __call__(self, *args: t.Any, **kwargs: t.Any) -> asyncio.Future:
+        if self._call_fut is None:
+            self._call_fut = asyncio.Future()
+
+        self.call_nowait(*args, **kwargs)
+        return self._call_fut
+
     async def _delay_call(self) -> None:
+        call_fut = None
         try:
             self.flush_event.clear()
-            with contextlib.suppress(asyncio.TimeoutError):
-                await asyncio.wait_for(self.flush_event.wait(), timeout=self.delay)
+            try:
+                with contextlib.suppress(asyncio.TimeoutError):
+                    await asyncio.wait_for(self.flush_event.wait(), timeout=self.delay)
+            finally:
+                # Ensure we set call_fut, even if the wait_for raised an exception.
+                call_fut = self._call_fut
 
             if not self.delayed_params:
+                if call_fut:
+                    call_fut.cancel()
                 return
 
             args, kwargs = self.delayed_params
             self.delayed_params = None
-            await self.func(*args, **kwargs)
+            self._call_fut = None
+            result = await self.func(*args, **kwargs)
+            if call_fut:
+                call_fut.set_result(result)
+        except BaseException as e:
+            if call_fut:
+                call_fut.set_exception(e)
+            raise
         finally:
             self.delayed_task = None
 
             # If __call__ was called while we were calling func, we requeue a new task.
             if self.delayed_params:
                 args, kwargs = self.delayed_params
-                self.__call__(*args, **kwargs)
+                self.call_nowait(*args, **kwargs)
 
     async def cancel(self) -> None:
         self.delayed_params = None

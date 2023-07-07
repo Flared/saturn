@@ -1,5 +1,7 @@
 import typing as t
 
+import asyncio
+
 import pytest
 
 from saturn_engine.core import Cursor
@@ -8,6 +10,7 @@ from saturn_engine.utils import utcnow
 from saturn_engine.worker.services.job_state.service import JobStateService
 from saturn_engine.worker.services.manager import ServicesManager
 from tests.conftest import FreezeTime
+from tests.utils import EqualAnyOrder
 from tests.utils import HttpClientMock
 
 
@@ -96,3 +99,44 @@ async def test_job_state_update(
     http_client_mock.reset_mock()
     await job_state_service.flush()
     http_client_mock.put("http://127.0.0.1:5000/api/jobs/_states").assert_not_called()
+
+
+async def test_job_state_fetch_cursors(
+    http_client_mock: HttpClientMock,
+    job_state_service: JobStateService,
+) -> None:
+    http_client_mock.post(
+        "http://127.0.0.1:5000/api/jobs/_states/fetch"
+    ).return_value = {
+        "cursors": {
+            "job-1": {
+                "a": {"x": 1},
+                "b": {"x": 2},
+            },
+            "job-2": {
+                "c": None,
+            },
+        }
+    }
+
+    fetch_1 = job_state_service.fetch_cursors_states(
+        JobId("job-1"), cursors=[Cursor("a"), Cursor("b")]
+    )
+    fetch_2 = job_state_service.fetch_cursors_states(
+        JobId("job-2"), cursors=[Cursor("c")]
+    )
+    states_1, states_2 = await asyncio.gather(fetch_1, fetch_2)
+
+    assert states_1 == {"a": {"x": 1}, "b": {"x": 2}}
+    assert states_2 == {"c": None}
+
+    http_client_mock.post(
+        "http://127.0.0.1:5000/api/jobs/_states/fetch"
+    ).assert_called_once_with(
+        json={
+            "cursors": {
+                "job-1": EqualAnyOrder(["a", "b"]),
+                "job-2": ["c"],
+            }
+        }
+    )
