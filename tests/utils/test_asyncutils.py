@@ -3,6 +3,8 @@ import typing as t
 import asyncio
 from unittest.mock import Mock
 
+import pytest
+
 from saturn_engine.utils.asyncutils import DelayedThrottle
 
 
@@ -22,9 +24,9 @@ async def test_delayed_task() -> None:
 
     # The call is delayed and done with the latest parameters.
     func_wait.set()
-    delayed_func(1, a="b")
+    delayed_func.call_nowait(1, a="b")
     await asyncio.sleep(4)
-    delayed_func(2, a="b")
+    delayed_func.call_nowait(2, a="b")
     func_mock.assert_not_called()
 
     await asyncio.sleep(2)
@@ -37,7 +39,7 @@ async def test_delayed_task() -> None:
     func_wait.clear()
     func_mock.reset_mock()
 
-    delayed_func()
+    delayed_func.call_nowait()
     await asyncio.sleep(4)
     await delayed_func.cancel()
     func_mock.assert_not_called()
@@ -48,7 +50,7 @@ async def test_delayed_task() -> None:
     func_wait.clear()
     func_mock.reset_mock()
 
-    delayed_func()
+    delayed_func.call_nowait()
     await asyncio.sleep(6)
     func_mock.assert_called_once()
     func_mock.reset_mock()
@@ -66,7 +68,7 @@ async def test_delayed_task() -> None:
     await delayed_func.flush()
     func_mock.assert_not_called()
 
-    delayed_func()
+    delayed_func.call_nowait()
     await delayed_func.flush()
     func_mock.assert_called_once()
     func_mock.reset_mock()
@@ -81,11 +83,11 @@ async def test_delayed_task() -> None:
     func_wait.clear()
     func_mock.reset_mock()
 
-    delayed_func(1)
+    delayed_func.call_nowait(1)
     await asyncio.sleep(6)
     func_mock.assert_called_once_with(1)
     func_mock.reset_mock()
-    delayed_func(2)
+    delayed_func.call_nowait(2)
     func_wait.set()
 
     await asyncio.sleep(6)
@@ -99,11 +101,11 @@ async def test_delayed_task() -> None:
     func_wait.clear()
     func_mock.reset_mock()
 
-    delayed_func(1)
+    delayed_func.call_nowait(1)
     await asyncio.sleep(6)
     func_mock.assert_called_once_with(1)
     func_mock.reset_mock()
-    delayed_func(2)
+    delayed_func.call_nowait(2)
 
     await delayed_func.cancel()
     await asyncio.sleep(6)
@@ -111,6 +113,47 @@ async def test_delayed_task() -> None:
     func_mock.reset_mock()
     func_wait.set()
 
-    delayed_func(3)
+    delayed_func.call_nowait(3)
     await asyncio.sleep(6)
     func_mock.assert_called_once_with(3)
+
+
+async def test_delayed_throttle_wait() -> None:
+    # We can await a call to get the latest call result.
+    async def return_arg(x: int) -> int:
+        return x
+
+    delayed_func = DelayedThrottle(return_arg, delay=5)
+
+    t1 = delayed_func(1)
+    await asyncio.sleep(1)
+    delayed_func.call_nowait(2)
+    assert (await t1) == 2
+
+    # Call getting cancelled while waiting see the exception.
+    t1 = delayed_func(1)
+    await asyncio.sleep(1)
+    await delayed_func.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await t1
+
+    # A call while another call is in progress will have its own future.
+    wait_func = asyncio.Event()
+    resume_func = asyncio.Event()
+
+    async def wait_event(x: int) -> int:
+        wait_func.set()
+        await resume_func.wait()
+        return x
+
+    delayed_func = DelayedThrottle(wait_event, delay=5)
+
+    t1 = delayed_func(1)
+    t2 = delayed_func(2)
+    await wait_func.wait()
+    t3 = delayed_func(3)
+    resume_func.set()
+
+    assert (await t1) == 2
+    assert (await t2) == 2
+    assert (await t3) == 3
