@@ -249,6 +249,9 @@ def check_type(obj: Any, typ: Any, scope: Any) -> bool:
     if typ is typing.Union:
         return any(check_type(obj, t, scope) for t in typ_args)
 
+    if typ is float:
+        return isinstance(obj, (float, int))
+
     if not isinstance(obj, typ):
         return False
 
