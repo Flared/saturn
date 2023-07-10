@@ -13,6 +13,8 @@ if t.TYPE_CHECKING:
     from saturn_engine.worker.executors.bootstrap import PipelineBootstrap
     from saturn_engine.worker.executors.executable import ExecutableMessage
     from saturn_engine.worker.executors.executable import ExecutableQueue
+    from saturn_engine.worker.inventory import Item
+    from saturn_engine.worker.job import Job
     from saturn_engine.worker.topic import Topic
 
 
@@ -22,11 +24,17 @@ class MessagePublished(t.NamedTuple):
     output: "PipelineOutput"
 
 
+class ItemsBatch(t.NamedTuple):
+    items: list["Item"]
+    job: "Job"
+
+
 class Hooks:
     name = "hooks"
 
     hook_failed: AsyncEventHook[Exception]
 
+    items_batched: AsyncEventHook["ItemsBatch"]
     message_polled: AsyncEventHook["ExecutableMessage"]
     message_scheduled: AsyncEventHook["ExecutableMessage"]
     message_submitted: AsyncEventHook["ExecutableMessage"]
@@ -40,6 +48,7 @@ class Hooks:
     def __init__(self) -> None:
         self.hook_failed = AsyncEventHook()
         self.work_queue_built = AsyncContextHook(error_handler=self.hook_failed.emit)
+        self.items_batched = AsyncEventHook(error_handler=self.hook_failed.emit)
         self.message_polled = AsyncEventHook(error_handler=self.hook_failed.emit)
         self.message_scheduled = AsyncEventHook(error_handler=self.hook_failed.emit)
         self.message_submitted = AsyncEventHook(error_handler=self.hook_failed.emit)

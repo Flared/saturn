@@ -14,6 +14,7 @@ from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.inventories import Inventory
 from saturn_engine.worker.inventory import Item
 from saturn_engine.worker.services import Services
+from saturn_engine.worker.services.hooks import ItemsBatch
 from saturn_engine.worker.services.job_state.service import JobStateService
 from saturn_engine.worker.topics import Topic
 from saturn_engine.worker.topics import TopicOutput
@@ -24,16 +25,16 @@ JOB_NAMESPACE: t.Final[str] = "job"
 class Job(Topic):
     @dataclasses.dataclass
     class Options:
-        enable_cursors_states: bool = False
-        buffer_flush_after: float = 5
-        buffer_size: int = 10
+        batching_enabled: bool = False
+        buffer_flush_after: t.Optional[float] = 5
+        buffer_size: t.Optional[int] = 10
 
     def __init__(
         self,
         *,
         inventory: Inventory,
         queue_item: QueueItemWithState,
-        services: Services
+        services: Services,
     ) -> None:
         self.logger = getLogger(__name__, self)
         self.inventory = inventory
@@ -72,15 +73,25 @@ class Job(Topic):
 
         # If we enable cursors states, we are going to decorate the iterator
         # to buffer multiple messages together and load their states.
-        if self.options.enable_cursors_states:
+        if self.options.batching_enabled:
             buffered_iterator = iterators.async_buffered(
                 iterator,
                 flush_after=self.options.buffer_flush_after,
                 buffer_size=self.options.buffer_size,
             )
-            iterator = iterators.async_flatten(buffered_iterator)
+            emit_batches = self._emit_batches(buffered_iterator)
+            iterator = iterators.async_flatten(emit_batches)
         return iterator
 
     @property
     def options(self) -> Options:
         return self.config.cast_namespace(JOB_NAMESPACE, self.Options)
+
+    async def _emit_batches(
+        self, iterator: t.AsyncIterator[list[Item]]
+    ) -> t.AsyncIterator[list[Item]]:
+        async for items in iterator:
+            await self.services.s.hooks.items_batched.emit(
+                ItemsBatch(items=items, job=self)
+            )
+            yield items
