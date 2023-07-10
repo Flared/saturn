@@ -7,8 +7,11 @@ from saturn_engine.core import JobId
 from saturn_engine.core.api import FetchCursorsStatesInput
 from saturn_engine.core.api import FetchCursorsStatesResponse
 from saturn_engine.core.api import JobsStatesSyncInput
+from saturn_engine.core.api import QueueItemWithState
 from saturn_engine.utils.asyncutils import DelayedThrottle
 from saturn_engine.utils.log import getLogger
+from saturn_engine.worker.executors.executable import ExecutableMessage
+from saturn_engine.worker.services.hooks import ItemsBatch
 
 from .. import BaseServices
 from .. import Service
@@ -49,6 +52,10 @@ class CursorsStatesFetcher:
         return result.cursors.get(job_name, {})
 
 
+class CursorState:
+    name = "CursorState"
+
+
 class JobStateService(Service[Services, Options]):
     name = "job_state"
 
@@ -67,6 +74,31 @@ class JobStateService(Service[Services, Options]):
         self._delayed_flush = DelayedThrottle(
             self.flush, delay=self.options.flush_delay
         )
+
+        self.services.hooks.work_queue_built.register(self.on_work_queue_built)
+        self.services.hooks.items_batched.register(self.on_items_batched)
+        self.services.hooks.message_polled.register(self.on_message_polled)
+
+    async def on_work_queue_built(self, queue_item: QueueItemWithState) -> None:
+        # Ensure the job batching is enabled when we have cursors states enabled.
+        # Otherwise on_items_batch won't emit.
+        if queue_item.config.get("job_state", {}).get("cursors_states_enabled"):
+            queue_item.config.setdefault("job", {})["batching_enabled"] = True
+
+    async def on_items_batched(self, batch: ItemsBatch) -> None:
+        cursors = [c for i in batch.items if (c := i.cursor)]
+        cursors_states: dict = await self.fetch_cursors_states(
+            batch.job.queue_item.name, cursors=cursors
+        )
+        for item in batch.items:
+            metadata = item.metadata.setdefault("job_state", {})
+            metadata["cursor_state"] = cursors_states.get(item.cursor)
+
+    async def on_message_polled(self, xmsg: ExecutableMessage) -> None:
+        metadata = xmsg.message.message.metadata.get("job_state", {})
+        cursor_state = metadata.get("cursor_state")
+        if cursor_state:
+            xmsg.message.set_meta_arg(meta_type=CursorState, value=cursor_state)
 
     def set_job_cursor(self, job_name: JobId, *, cursor: Cursor) -> None:
         self._store.set_job_cursor(job_name, cursor)

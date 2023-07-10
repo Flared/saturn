@@ -17,6 +17,7 @@ from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
 from saturn_engine.client.worker_manager import WorkerManagerClient
 from saturn_engine.config import Config
+from saturn_engine.core import Cursor
 from saturn_engine.core import JobId
 from saturn_engine.core import PipelineInfo
 from saturn_engine.core import QueuePipeline
@@ -39,6 +40,8 @@ from saturn_engine.worker.resources.provider import ResourcesProvider
 from saturn_engine.worker.services import MinimalService
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.api_client import ApiClient
+from saturn_engine.worker.services.job_state.service import CursorsStatesFetcher
+from saturn_engine.worker.services.job_state.service import JobStateService
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.services.rabbitmq import RabbitMQService
 from saturn_engine.worker.topics import MemoryTopic
@@ -422,3 +425,27 @@ async def fake_http_client_service(
 
     await services_manager._reload_service(FakeHttpClient)
     await services_manager._reload_service(ApiClient)
+
+
+class InMemoryCursorsFetcher(CursorsStatesFetcher):
+    def __init__(self, *, job_state: JobStateService) -> None:
+        self.job_state = job_state
+
+    async def fetch(
+        self, job_name: JobId, *, cursors: list[Cursor]
+    ) -> dict[Cursor, dict]:
+        return {
+            c: s
+            for c, s in self.job_state._store._current_state.jobs[
+                job_name
+            ].cursors_states.items()
+            if c in cursors
+        }
+
+
+@pytest.fixture
+async def inmemory_cursors_fetcher(services_manager: ServicesManager) -> None:
+    job_state_service = services_manager.services.cast_service(JobStateService)
+    job_state_service._cursors_fetcher = InMemoryCursorsFetcher(
+        job_state=job_state_service
+    )

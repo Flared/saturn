@@ -29,12 +29,19 @@ class OptionsSchema:
         return cls(*args, options=options, **kwargs)
 
 
+class ModelConfig(pydantic.BaseConfig):
+    arbitrary_types_allowed = True
+
+
 @cache
 def schema_for(klass: t.Type) -> t.Type[pydantic.BaseModel]:
     if issubclass(klass, pydantic.BaseModel):
         return klass
     if dataclasses.is_dataclass(klass):
-        return pydantic.dataclasses.create_pydantic_model_from_dataclass(klass)  # type: ignore[arg-type]
+        return pydantic.dataclasses.create_pydantic_model_from_dataclass(
+            klass,  # type: ignore[arg-type]
+            config=ModelConfig,
+        )
     raise ValueError(f"Cannot get shema for {klass}")
 
 
