@@ -33,7 +33,7 @@ class Job(Topic):
         *,
         inventory: Inventory,
         queue_item: QueueItemWithState,
-        services: Services
+        services: Services,
     ) -> None:
         self.logger = getLogger(__name__, self)
         self.inventory = inventory
@@ -78,9 +78,22 @@ class Job(Topic):
                 flush_after=self.options.buffer_flush_after,
                 buffer_size=self.options.buffer_size,
             )
-            iterator = iterators.async_flatten(buffered_iterator)
+            cursors_states = self._fetch_cursors_middleware(buffered_iterator)
+            iterator = iterators.async_flatten(cursors_states)
         return iterator
 
     @property
     def options(self) -> Options:
         return self.config.cast_namespace(JOB_NAMESPACE, self.Options)
+
+    async def _fetch_cursors_middleware(
+        self, iterator: t.AsyncIterator[list[Item]]
+    ) -> t.AsyncIterator[list[Item]]:
+        async for items in iterator:
+            cursors = [c for i in items if (c := i.cursor)]
+            cursors_states: dict = await self.state_service.fetch_cursors_states(
+                self.queue_item.name, cursors=cursors
+            )
+            for item in items:
+                item.metadata["cursor_state"] = cursors_states.get(item.cursor)
+            yield items

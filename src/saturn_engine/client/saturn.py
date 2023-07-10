@@ -16,7 +16,6 @@ from saturn_engine.utils import LONG_TIMEOUT
 from saturn_engine.utils import MEDIUM_TIMEOUT
 from saturn_engine.utils import urlcat
 from saturn_engine.utils.options import fromdict
-from saturn_engine.worker import work_factory
 from saturn_engine.worker.services.http_client import HttpClient
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.topic import Topic
@@ -39,6 +38,8 @@ class SaturnClient:
         self.topics: dict[str, Topic] = {}
 
     async def publish(self, topic_name: str, message: TopicMessage, wait: bool) -> bool:
+        from saturn_engine.worker import work_factory
+
         if topic_name not in self.topics:
             self.topics[topic_name] = work_factory.build_topic(
                 self.topic_definitions[topic_name],
