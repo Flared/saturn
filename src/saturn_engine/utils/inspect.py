@@ -1,16 +1,18 @@
-from typing import Any
-from typing import Callable
-from typing import Type
-from typing import Union
+import typing as t
 
+import dataclasses
 import functools
 import inspect
 import sys
 import threading
 from collections.abc import Iterable
 
+R = t.TypeVar("R")
 
-def eval_annotations(func: Callable, signature: inspect.Signature) -> inspect.Signature:
+
+def eval_annotations(
+    func: t.Callable, signature: inspect.Signature
+) -> inspect.Signature:
     is_dirty = False
     evaluated_parameters: list[inspect.Parameter] = []
     for parameter in signature.parameters.values():
@@ -33,7 +35,7 @@ def eval_annotations(func: Callable, signature: inspect.Signature) -> inspect.Si
 
 
 # Taken from cpython 3.10 inspect.get_annotations
-def eval_annotation(func: Callable, annotation: str) -> Type:
+def eval_annotation(func: t.Callable, annotation: str) -> t.Type:
     unwrap = func
     while True:
         if hasattr(unwrap, "__wrapped__"):
@@ -48,8 +50,8 @@ def eval_annotation(func: Callable, annotation: str) -> Type:
 
 
 def eval_class_annotations(
-    klass: Type, annotations: Iterable[Union[Type, str]]
-) -> list[Type]:
+    klass: t.Type, annotations: Iterable[t.Union[t.Type, str]]
+) -> list[t.Type]:
     class_globals = sys.modules[klass.__module__].__dict__
     eval_annotations = []
     for annotation in annotations:
@@ -63,7 +65,7 @@ def eval_class_annotations(
 _import_lock = threading.Lock()
 
 
-def synchronized_import(name: str, *, level: int) -> Any:
+def synchronized_import(name: str, *, level: int) -> t.Any:
     """Import a module from name holding a lock.
     __import__ is not threadsafe since Python 3.3, having two thread importing
     module at once can (and has) led to circular import that would otherwise
@@ -75,7 +77,7 @@ def synchronized_import(name: str, *, level: int) -> Any:
 
 
 # Taken from CPython pickle.py
-def get_import_name(obj: Callable) -> str:
+def get_import_name(obj: t.Callable) -> str:
     name = getattr(obj, "__qualname__", None)
     if name is None:
         name = obj.__name__
@@ -137,11 +139,12 @@ def whichmodule(obj: object, name: str) -> str:
     return "__main__"
 
 
-def import_name(name: str) -> Any:
+def import_name(name: str) -> t.Any:
     module, _, name = name.rpartition(".")
     while module:
         try:
-            synchronized_import(module, level=0)
+            if module not in sys.modules:
+                synchronized_import(module, level=0)
             return getattribute(sys.modules[module], name)[0]
         except ModuleNotFoundError:
             prev_name = name
@@ -151,7 +154,88 @@ def import_name(name: str) -> Any:
 
 
 @functools.cache
-def signature(func: Callable) -> inspect.Signature:
+def signature(func: t.Callable) -> inspect.Signature:
     _signature = inspect.signature(func)
     _signature = eval_annotations(func, _signature)
     return _signature
+
+
+def unwrap_optional(typ: t.Any) -> t.Optional[t.Type]:
+    origin = t.get_origin(typ)
+    if origin is t.Union:
+        target_args = [arg for arg in t.get_args(typ) if not isinstance(None, arg)]
+        if len(target_args) == 1:
+            return target_args[0]
+    return None
+
+
+class BaseParamsDataclass(t.Generic[R]):
+    _func: t.ClassVar[t.Callable]
+    _has_kwargs: t.ClassVar[bool]
+
+    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+        pass
+
+    @classmethod
+    def find_by_type(cls, typ: t.Type) -> t.Optional[str]:
+        for field in dataclasses.fields(cls):  # type: ignore[arg-type]
+            field_type = field.type
+            if inner_typ := unwrap_optional(field_type):
+                field_type = inner_typ
+
+            if isinstance(field_type, type) and issubclass(field_type, typ):
+                return field.name
+
+            origin = t.get_origin(field_type)
+            if origin is t.Annotated:
+                if any(issubclass(t, typ) for t in t.get_args(field_type)[1:]):
+                    return field.name
+        return None
+
+    def call(self, *, kwargs: t.Optional[dict[str, t.Any]] = None) -> R:
+        args_dict = self.__dict__.copy()
+        if kwargs is None or not self._has_kwargs:
+            kwargs = {}
+        if self._has_kwargs:
+            kwargs = {k: v for k, v in kwargs.items() if k not in args_dict}
+        return self._func(**args_dict, **kwargs)
+
+
+@functools.cache
+def dataclass_from_params(func: t.Callable[..., R]) -> t.Type[BaseParamsDataclass[R]]:
+    cls_name = func.__name__ + ".params"
+    fields: list[tuple] = []
+    func_signature = signature(func)
+    namespace = {"_func": staticmethod(func), "_has_kwargs": False}
+    for parameter in func_signature.parameters.values():
+        name = parameter.name
+        typ = parameter.annotation
+        if typ is inspect.Parameter.empty:
+            typ = t.Any
+
+        field_extra = {}
+        if parameter.default is not inspect.Parameter.empty:
+            field_extra["default"] = parameter.default
+        if parameter.kind is inspect.Parameter.KEYWORD_ONLY:
+            field_extra["kw_only"] = True
+        elif parameter.kind is inspect.Parameter.VAR_KEYWORD:
+            namespace["_has_kwargs"] = True
+            continue
+        elif parameter.kind is not inspect.Parameter.POSITIONAL_OR_KEYWORD:
+            continue
+
+        field = [name, typ]
+        if field_extra:
+            field.append(dataclasses.field(**field_extra))
+
+        fields.append(tuple(field))
+
+    return t.cast(
+        t.Type[BaseParamsDataclass[R]],
+        dataclasses.make_dataclass(
+            cls_name,
+            fields,  # type: ignore[arg-type]
+            bases=(BaseParamsDataclass,),
+            namespace=namespace,
+        ),
+    )

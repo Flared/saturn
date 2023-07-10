@@ -1,8 +1,6 @@
-import typing
 from typing import Any
 from typing import Callable
 from typing import Hashable
-from typing import Type
 from typing import TypeVar
 from typing import Union
 from typing import cast
@@ -11,7 +9,6 @@ import dataclasses
 import inspect
 
 from saturn_engine.utils import inspect as extra_inspect
-from saturn_engine.utils.options import fromdict
 
 from .resource import Resource
 from .topic import TopicMessage
@@ -41,57 +38,11 @@ class PipelineInfo:
     def get_resources(signature: inspect.Signature) -> dict[str, str]:
         resources = {}
         for parameter in signature.parameters.values():
-            if issubclass(parameter.annotation, Resource):
+            if isinstance(parameter.annotation, type) and issubclass(
+                parameter.annotation, Resource
+            ):
                 resources[parameter.name] = parameter.annotation._typename()
         return resources
-
-    @staticmethod
-    def _instancify_dataclass(
-        data: dict[str, object],
-        target_type: Type[T],
-    ) -> Union[T, dict[str, object]]:
-        if dataclasses.is_dataclass(target_type):
-            return cast(T, fromdict(data, target_type))
-        return data
-
-    @classmethod
-    def instancify_args(cls, args: dict[str, object], pipeline: Callable) -> None:
-        signature = extra_inspect.signature(pipeline)
-        for parameter in signature.parameters.values():
-            if parameter.name not in args:
-                continue
-            data = args[parameter.name]
-            if not isinstance(data, (dict, list)):
-                continue
-
-            target_type = parameter.annotation
-
-            # Support Optional[dataclass], which is very common.
-            # This does not support Union of two dataclasses yet.
-            if typing.get_origin(target_type) is typing.Union:
-                target_args = [
-                    arg
-                    for arg in typing.get_args(target_type)
-                    if not isinstance(None, arg)
-                ]
-                if len(target_args) == 1:
-                    target_type = target_args[0]
-
-            if isinstance(data, dict):
-                args[parameter.name] = cls._instancify_dataclass(
-                    data=data,
-                    target_type=target_type,
-                )
-            else:
-                target_args = list(typing.get_args(target_type))
-                if len(target_args) == 1:
-                    args[parameter.name] = [
-                        cls._instancify_dataclass(
-                            data=item,
-                            target_type=target_args[0],
-                        )
-                        for item in data
-                    ]
 
 
 @dataclasses.dataclass
