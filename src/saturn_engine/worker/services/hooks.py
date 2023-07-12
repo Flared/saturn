@@ -2,6 +2,7 @@ import typing as t
 
 from functools import partial
 
+from saturn_engine.core.pipeline import PipelineEvent
 from saturn_engine.utils.hooks import AsyncContextHook
 from saturn_engine.utils.hooks import AsyncEventHook
 from saturn_engine.utils.hooks import EventHook
@@ -29,6 +30,11 @@ class ItemsBatch(t.NamedTuple):
     job: "Job"
 
 
+class PipelineEventsEmitted(t.NamedTuple):
+    xmsg: "ExecutableMessage"
+    events: list[PipelineEvent]
+
+
 class Hooks:
     name = "hooks"
 
@@ -41,6 +47,7 @@ class Hooks:
     message_executed: AsyncContextHook["ExecutableMessage", "PipelineResults"]
     message_published: AsyncContextHook["MessagePublished", None]
     output_blocked: AsyncContextHook["Topic", None]
+    pipeline_events_emitted: AsyncEventHook[PipelineEventsEmitted]
 
     work_queue_built: AsyncContextHook["QueueItemWithState", "ExecutableQueue"]
     executor_initialized: EventHook["PipelineBootstrap"]
@@ -57,6 +64,9 @@ class Hooks:
         self.output_blocked = AsyncContextHook(error_handler=self.hook_failed.emit)
         self.executor_initialized = EventHook(
             error_handler=partial(self.remote_hook_failed, name="executor_initialized")
+        )
+        self.pipeline_events_emitted = AsyncEventHook(
+            error_handler=self.hook_failed.emit
         )
 
     # `pipeline_hook_failed` is a static method with no dependency since it
