@@ -11,6 +11,7 @@ from saturn_engine.worker.error_handling import process_pipeline_exception
 from saturn_engine.worker.resources.manager import ResourceUnavailable
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.hooks import MessagePublished
+from saturn_engine.worker.services.hooks import PipelineEventsEmitted
 from saturn_engine.worker.topic import Topic
 
 from . import Executor
@@ -78,6 +79,14 @@ class ExecutorQueue:
                     except Exception:  # noqa: S110
                         pass
                     else:
+                        self.consuming_tasks.create_task(
+                            self.services.s.hooks.pipeline_events_emitted.emit(
+                                PipelineEventsEmitted(
+                                    events=output.events, xmsg=processable
+                                )
+                            ),
+                            name=f"emit-pipeline-events({processable})",
+                        )
                         processable.update_resources_used(output.resources)
                         self.consuming_tasks.create_task(
                             self.consume_output(

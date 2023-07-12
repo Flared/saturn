@@ -1,3 +1,4 @@
+import typing as t
 from typing import Any
 from typing import Callable
 from typing import Hashable
@@ -67,10 +68,18 @@ class ResourceUsed:
         return cls(type=resource._typename(), release_at=release_at)
 
 
-PipelineResult = Union[ResourceUsed, PipelineOutput, TopicMessage]
+class PipelineEvent:
+    pass
+
+
+PipelineResult: t.TypeAlias = Union[
+    ResourceUsed, PipelineOutput, TopicMessage, PipelineEvent
+]
+PipelineResultTypes = t.get_args(PipelineResult)
 
 
 @dataclasses.dataclass
 class PipelineResults:
     outputs: list[PipelineOutput]
-    resources: list[ResourceUsed]
+    resources: list[ResourceUsed] = dataclasses.field(default_factory=list)
+    events: list[PipelineEvent] = dataclasses.field(default_factory=list)
