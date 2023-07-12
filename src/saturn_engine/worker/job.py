@@ -52,7 +52,7 @@ class Job(Topic):
                         id=MessageId(item.id),
                         args=item.args,
                         tags=item.tags,
-                        metadata=item.metadata,
+                        metadata=item.metadata | {"job": {"cursor": cursor}},
                     )
 
                     yield message

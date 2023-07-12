@@ -11,6 +11,7 @@ from pytest_mock import MockerFixture
 from saturn_engine.core import Cursor
 from saturn_engine.core import JobId
 from saturn_engine.core.api import QueueItemWithState
+from saturn_engine.core.job_state import CursorStateUpdated
 from saturn_engine.core.pipeline import PipelineInfo
 from saturn_engine.core.topic import TopicMessage
 from saturn_engine.utils import utcnow
@@ -18,6 +19,7 @@ from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.inventory import Inventory
 from saturn_engine.worker.inventory import Item
 from saturn_engine.worker.job import Job
+from saturn_engine.worker.services.hooks import PipelineEventsEmitted
 from saturn_engine.worker.services.job_state.service import CursorState
 from saturn_engine.worker.services.job_state.service import JobStateService
 from saturn_engine.worker.services.manager import ServicesManager
@@ -246,11 +248,35 @@ async def test_job_state_set_message_cursor_state(
         assert job_state.completion
 
     results = []
-    for msg in msgs:
+    for i, msg in enumerate(msgs):
         xmsg = executable_maker(
             message=msg,
             pipeline_info=PipelineInfo.from_pipeline(pipeline),
         )
         await services_manager.services.s.hooks.message_polled.emit(xmsg)
         results.append(xmsg.message.execute())
+
+        await services_manager.services.s.hooks.pipeline_events_emitted.emit(
+            PipelineEventsEmitted(
+                xmsg=xmsg, events=[CursorStateUpdated(state={"x": i * 10})]
+            )
+        )
     assert results == [None, "1", "2", None, None]
+
+    # Rerun the inventory, expect new states to be loaded
+    inventory = FakeInventory(options=FakeInventory.Options(data=[5, 4, 3, 2, 1]))
+    job = Job(
+        inventory=inventory,
+        queue_item=fake_queue_item,
+        services=services_manager.services,
+    )
+    msgs = await alib.list(job.run())  # type: ignore[arg-type]
+
+    # Assert everything loaded and ran in order.
+    assert [i.metadata.get("job_state", {}).get("cursor_state") for i in msgs] == [
+        {"x": 0},
+        {"x": 10},
+        {"x": 20},
+        {"x": 30},
+        {"x": 40},
+    ]

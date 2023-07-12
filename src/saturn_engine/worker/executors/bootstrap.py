@@ -8,6 +8,8 @@ from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResults
 from saturn_engine.core import ResourceUsed
 from saturn_engine.core import TopicMessage
+from saturn_engine.core.pipeline import PipelineEvent
+from saturn_engine.core.pipeline import PipelineResultTypes
 from saturn_engine.utils.hooks import ContextHook
 from saturn_engine.utils.hooks import EventHook
 from saturn_engine.utils.traceback_data import TracebackData
@@ -38,7 +40,7 @@ class PipelineBootstrap:
         elif isinstance(execute_result, Iterable):
             results = iter(execute_result)
         elif not isinstance(execute_result, Iterator):
-            if isinstance(execute_result, (TopicMessage, PipelineOutput, ResourceUsed)):
+            if isinstance(execute_result, PipelineResultTypes):
                 results = iter([execute_result])
             else:
                 self.logger.error("Invalid result type: %s", execute_result.__class__)
@@ -49,6 +51,7 @@ class PipelineBootstrap:
         # Convert result into a list of PipelineOutput.
         outputs: list[PipelineOutput] = []
         resources: list[ResourceUsed] = []
+        events: list[PipelineEvent] = []
         for result in results:
             if isinstance(result, PipelineOutput):
                 outputs.append(result)
@@ -56,10 +59,12 @@ class PipelineBootstrap:
                 outputs.append(PipelineOutput(channel="default", message=result))
             elif isinstance(result, ResourceUsed):
                 resources.append(result)
+            elif isinstance(result, PipelineEvent):
+                events.append(result)
             else:
                 self.logger.error("Invalid result type: %s", result.__class__)
 
-        return PipelineResults(outputs=outputs, resources=resources)
+        return PipelineResults(outputs=outputs, resources=resources, events=events)
 
     def pipeline_hook_failed(self, exception: Exception) -> None:
         self.logger.error("Error while handling pipeline hook", exc_info=exception)

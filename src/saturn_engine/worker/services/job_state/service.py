@@ -8,9 +8,12 @@ from saturn_engine.core.api import FetchCursorsStatesInput
 from saturn_engine.core.api import FetchCursorsStatesResponse
 from saturn_engine.core.api import JobsStatesSyncInput
 from saturn_engine.core.api import QueueItemWithState
+from saturn_engine.core.job_state import CursorState
+from saturn_engine.core.job_state import CursorStateUpdated
 from saturn_engine.utils.asyncutils import DelayedThrottle
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.services.hooks import ItemsBatch
+from saturn_engine.worker.services.hooks import PipelineEventsEmitted
 
 from .. import BaseServices
 from .. import Service
@@ -51,10 +54,6 @@ class CursorsStatesFetcher:
         return result.cursors.get(job_name, {})
 
 
-class CursorState:
-    name = "CursorState"
-
-
 class JobStateService(Service[Services, Options]):
     name = "job_state"
 
@@ -76,6 +75,9 @@ class JobStateService(Service[Services, Options]):
         self.services.hooks.work_queue_built.register(self.on_work_queue_built)
         self.services.hooks.items_batched.register(self.on_items_batched)
         self.services.hooks.message_polled.register(self.on_message_polled)
+        self.services.hooks.pipeline_events_emitted.register(
+            self.on_pipeline_events_emitted
+        )
 
     async def on_work_queue_built(self, queue_item: QueueItemWithState) -> None:
         # Ensure the job batching is enabled when we have cursors states enabled.
@@ -97,6 +99,17 @@ class JobStateService(Service[Services, Options]):
         cursor_state = metadata.get("cursor_state")
         if cursor_state:
             xmsg.message.set_meta_arg(meta_type=CursorState, value=cursor_state)
+
+    async def on_pipeline_events_emitted(self, pevents: PipelineEventsEmitted) -> None:
+        for event in pevents.events:
+            if not isinstance(event, CursorStateUpdated):
+                continue
+            job = pevents.xmsg.queue.definition.name
+            message = pevents.xmsg.message.message
+            cursor = message.metadata.get("job", {}).get("cursor")
+            if not cursor:
+                continue
+            self.set_job_cursor_state(job, cursor=cursor, cursor_state=event.state)
 
     def set_job_cursor(self, job_name: JobId, *, cursor: Cursor) -> None:
         self._store.set_job_cursor(job_name, cursor)
