@@ -2,8 +2,6 @@ import typing as t
 
 import asyncio
 
-import asyncstdlib as alib
-
 T = t.TypeVar("T")
 
 
@@ -16,8 +14,10 @@ async def async_buffered(
     items = []
 
     async def next_slice() -> None:
-        async for item in alib.islice(alib.borrow(iterator), buffer_size):
+        async for item in iterator:
             items.append(item)
+            if buffer_size is not None and len(items) >= buffer_size:
+                break
 
     pending = {asyncio.create_task(next_slice())}
 
@@ -32,7 +32,8 @@ async def async_buffered(
         if done:
             pending = {asyncio.create_task(next_slice())}
 
-        yield yield_items
+        if yield_items:
+            yield yield_items
 
 
 async def async_flatten(

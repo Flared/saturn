@@ -37,6 +37,12 @@ async def test_buffered() -> None:
     items = await alib.list(buf_it)
     assert items == [[1, 2], [3, 4], [5], [6]]
 
+    # Each time we flush a batch after a delay, we should start a new batch.
+    iterator = generator([0, 3, 3, 0, 0, 40])
+    buf_it = iterators.async_buffered(iterator, flush_after=5, buffer_size=3)
+    items = await alib.list(buf_it)
+    assert items == [[0, 3], [3, 0, 0], [40]]
+
 
 async def test_flatten() -> None:
     iterator = alib.iter([[1, 2], [3, 4], [5]])
