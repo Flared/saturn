@@ -22,15 +22,17 @@ async def async_buffered(
     pending = {asyncio.create_task(next_slice())}
 
     while True:
-        items.clear()
         done, pending = await asyncio.wait(pending, timeout=flush_after)
 
+        if done and not items:
+            break
+
+        yield_items = items.copy()
+        items.clear()
         if done:
-            if not items:
-                break
             pending = {asyncio.create_task(next_slice())}
 
-        yield items.copy()
+        yield yield_items
 
 
 async def async_flatten(
