@@ -105,6 +105,9 @@ def test_api_jobs(
                 "cursor": None,
                 "error": None,
                 "started_at": "2018-01-02T00:00:00+00:00",
+                "enabled": True,
+                "assigned_to": None,
+                "assigned_at": None,
             }
         ]
     }
@@ -141,6 +144,9 @@ def test_api_job(
             "cursor": None,
             "started_at": "2018-01-02T00:00:00+00:00",
             "error": None,
+            "enabled": True,
+            "assigned_to": None,
+            "assigned_at": None,
         }
     }
 
@@ -164,6 +170,9 @@ def test_api_update_job(
             "cursor": "1",
             "error": None,
             "started_at": "2018-01-02T00:00:00+00:00",
+            "enabled": True,
+            "assigned_to": None,
+            "assigned_at": None,
         }
     }
 
@@ -184,6 +193,9 @@ def test_api_update_job(
             "cursor": "2",
             "error": None,
             "started_at": "2018-01-02T00:00:00+00:00",
+            "enabled": False,
+            "assigned_to": None,
+            "assigned_at": None,
         }
     }
 
@@ -324,6 +336,9 @@ spec:
                 "cursor": None,
                 "error": None,
                 "name": "running",
+                "enabled": True,
+                "assigned_to": None,
+                "assigned_at": None,
             },
             {
                 "completed_at": "2018-01-01T00:00:00+00:00",
@@ -331,6 +346,9 @@ spec:
                 "cursor": None,
                 "error": None,
                 "name": "due",
+                "enabled": True,
+                "assigned_to": None,
+                "assigned_at": None,
             },
             {
                 "completed_at": "2018-01-01T00:00:00+00:00",
@@ -338,6 +356,9 @@ spec:
                 "cursor": None,
                 "error": None,
                 "name": "not-due",
+                "enabled": True,
+                "assigned_to": None,
+                "assigned_at": None,
             },
         ]
     }
@@ -357,6 +378,9 @@ spec:
                 "error": None,
                 "name": "running",
                 "started_at": "2017-12-25T00:00:00+00:00",
+                "enabled": True,
+                "assigned_to": None,
+                "assigned_at": None,
             },
             {
                 # The old due job, untouched
@@ -365,6 +389,9 @@ spec:
                 "error": None,
                 "name": "due",
                 "started_at": "2017-12-25T00:00:00+00:00",
+                "enabled": True,
+                "assigned_to": None,
+                "assigned_at": None,
             },
             {
                 # The not-due job, untouched
@@ -373,6 +400,9 @@ spec:
                 "error": None,
                 "name": "not-due",
                 "started_at": "2017-12-31T00:00:00+00:00",
+                "enabled": True,
+                "assigned_to": None,
+                "assigned_at": None,
             },
             {
                 # Unscheduled job was scheduled
@@ -381,6 +411,9 @@ spec:
                 "error": None,
                 "name": "unscheduled-1514851200",
                 "started_at": "2018-01-02T00:00:00+00:00",
+                "enabled": True,
+                "assigned_to": None,
+                "assigned_at": None,
             },
             {
                 # The due job was scheduled
@@ -389,6 +422,9 @@ spec:
                 "error": None,
                 "name": "due-1514851200",
                 "started_at": "2018-01-02T00:00:00+00:00",
+                "enabled": True,
+                "assigned_to": None,
+                "assigned_at": None,
             },
         ]
     }
@@ -562,6 +598,9 @@ spec:
                 "cursor": None,
                 "error": None,
                 "name": "test-job",
+                "enabled": True,
+                "assigned_to": None,
+                "assigned_at": None,
             }
         ]
     }

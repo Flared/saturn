@@ -164,6 +164,10 @@ class JobItem:
     cursor: Optional[Cursor] = None
     error: Optional[str] = None
 
+    enabled: bool = True
+    assigned_to: Optional[str] = None
+    assigned_at: Optional[datetime] = None
+
 
 @dataclasses.dataclass
 class JobInput:
