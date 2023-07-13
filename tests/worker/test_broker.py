@@ -132,7 +132,7 @@ async def test_broker_dummy(
     assert wait_task in done
     assert broker_task in pending
 
-    assert hooks_handler.message_polled.await_count == 1001
+    assert hooks_handler.message_polled.await_count == 1002
     assert hooks_handler.message_scheduled.await_count == 1001
     assert hooks_handler.message_submitted.await_count == 1001
     assert hooks_handler.message_executed.before.await_count == 1000
@@ -168,7 +168,7 @@ async def test_broker_dummy(
         "saturn.pipeline.message",
         [
             metrics_capture.create_number_data_point(
-                1001,
+                1002,
                 attributes=pipeline_params | {"state": "polled"},
             ),
             metrics_capture.create_number_data_point(

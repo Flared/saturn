@@ -10,6 +10,7 @@ from collections.abc import Iterable
 
 from saturn_engine.utils.log import getLogger
 
+R = t.TypeVar("R")
 T = t.TypeVar("T")
 K = t.TypeVar("K")
 V = t.TypeVar("V")
@@ -416,3 +417,20 @@ class SharedLockReservation:
 
     def release(self) -> None:
         self._lock._release(self)
+
+
+class Cancellable(t.Generic[R]):
+    def __init__(self, func: t.Callable[..., t.Coroutine[t.Any, t.Any, R]]) -> None:
+        self.func = func
+        self._tasks: set[asyncio.Task] = set()
+
+    def cancel(self) -> None:
+        for task in self._tasks:
+            task.cancel()
+
+    async def __call__(self, *args: t.Any, **kwargs: t.Any) -> R:
+        task: asyncio.Task = asyncio.create_task(
+            self.func(*args, **kwargs), name=f"cancellable({self.func})"
+        )
+        self._tasks.add(task)
+        return await task
