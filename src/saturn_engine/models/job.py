@@ -67,12 +67,20 @@ class Job(Base):
         self.error = error
 
     def as_core_item(self) -> JobItem:
+        queue_args = {}
+        if self.queue:
+            queue_args = {
+                "enabled": self.queue.enabled,
+                "assigned_at": self.queue.assigned_at,
+                "assigned_to": self.queue.assigned_to,
+            }
         return JobItem(
             name=JobId(self.name),
             completed_at=self.completed_at,
             started_at=self.started_at,
             cursor=Cursor(self.cursor) if self.cursor else None,
             error=self.error,
+            **queue_args,  # type: ignore[arg-type]
         )
 
 
