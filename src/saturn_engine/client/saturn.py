@@ -81,6 +81,9 @@ class SaturnClient:
 
 
 class SyncSaturnClient:
+    _instance = None
+    _instance_lock = threading.Lock()
+
     def __init__(
         self,
         config: Config,
@@ -111,10 +114,14 @@ class SyncSaturnClient:
         *,
         http_client: Optional[aiohttp.ClientSession] = None,
     ) -> "SyncSaturnClient":
-        return cls(
-            config=config,
-            http_client=http_client,
-        )
+        if cls._instance is None:
+            with cls._instance_lock:
+                if cls._instance is None:
+                    cls._instance = cls(
+                        config=config,
+                        http_client=http_client,
+                    )
+        return cls._instance
 
     def publish(
         self,
