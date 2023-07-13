@@ -236,9 +236,8 @@ async def test_job_state_set_message_cursor_state(
 
     assert fetch_cursors.call_args_list == [
         call(fake_queue_item.name, cursors=[Cursor("0")]),
-        call(fake_queue_item.name, cursors=[Cursor("1")]),
-        call(fake_queue_item.name, cursors=[Cursor("2"), Cursor("3")]),
-        call(fake_queue_item.name, cursors=[Cursor("4")]),
+        call(fake_queue_item.name, cursors=[Cursor("1"), Cursor("2")]),
+        call(fake_queue_item.name, cursors=[Cursor("3"), Cursor("4")]),
     ]
 
     with job_state_service._store.flush() as state:
