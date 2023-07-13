@@ -55,12 +55,12 @@ class TasksGroup:
         self.updated.set()
 
     async def wait(self) -> set[asyncio.Task]:
-        self.updated.clear()
         done, _ = await asyncio.wait(
             self.tasks | {self.updated_task}, return_when=asyncio.FIRST_COMPLETED
         )
 
         if self.updated_task in done:
+            self.updated.clear()
             done.remove(self.updated_task)
             name = f"task-group-{self.name}.wait" if self.name else None
             self.updated_task = asyncio.create_task(self.updated.wait(), name=name)
@@ -200,11 +200,11 @@ class DelayedThrottle(t.Generic[AsyncFNone]):
     async def _delay_call(self) -> None:
         call_fut = None
         try:
-            self.flush_event.clear()
             try:
                 with contextlib.suppress(asyncio.TimeoutError):
                     await asyncio.wait_for(self.flush_event.wait(), timeout=self.delay)
             finally:
+                self.flush_event.clear()
                 # Ensure we set call_fut, even if the wait_for raised an exception.
                 call_fut = self._call_fut
 
