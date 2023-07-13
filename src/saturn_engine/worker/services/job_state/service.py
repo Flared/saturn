@@ -40,7 +40,7 @@ class CursorsStatesFetcher:
 
     async def _do_fetch(self) -> FetchCursorsStatesResponse:
         queries = self.pending_queries
-        self.pending_queries = {}
+        self.pending_queries = defaultdict(set)
         cursors = {k: list(v) for k, v in queries.items()}
         return await self.client.fetch_cursors_states(
             FetchCursorsStatesInput(cursors=cursors)
@@ -64,6 +64,7 @@ class JobStateService(Service[Services, Options]):
     _delayed_flush: DelayedThrottle
 
     async def open(self) -> None:
+        self.logger = getLogger(__name__, self)
         self._store = JobsStatesSyncStore()
         self._cursors_fetcher = CursorsStatesFetcher(
             client=self.services.api_client.client
@@ -145,6 +146,7 @@ class JobStateService(Service[Services, Options]):
             self._delayed_flush.call_nowait()
 
     async def flush(self) -> None:
+        self.logger.debug("Flushing")
         with self._store.flush() as state:
             if not state.is_empty:
                 await self.flush_state(state)
@@ -155,4 +157,6 @@ class JobStateService(Service[Services, Options]):
         await self.services.api_client.client.sync(JobsStatesSyncInput(state=state))
 
     async def close(self) -> None:
+        self.logger.info("Closing")
+        self._maybe_flush()
         await self._delayed_flush.flush()

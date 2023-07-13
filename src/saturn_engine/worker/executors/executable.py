@@ -186,3 +186,6 @@ class ExecutableQueue:
                 self.definition.config,
             ]
         )
+
+    def __repr__(self) -> str:
+        return f"ExecutableQueue(name={self.name})"
