@@ -5,6 +5,7 @@ import sys
 
 from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResults
+from saturn_engine.utils.asyncutils import Cancellable
 from saturn_engine.utils.asyncutils import TasksGroupRunner
 from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.error_handling import process_pipeline_exception
@@ -36,7 +37,7 @@ class ExecutorQueue:
         self.resources_manager = services.s.resources_manager
         self.executor = executor
         self.services = services
-        self.is_running = False
+        self.poll = Cancellable(self.queue.get)
 
     def start(self) -> None:
         self.is_running = True
@@ -51,11 +52,10 @@ class ExecutorQueue:
 
     async def run_queue(self) -> None:
         while self.is_running:
-            processable = await self.queue.get()
+            processable = await self.poll()
             processable._context.callback(self.queue.task_done)
             try:
                 async with processable._context:
-
                     @self.services.s.hooks.message_executed.emit
                     async def scope(
                         xmsg: ExecutableMessage,
@@ -68,7 +68,9 @@ class ExecutorQueue:
                             if exc_value is None or exc_traceback is None:
                                 raise
                             result = process_pipeline_exception(
-                                xmsg.queue.definition.output, exc_value, exc_traceback
+                                xmsg.queue.definition.output,
+                                exc_value,
+                                exc_traceback,
                             )
                             if not result:
                                 raise
@@ -181,11 +183,17 @@ class ExecutorQueue:
             await processable.unpark()
 
     async def close(self) -> None:
+        self.is_running = False
         # Shutdown the queue task first so we don't process any new item.
+        self.logger.debug("Closing processing tasks")
+        self.poll.cancel()
         await self.processing_tasks.close(timeout=self.CLOSE_TIMEOUT.total_seconds())
         # Delayed tasks waiting on resource
+        self.logger.debug("Closing submitting tasks")
         await self.submit_tasks.close()
         # Then close the output consuming task.
+        self.logger.debug("Closing consuming tasks")
         await self.consuming_tasks.close(timeout=self.CLOSE_TIMEOUT.total_seconds())
 
+        self.logger.debug("Closing executor")
         await self.executor.close()
