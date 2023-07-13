@@ -13,6 +13,7 @@ from saturn_engine.core import JobId
 from saturn_engine.core.api import JobsStates
 from saturn_engine.models import Job
 from saturn_engine.models.job import JobCursorState
+from saturn_engine.models.queue import Queue
 from saturn_engine.stores import queues_store
 from saturn_engine.utils import utcnow
 from saturn_engine.utils.sqlalchemy import AnySession
@@ -120,6 +121,7 @@ def sync_jobs_states(
 
     jobs_values = []
     jobs_cursors = []
+    queues_values = []
 
     for job_id, job_state in state.jobs.items():
         job_values: dict[str, t.Any] = {}
@@ -131,6 +133,12 @@ def sync_jobs_states(
             job_values["completed_at"] = job_state.completion.completed_at
             if (error := job_state.completion.error) is not None:
                 job_values["error"] = error
+            queues_values.append(
+                {
+                    "name": job_id,
+                    "enabled": False,
+                }
+            )
         for cursor, cursor_state in job_state.cursors_states.items():
             job_definition_name = job_definition_by_name.get(job_id)
             if job_definition_name:
@@ -161,6 +169,8 @@ def sync_jobs_states(
 
     if jobs_values:
         session.bulk_update_mappings(Job, jobs_values)
+    if queues_values:
+        session.bulk_update_mappings(Queue, queues_values)
 
 
 CursorsStates = dict[JobId, dict[Cursor, t.Optional[dict]]]
