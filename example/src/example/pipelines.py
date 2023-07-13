@@ -1,5 +1,6 @@
 import typing as t
 
+import dataclasses
 import json
 import logging
 import os
@@ -9,6 +10,9 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 
 from saturn_engine.core import TopicMessage
+from saturn_engine.core.job_state import CursorState
+from saturn_engine.core.job_state import CursorStateUpdated
+from saturn_engine.core.pipeline import PipelineResult
 
 from .resources import BackpressureApiKey
 from .resources import TestApiKey
@@ -66,3 +70,17 @@ def slow(api_key: BackpressureApiKey, **kwargs: t.Any) -> TopicMessage:
 def fast(**kwargs: t.Any) -> TopicMessage:
     trace_pipeline("fast", kwargs)
     return TopicMessage(args=kwargs)
+
+
+@dataclasses.dataclass
+class IncrementedState(CursorState):
+    x: int
+
+
+def increment_state(
+    state: t.Optional[IncrementedState] = None,
+) -> t.Iterator[PipelineResult]:
+    logging.info("state: %s", state)
+    if not state:
+        state = IncrementedState(x=0)
+    yield CursorStateUpdated({"x": state.x + 1})
