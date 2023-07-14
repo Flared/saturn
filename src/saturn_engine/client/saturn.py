@@ -15,8 +15,10 @@ from saturn_engine.core.api import TopicsResponse
 from saturn_engine.utils import LONG_TIMEOUT
 from saturn_engine.utils import MEDIUM_TIMEOUT
 from saturn_engine.utils import urlcat
+from saturn_engine.utils.log import getLogger
 from saturn_engine.utils.options import fromdict
 from saturn_engine.worker.services.http_client import HttpClient
+from saturn_engine.worker.services.loggers.logger import topic_message_data
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.topic import Topic
 
@@ -30,6 +32,7 @@ class SaturnClient:
         services_manager: ServicesManager,
         topic_definitions: list[ComponentDefinition],
     ) -> None:
+        self.logger = getLogger(__name__, self)
         self.services_manager = services_manager
         self.services = services_manager.services
         self.topic_definitions = {
@@ -40,12 +43,23 @@ class SaturnClient:
     async def publish(self, topic_name: str, message: TopicMessage, wait: bool) -> bool:
         from saturn_engine.worker import work_factory
 
-        if topic_name not in self.topics:
-            self.topics[topic_name] = work_factory.build_topic(
-                self.topic_definitions[topic_name],
-                services=self.services,
+        publish_info = {
+            "topic": topic_name,
+            "message": topic_message_data(message),
+        }
+        try:
+            if topic_name not in self.topics:
+                self.topics[topic_name] = work_factory.build_topic(
+                    self.topic_definitions[topic_name],
+                    services=self.services,
+                )
+            self.logger.debug("Publishing message", extra={"data": publish_info})
+            return await self.topics[topic_name].publish(message, wait)
+        except Exception:
+            self.logger.exception(
+                "Failed to publish message", extra={"data": publish_info}
             )
-        return await self.topics[topic_name].publish(message, wait)
+            raise
 
     async def close(self) -> None:
         await self.services_manager.close()
