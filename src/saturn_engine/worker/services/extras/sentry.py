@@ -61,6 +61,7 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
 
     class Options:
         dsn: t.Optional[str] = None
+        release: t.Optional[str] = None
 
     async def open(self) -> None:
         self.logger = logging.getLogger("saturn.extras.sentry")
@@ -68,6 +69,7 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
             self.options.dsn,
             environment=self.services.config.c.env.value,
             before_send=self.on_before_send,
+            release=self.options.release,
         )
 
         self.services.hooks.hook_failed.register(self.on_hook_failed)
