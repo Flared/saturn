@@ -88,13 +88,21 @@ class JobStateService(Service[Services, Options]):
             queue_item.config.setdefault("job", {})["batching_enabled"] = True
 
     async def on_items_batched(self, batch: ItemsBatch) -> None:
-        cursors = [c for i in batch.items if (c := i.cursor)]
+        # Default `i.metadata["job_state"]["state_cursor"]` to `i.cursor`
+        for item in batch.items:
+            item.metadata.setdefault("job_state", {}).setdefault(
+                "state_cursor", item.cursor
+            )
+
+        cursors = [
+            c for i in batch.items if (c := i.metadata["job_state"]["state_cursor"])
+        ]
         cursors_states: dict = await self.fetch_cursors_states(
             batch.job.queue_item.name, cursors=cursors
         )
         for item in batch.items:
             metadata = item.metadata.setdefault("job_state", {})
-            metadata["cursor_state"] = cursors_states.get(item.cursor)
+            metadata["cursor_state"] = cursors_states.get(metadata["state_cursor"])
 
     async def on_message_polled(self, xmsg: ExecutableMessage) -> None:
         metadata = xmsg.message.message.metadata.get("job_state", {})
@@ -108,7 +116,7 @@ class JobStateService(Service[Services, Options]):
                 continue
             job = pevents.xmsg.queue.definition.name
             message = pevents.xmsg.message.message
-            cursor = message.metadata.get("job", {}).get("cursor")
+            cursor = message.metadata.get("job_state", {}).get("state_cursor")
             if not cursor:
                 continue
             self.set_job_cursor_state(job, cursor=cursor, cursor_state=event.state)
