@@ -5,3 +5,4 @@ test.db
 /dist
 *.egg-info
 /.python-version
+/docs/_build
