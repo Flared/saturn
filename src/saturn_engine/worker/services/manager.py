@@ -3,6 +3,7 @@ from typing import Type
 from itertools import chain
 
 from saturn_engine.utils import inspect as extra_inspect
+from saturn_engine.worker.services.tasks_runner import TasksRunnerService
 
 from ..resources.manager import ResourcesManager
 from . import BaseServices
@@ -16,19 +17,18 @@ from . import TService
 
 class ServicesManager:
     def __init__(self, config: Config) -> None:
-        self.strict = config.c.services_manager.strict_services
         self.services: Services = ServicesNamespace(
             config=config,
             hooks=Hooks(),
             resources_manager=ResourcesManager(),
-            strict=self.strict,
+            tasks_runner=TasksRunnerService(),
         )
         self.loaded_services: list[Service] = []
         self.is_opened = False
 
         # Load optional services based on config.
         for service_cls_path in chain(
-            BASE_SERVICES, config.c.services_manager.services
+            config.c.services_manager.base_services, config.c.services_manager.services
         ):
             service_cls = extra_inspect.import_name(service_cls_path)
             self._load_service(service_cls)
@@ -81,11 +81,3 @@ class ServicesManager:
 
     def has_loaded(self, service_cls: Type[TService]) -> bool:
         return service_cls.name in self.services
-
-
-BASE_SERVICES: list[str] = [
-    "saturn_engine.worker.services.http_client.HttpClient",
-    "saturn_engine.worker.services.api_client.ApiClient",
-    "saturn_engine.worker.services.tasks_runner.TasksRunnerService",
-    "saturn_engine.worker.services.job_state.service.JobStateService",
-]

@@ -19,13 +19,17 @@ class config(SaturnConfig):
     )
 
     class services_manager(ServicesManagerConfig):
+        base_services = [
+            "saturn_engine.worker.services.http_client.HttpClient",
+            "saturn_engine.worker.services.api_client.ApiClient",
+            "saturn_engine.worker.services.job_state.service.JobStateService",
+        ]
         services = [
             "saturn_engine.worker.services.tracing.Tracer",
             "saturn_engine.worker.services.metrics.Metrics",
             "saturn_engine.worker.services.loggers.Logger",
             "saturn_engine.worker.services.rabbitmq.RabbitMQService",
         ]
-        strict_services = True
 
     class rabbitmq(RabbitMQConfig):
         url = os.environ.get("SATURN_AMQP_URL", "amqp://127.0.0.1/")
@@ -52,6 +56,10 @@ class config(SaturnConfig):
 
     class tracer:
         rate: float = 0.0
+
+    class databases:
+        engines: dict[str, t.Any] = {}
+        sync_engines: dict[str, t.Any] = {}
 
 
 class client_config(config):

@@ -37,11 +37,10 @@ class RedisConfig:
 
 @dataclasses.dataclass
 class ServicesManagerConfig:
+    # Base services, should not be overriden.
+    base_services: list[str]
     # Services to load
     services: list[str]
-    # Check services type dependancies match loaded services. `False` value is
-    # needed to load fake services.
-    strict_services: bool
 
 
 @dataclasses.dataclass

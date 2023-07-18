@@ -138,8 +138,6 @@ def test_services_manager_check_services(config: Config) -> None:
                 "services": [
                     get_import_name(FakeServiceWithServices),
                 ],
-                # Enable strict mode to validate it works.
-                "strict_services": True,
             },
         }
     )

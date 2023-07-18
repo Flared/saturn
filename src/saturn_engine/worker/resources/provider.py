@@ -12,7 +12,6 @@ from saturn_engine.worker.resources.manager import ResourceData
 from saturn_engine.worker.resources.manager import ResourceKey
 from saturn_engine.worker.resources.manager import ResourceRateLimit
 from saturn_engine.worker.services import Services
-from saturn_engine.worker.services.tasks_runner import TasksRunnerService
 
 
 @dataclasses.dataclass
@@ -104,9 +103,7 @@ class PeriodicSyncProvider(ResourcesProvider[TPeriodicSyncOptions]):
 
     async def _open(self) -> None:
         await super()._open()
-        self._sync_task = self.services.cast_service(
-            TasksRunnerService
-        ).runner.create_task(
+        self._sync_task = self.services.s.tasks_runner.create_task(
             self.poller(), name=f"provider-sync({self.definition.name})"
         )
 

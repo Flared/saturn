@@ -36,7 +36,7 @@ async def test_batching_topic_batch_size() -> None:
             ),
             batch_size=BATCH_SIZE,
         ),
-        services=ServicesNamespace(strict=False),
+        services=ServicesNamespace(),
     )
 
     async with alib.scoped_iter(topic.run()) as scoped_topic_iter:
@@ -66,7 +66,7 @@ async def test_batching_topic_flush_timeout() -> None:
             ),
             flush_timeout=FLUSH_TIMEOUT,
         ),
-        services=ServicesNamespace(strict=False),
+        services=ServicesNamespace(),
     )
 
     async with alib.scoped_iter(topic.run()) as scoped_topic_iter:
@@ -119,7 +119,7 @@ async def test_batching_topic_context_manager(
             ),
             batch_size=2,
         ),
-        services=ServicesNamespace(strict=False),
+        services=ServicesNamespace(),
     )
 
     items = []

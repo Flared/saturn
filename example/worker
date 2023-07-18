@@ -7,4 +7,5 @@ ROOT_DIR="$( cd ${DIR}/.. && pwd )"
 export SATURN_ENV="${SATURN_ENV:-development}"
 export SATURN_SETTINGS="example.settings.config"
 export PYTHONPATH="${PYTHONPATH}:$DIR/src"
-exec bash ${ROOT_DIR}/bin/worker
+export SATURN_STATIC_DEFINITIONS_DIRS="${SATURN_STATIC_DEFINITIONS_DIRS:-${DIR}/definitions}"
+exec bash ${ROOT_DIR}/bin/worker --standalone
