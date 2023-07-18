@@ -172,7 +172,7 @@ class FakeInventory(Inventory):
 
     @dataclasses.dataclass
     class Options:
-        data: list[int]
+        data: list[t.Union[int, tuple[int, dict]]]
 
     def __init__(self, *args: t.Any, options: Options, **kwargs: t.Any) -> None:
         self.options = options
@@ -181,9 +181,15 @@ class FakeInventory(Inventory):
         raise NotImplementedError()
 
     async def iterate(self, after: t.Optional[Cursor] = None) -> t.AsyncIterator[Item]:
-        for i, x in enumerate(self.options.data):
+        for i, data in enumerate(self.options.data):
+            if isinstance(data, tuple):
+                x, metadata = data
+            else:
+                x = data
+                metadata = {}
+
             await asyncio.sleep(x)
-            yield Item(id=str(i), args={"x": x})
+            yield Item(id=str(i), args={"x": x}, metadata=metadata)
 
 
 async def test_job_state_set_message_cursor_state(
@@ -214,7 +220,11 @@ async def test_job_state_set_message_cursor_state(
     await fake_work_builder(fake_queue_item)
     assert fake_queue_item.config["job"]["batching_enabled"]
 
-    inventory = FakeInventory(options=FakeInventory.Options(data=[5, 4, 3, 2, 1]))
+    inventory = FakeInventory(
+        options=FakeInventory.Options(
+            data=[5, 4, 3, 2, (1, {"job_state": {"state_cursor": "a"}})]
+        )
+    )
     job = Job(
         inventory=inventory,
         queue_item=fake_queue_item,
@@ -237,7 +247,7 @@ async def test_job_state_set_message_cursor_state(
     assert fetch_cursors.call_args_list == [
         call(fake_queue_item.name, cursors=[Cursor("0")]),
         call(fake_queue_item.name, cursors=[Cursor("1"), Cursor("2")]),
-        call(fake_queue_item.name, cursors=[Cursor("3"), Cursor("4")]),
+        call(fake_queue_item.name, cursors=[Cursor("3"), Cursor("a")]),
     ]
 
     with job_state_service._store.flush() as state:
@@ -263,7 +273,11 @@ async def test_job_state_set_message_cursor_state(
     assert results == [None, "1", "2", None, None]
 
     # Rerun the inventory, expect new states to be loaded
-    inventory = FakeInventory(options=FakeInventory.Options(data=[5, 4, 3, 2, 1]))
+    inventory = FakeInventory(
+        options=FakeInventory.Options(
+            data=[5, 4, 3, 2, (1, {"job_state": {"state_cursor": "a"}})]
+        )
+    )
     job = Job(
         inventory=inventory,
         queue_item=fake_queue_item,
