@@ -116,3 +116,12 @@ def safety(session: Session) -> None:
     session.install("safety")
     requirements = session.poetry.export_requirements()
     session.run("safety", "check", f"--file={requirements}", "--full-report")
+
+
+@nox_session(python=python_tool_version)
+def docs(session: Session) -> None:
+    """Build sphinx docs."""
+    args = session.posargs
+    session.install(".", "sphinx")
+    session.cd("docs")
+    session.run("make", "html")
