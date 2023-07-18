@@ -121,7 +121,7 @@ def safety(session: Session) -> None:
 @nox_session(python=python_tool_version)
 def docs(session: Session) -> None:
     """Build sphinx docs."""
-    args = session.posargs
+    session.posargs
     session.install(".", "sphinx")
     session.cd("docs")
     session.run("make", "html")
