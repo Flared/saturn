@@ -1,5 +1,4 @@
-from typing import DefaultDict
-from typing import Optional
+import typing as t
 
 import dataclasses
 import pprint
@@ -33,7 +32,7 @@ class SaturnTests:
 
 
 def compile_tests(uncompiled_objects: list) -> SaturnTests:
-    objects_by_kind: DefaultDict[str, dict[str, UncompiledObject]] = defaultdict(dict)
+    objects_by_kind: t.DefaultDict[str, dict[str, UncompiledObject]] = defaultdict(dict)
     for uncompiled_object in uncompiled_objects:
         if uncompiled_object.name in objects_by_kind[uncompiled_object.kind]:
             raise Exception(
@@ -115,7 +114,10 @@ def run_tests(*, static_definitions: StaticDefinitions, tests: SaturnTests) -> N
         )
 
 
-@click.group()
+cli: t.Any
+
+
+@click.group()  # type: ignore[no-redef]
 def cli() -> None:
     pass
 
@@ -156,7 +158,7 @@ def run(
 @click.option("--limit", type=int, required=True, default=1)
 @click.option("--after", type=str, required=False)
 def show_inventory(
-    topology: str, name: str, limit: int, after: Optional[Cursor]
+    topology: str, name: str, limit: int, after: t.Optional[Cursor]
 ) -> None:
     static_definitions = compile_static_definitions(
         load_uncompiled_objects_from_path(topology),
