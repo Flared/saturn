@@ -1,7 +1,6 @@
 import typing as t
 from typing import AsyncContextManager
 from typing import Optional
-from typing import Union
 
 import abc
 import asyncio
@@ -12,7 +11,7 @@ from saturn_engine.core import TopicMessage
 from saturn_engine.utils.log import getLogger
 from saturn_engine.utils.options import OptionsSchema
 
-TopicOutput = Union[AsyncContextManager[TopicMessage], TopicMessage]
+TopicOutput = AsyncContextManager[TopicMessage]
 
 
 class TopicClosedError(Exception):

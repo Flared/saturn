@@ -2,20 +2,20 @@ import typing as t
 
 from functools import partial
 
+from saturn_engine.core import PipelineOutput
+from saturn_engine.core import PipelineResults
+from saturn_engine.core import TopicMessage
+from saturn_engine.core.api import QueueItem
+from saturn_engine.core.api import QueueItemWithState
 from saturn_engine.core.pipeline import PipelineEvent
 from saturn_engine.utils.hooks import AsyncContextHook
 from saturn_engine.utils.hooks import AsyncEventHook
 from saturn_engine.utils.hooks import EventHook
 
 if t.TYPE_CHECKING:
-    from saturn_engine.core import PipelineOutput
-    from saturn_engine.core import PipelineResults
-    from saturn_engine.core.api import QueueItemWithState
     from saturn_engine.worker.executors.bootstrap import PipelineBootstrap
     from saturn_engine.worker.executors.executable import ExecutableMessage
     from saturn_engine.worker.executors.executable import ExecutableQueue
-    from saturn_engine.worker.inventory import Item
-    from saturn_engine.worker.job import Job
     from saturn_engine.worker.topic import Topic
 
 
@@ -26,8 +26,8 @@ class MessagePublished(t.NamedTuple):
 
 
 class ItemsBatch(t.NamedTuple):
-    items: list["Item"]
-    job: "Job"
+    items: list[TopicMessage]
+    job: QueueItem
 
 
 class PipelineEventsEmitted(t.NamedTuple):

@@ -46,3 +46,9 @@ class TopicMessage:
 
     def extend(self, args: dict[str, object]) -> "TopicMessage":
         return dataclasses.replace(self, args=args | self.args)
+
+    async def __aenter__(self) -> "TopicMessage":
+        return self
+
+    async def __aexit__(self, *args: t.Any, **kwargs: t.Any) -> None:
+        return None

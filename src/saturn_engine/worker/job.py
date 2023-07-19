@@ -1,20 +1,13 @@
 import typing as t
 
-import dataclasses
 from collections.abc import AsyncGenerator
-
-import asyncstdlib as alib
 
 from saturn_engine.core import MessageId
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import QueueItemWithState
-from saturn_engine.utils import iterators
-from saturn_engine.utils.config import LazyConfig
 from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.inventories import Inventory
-from saturn_engine.worker.inventory import Item
 from saturn_engine.worker.services import Services
-from saturn_engine.worker.services.hooks import ItemsBatch
 from saturn_engine.worker.services.job_state.service import JobStateService
 from saturn_engine.worker.topics import Topic
 from saturn_engine.worker.topics import TopicOutput
@@ -23,12 +16,6 @@ JOB_NAMESPACE: t.Final[str] = "job"
 
 
 class Job(Topic):
-    @dataclasses.dataclass
-    class Options:
-        batching_enabled: bool = False
-        buffer_flush_after: t.Optional[float] = 5
-        buffer_size: t.Optional[int] = 10
-
     def __init__(
         self,
         *,
@@ -41,57 +28,28 @@ class Job(Topic):
         self.services = services
         self.queue_item = queue_item
         self.state_service = services.cast_service(JobStateService)
-        self.config = LazyConfig([self.services.s.config.r, self.queue_item.config])
 
     async def run(self) -> AsyncGenerator[TopicOutput, None]:
+        cursor = self.queue_item.state.cursor
+
         try:
-            async with alib.scoped_iter(self._make_iterator()) as iterator:
-                async for item in iterator:
-                    cursor = item.cursor
-                    message = TopicMessage(
-                        id=MessageId(item.id),
-                        args=item.args,
-                        tags=item.tags,
-                        metadata=item.metadata | {"job": {"cursor": cursor}},
+            async for item in self.inventory.iterate(after=cursor):
+                cursor = item.cursor
+                message = TopicMessage(
+                    id=MessageId(item.id),
+                    args=item.args,
+                    tags=item.tags,
+                    metadata=item.metadata | {"job": {"cursor": cursor}},
+                )
+
+                yield message
+
+                if cursor:
+                    self.state_service.set_job_cursor(
+                        self.queue_item.name, cursor=cursor
                     )
-
-                    yield message
-
-                    if cursor:
-                        self.state_service.set_job_cursor(
-                            self.queue_item.name, cursor=cursor
-                        )
 
             self.state_service.set_job_completed(self.queue_item.name)
         except Exception as e:
             self.logger.exception("Exception raised from job")
             self.state_service.set_job_failed(self.queue_item.name, error=e)
-
-    def _make_iterator(self) -> t.AsyncIterator[Item]:
-        cursor = self.queue_item.state.cursor
-        iterator = self.inventory.iterate(after=cursor)
-
-        # If we enable cursors states, we are going to decorate the iterator
-        # to buffer multiple messages together and load their states.
-        if self.options.batching_enabled:
-            buffered_iterator = iterators.async_buffered(
-                iterator,
-                flush_after=self.options.buffer_flush_after,
-                buffer_size=self.options.buffer_size,
-            )
-            emit_batches = self._emit_batches(buffered_iterator)
-            iterator = iterators.async_flatten(emit_batches)
-        return iterator
-
-    @property
-    def options(self) -> Options:
-        return self.config.cast_namespace(JOB_NAMESPACE, self.Options)
-
-    async def _emit_batches(
-        self, iterator: t.AsyncIterator[list[Item]]
-    ) -> t.AsyncIterator[list[Item]]:
-        async for items in iterator:
-            await self.services.s.hooks.items_batched.emit(
-                ItemsBatch(items=items, job=self)
-            )
-            yield items

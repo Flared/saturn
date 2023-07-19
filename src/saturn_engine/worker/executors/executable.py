@@ -2,19 +2,26 @@ import typing as t
 
 import asyncio
 import contextlib
+import dataclasses
 from collections.abc import AsyncGenerator
 from collections.abc import Iterator
 from functools import cached_property
 
 from saturn_engine.core import ResourceUsed
+from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import QueueItem
+from saturn_engine.utils import iterators
 from saturn_engine.utils.config import LazyConfig
 from saturn_engine.worker.executors.parkers import Parkers
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources.manager import ResourceContext
 from saturn_engine.worker.resources.manager import ResourcesContext
 from saturn_engine.worker.services import Services
+from saturn_engine.worker.services.hooks import ItemsBatch
 from saturn_engine.worker.topic import Topic
+from saturn_engine.worker.topic import TopicOutput
+
+JOB_NAMESPACE: t.Final[str] = "job"
 
 
 class ExecutableMessage:
@@ -98,14 +105,15 @@ class ExecutableQueue:
         self.pending_messages_count = 0
         self.done = asyncio.Event()
 
+    @dataclasses.dataclass
+    class Options:
+        batching_enabled: bool = False
+        buffer_flush_after: t.Optional[float] = 5
+        buffer_size: t.Optional[int] = 10
+
     async def run(self) -> AsyncGenerator[ExecutableMessage, None]:
         try:
-            async for message in self.topic.run():
-                context = None
-                if isinstance(message, t.AsyncContextManager):
-                    context = message
-                    message = await message.__aenter__()
-
+            async for context, message in self._make_iterator():
                 pipeline_message = PipelineMessage(
                     info=self.pipeline.info,
                     message=message.extend(self.pipeline.args),
@@ -178,6 +186,10 @@ class ExecutableQueue:
         if self.is_closed and self.pending_messages_count == 0:
             self.done.set()
 
+    @property
+    def options(self) -> Options:
+        return self.config.cast_namespace(JOB_NAMESPACE, self.Options)
+
     @cached_property
     def config(self) -> LazyConfig:
         return LazyConfig(
@@ -189,3 +201,26 @@ class ExecutableQueue:
 
     def __repr__(self) -> str:
         return f"ExecutableQueue(name={self.name})"
+
+    def _make_iterator(self) -> t.AsyncIterator[tuple[TopicOutput, TopicMessage]]:
+        iterator = iterators.async_enter(self.topic.run())
+        # If we enable cursors states, we are going to decorate the iterator
+        # to buffer multiple messages together and load their states.
+        if self.options.batching_enabled:
+            buffered_iterator = iterators.async_buffered(
+                iterator,
+                flush_after=self.options.buffer_flush_after,
+                buffer_size=self.options.buffer_size,
+            )
+            emit_batches = self._emit_batches(buffered_iterator)
+            iterator = iterators.async_flatten(emit_batches)
+        return iterator
+
+    async def _emit_batches(
+        self, iterator: t.AsyncIterator[list[tuple[TopicOutput, TopicMessage]]]
+    ) -> t.AsyncIterator[list[tuple[TopicOutput, TopicMessage]]]:
+        async for items in iterator:
+            await self.services.s.hooks.items_batched.emit(
+                ItemsBatch(items=[i for _, i in items], job=self.definition)
+            )
+            yield items

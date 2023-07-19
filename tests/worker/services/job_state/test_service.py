@@ -4,7 +4,6 @@ import asyncio
 import dataclasses
 from unittest.mock import call
 
-import asyncstdlib as alib
 import pytest
 from pytest_mock import MockerFixture
 
@@ -13,9 +12,9 @@ from saturn_engine.core import JobId
 from saturn_engine.core.api import QueueItemWithState
 from saturn_engine.core.job_state import CursorStateUpdated
 from saturn_engine.core.pipeline import PipelineInfo
-from saturn_engine.core.topic import TopicMessage
 from saturn_engine.utils import utcnow
 from saturn_engine.worker.executors.executable import ExecutableMessage
+from saturn_engine.worker.executors.executable import ExecutableQueue
 from saturn_engine.worker.inventory import Inventory
 from saturn_engine.worker.inventory import Item
 from saturn_engine.worker.job import Job
@@ -195,7 +194,7 @@ class FakeInventory(Inventory):
 async def test_job_state_set_message_cursor_state(
     services_manager: ServicesManager,
     fake_queue_item: QueueItemWithState,
-    executable_maker: t.Callable[..., ExecutableMessage],
+    executable_queue_maker: t.Callable[..., ExecutableQueue],
     inmemory_cursors_fetcher: None,
     mocker: MockerFixture,
 ) -> None:
@@ -211,6 +210,7 @@ async def test_job_state_set_message_cursor_state(
         "buffer_flush_after": 7,
         "buffer_size": 2,
     }
+    fake_queue_item.pipeline.info = PipelineInfo.from_pipeline(pipeline)
     fake_queue_item.config["job_state"] = {"cursors_states_enabled": True}
 
     @services_manager.services.s.hooks.work_queue_built.emit
@@ -230,11 +230,23 @@ async def test_job_state_set_message_cursor_state(
         queue_item=fake_queue_item,
         services=services_manager.services,
     )
+    xqueue = executable_queue_maker(definition=fake_queue_item, topic=job)
 
     # Run the job manually
-    msgs: list[TopicMessage] = await alib.list(job.run())  # type: ignore[arg-type]
+    results = []
+    xmsgs: list[ExecutableMessage] = []
+    async for xmsg in xqueue.run():
+        async with xmsg._context:
+            xmsgs.append(xmsg)
+            results.append(xmsg.message.execute())
+            await services_manager.services.s.hooks.pipeline_events_emitted.emit(
+                PipelineEventsEmitted(
+                    xmsg=xmsg, events=[CursorStateUpdated(state={"x": len(xmsgs) * 10})]
+                )
+            )
 
     # Assert everything loaded and ran in order.
+    msgs = [i.message.message for i in xmsgs]
     assert [i.id for i in msgs] == ["0", "1", "2", "3", "4"]
     assert [i.metadata.get("job_state", {}).get("cursor_state") for i in msgs] == [
         None,
@@ -250,26 +262,12 @@ async def test_job_state_set_message_cursor_state(
         call(fake_queue_item.name, cursors=[Cursor("3"), Cursor("a")]),
     ]
 
-    with job_state_service._store.flush() as state:
-        assert len(state.jobs) == 1
-        job_state = state.jobs[fake_queue_item.name]
-        assert job_state.cursor == "4"
-        assert job_state.completion
+    state = job_state_service._store._current_state
+    assert len(state.jobs) == 1
+    job_state = state.jobs[fake_queue_item.name]
+    assert job_state.cursor == "4"
+    assert job_state.completion
 
-    results = []
-    for i, msg in enumerate(msgs):
-        xmsg = executable_maker(
-            message=msg,
-            pipeline_info=PipelineInfo.from_pipeline(pipeline),
-        )
-        await services_manager.services.s.hooks.message_polled.emit(xmsg)
-        results.append(xmsg.message.execute())
-
-        await services_manager.services.s.hooks.pipeline_events_emitted.emit(
-            PipelineEventsEmitted(
-                xmsg=xmsg, events=[CursorStateUpdated(state={"x": i * 10})]
-            )
-        )
     assert results == [None, "1", "2", None, None]
 
     # Rerun the inventory, expect new states to be loaded
@@ -283,13 +281,19 @@ async def test_job_state_set_message_cursor_state(
         queue_item=fake_queue_item,
         services=services_manager.services,
     )
-    msgs = await alib.list(job.run())  # type: ignore[arg-type]
+    xqueue = executable_queue_maker(definition=fake_queue_item, topic=job)
+
+    xmsgs.clear()
+    async for xmsg in xqueue.run():
+        async with xmsg._context:
+            xmsgs.append(xmsg)
+    msgs = [i.message.message for i in xmsgs]
 
     # Assert everything loaded and ran in order.
     assert [i.metadata.get("job_state", {}).get("cursor_state") for i in msgs] == [
-        {"x": 0},
         {"x": 10},
         {"x": 20},
         {"x": 30},
         {"x": 40},
+        {"x": 50},
     ]

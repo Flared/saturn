@@ -91,14 +91,14 @@ class JobStateService(Service[Services, Options]):
         # Default `i.metadata["job_state"]["state_cursor"]` to `i.cursor`
         for item in batch.items:
             item.metadata.setdefault("job_state", {}).setdefault(
-                "state_cursor", item.cursor
+                "state_cursor", item.metadata.get("job", {}).get("cursor")
             )
 
         cursors = [
             c for i in batch.items if (c := i.metadata["job_state"]["state_cursor"])
         ]
         cursors_states: dict = await self.fetch_cursors_states(
-            batch.job.queue_item.name, cursors=cursors
+            batch.job.name, cursors=cursors
         )
         for item in batch.items:
             metadata = item.metadata.setdefault("job_state", {})
