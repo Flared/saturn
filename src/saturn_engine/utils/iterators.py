@@ -42,3 +42,11 @@ async def async_flatten(
     async for items in iterator:
         for item in items:
             yield item
+
+
+async def async_enter(
+    iterator: t.AsyncIterator[t.AsyncContextManager[T]],
+) -> t.AsyncIterator[tuple[t.AsyncContextManager[T], T]]:
+    async for context in iterator:
+        item = await context.__aenter__()
+        yield (context, item)
