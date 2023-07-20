@@ -1,6 +1,7 @@
 import typing as t
 
 import asyncio
+import concurrent.futures
 import threading
 
 import pytest
@@ -10,6 +11,7 @@ from saturn_engine.client.saturn import SyncSaturnClient
 from saturn_engine.config import Config
 from saturn_engine.core import TopicMessage
 from saturn_engine.utils.inspect import get_import_name
+from saturn_engine.worker.topic import Topic
 from saturn_engine.worker.topics.memory import MemoryTopic
 from saturn_engine.worker.topics.memory import get_queue
 from saturn_engine.worker_manager.config.declarative import load_definitions_from_str
@@ -36,6 +38,22 @@ class DelayedMemoryTopic(MemoryTopic):
         self.published_event.set()
 
 
+class HangingTopic(Topic):
+    def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.publish_done = threading.Event()
+        self.publish_result: t.Any = None
+
+    async def publish(self, message: TopicMessage, wait: bool) -> bool:
+        try:
+            await asyncio.Event().wait()
+        except BaseException as e:
+            self.publish_result = e
+        finally:
+            self.publish_done.set()
+        return True
+
+
 def test_saturn_client_publish_sync(
     config: Config,
     http_client_mock: HttpClientMock,
@@ -47,7 +65,12 @@ def test_saturn_client_publish_sync(
                 "name": "test-topic",
                 "options": {},
                 "type": get_import_name(DelayedMemoryTopic),
-            }
+            },
+            {
+                "name": "hanging-topic",
+                "options": {},
+                "type": get_import_name(HangingTopic),
+            },
         ]
     }
 
@@ -71,6 +94,15 @@ def test_saturn_client_publish_sync(
     queue.task_done()
     assert queue.qsize() == 0
 
+    # Publish on blocking topic should cancel their async task.
+    with pytest.raises(concurrent.futures.TimeoutError):
+        saturn_client.publish("hanging-topic", TopicMessage({"a": 0}), True, timeout=1)
+
+    hanging_topic = t.cast(HangingTopic, saturn_client._client.topics["hanging-topic"])
+    hanging_topic.publish_done.wait()
+    assert isinstance(hanging_topic.publish_result, asyncio.CancelledError)
+
+    # Publish on invalid topic fail.
     with pytest.raises(KeyError):
         saturn_client.publish("test-topic2", TopicMessage({"a": 0}), True)
     assert queue.qsize() == 0
