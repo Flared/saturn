@@ -140,6 +140,9 @@ class RabbitMQTopic(Topic):
                     if e.frame.name != "Basic.Nack":
                         raise
 
+                    if isinstance(e, aio_pika.exceptions.PublishError):
+                        raise
+
                     if not wait:
                         return False
 
