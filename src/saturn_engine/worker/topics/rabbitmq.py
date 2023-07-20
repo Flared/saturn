@@ -220,7 +220,7 @@ class RabbitMQTopic(Topic):
         if self.options.max_length:
             arguments["x-max-length"] = self.options.max_length
         if self.options.max_length_bytes:
-            arguments["x-max-length-bytes"] = self.options.max_length
+            arguments["x-max-length-bytes"] = self.options.max_length_bytes
         arguments["x-overflow"] = self.options.overflow
 
         channel = await self.channel
