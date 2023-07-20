@@ -4,6 +4,7 @@ from typing import Optional
 from typing import TypeVar
 
 import asyncio
+import concurrent.futures
 import threading
 
 import aiohttp
@@ -161,7 +162,11 @@ class SyncSaturnClient:
         timeout: Optional[float] = MEDIUM_TIMEOUT,
     ) -> T:
         future = asyncio.run_coroutine_threadsafe(coroutine, self._loop)
-        return future.result(timeout=timeout)
+        try:
+            return future.result(timeout=timeout)
+        except concurrent.futures.TimeoutError:
+            future.cancel()
+            raise
 
     def close(self) -> None:
         try:
