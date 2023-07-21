@@ -284,24 +284,25 @@ class CachedProperty(t.Generic[T]):
         return self._get_attribute(instance)
 
     async def _get_attribute(self, instance: t.Any) -> T:
-        value = instance.__dict__.get(self._name)
-        if value is None:
-            task = asyncio.create_task(self.__wrapped__(instance))
-            instance.__dict__[self._name] = task
-            try:
-                value = await task
-            except BaseException:
-                del instance.__dict__[self._name]
-                raise
-
-            # Once the task is complete, replace with a future to only hold
-            # the value and drop the task.
+        future = instance.__dict__.get(self._name)
+        if future is None:
             future: asyncio.Future[T] = asyncio.Future()
-            future.set_result(value)
             instance.__dict__[self._name] = future
-            return value
 
-        return await value
+            async def wrapper():
+                try:
+                    value = await self.__wrapped__(instance)
+                    future.set_result(value)
+                except BaseException as e:
+                    future.set_exception(e)
+                    del instance.__dict__[self._name]
+
+            asyncio.create_task(
+                wrapper(),
+                name=f"cached_property({instance.__class__.__name__}.{self._name})",
+            )
+
+        return await future
 
 
 class AsyncLazyDict(t.Generic[K, V]):
