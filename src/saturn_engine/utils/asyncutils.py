@@ -286,10 +286,10 @@ class CachedProperty(t.Generic[T]):
     async def _get_attribute(self, instance: t.Any) -> T:
         future = instance.__dict__.get(self._name)
         if future is None:
-            future: asyncio.Future[T] = asyncio.Future()
+            future = asyncio.Future()
             instance.__dict__[self._name] = future
 
-            async def wrapper():
+            async def wrapper() -> None:
                 try:
                     value = await self.__wrapped__(instance)
                     future.set_result(value)
