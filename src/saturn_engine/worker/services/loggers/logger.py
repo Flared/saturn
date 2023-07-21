@@ -234,12 +234,10 @@ class PipelineLogger:
     @contextlib.contextmanager
     def log_context(self, data: dict) -> Iterator[None]:
         if self.set_context:
-            memo = self.structlog.threadlocal._get_context().copy()
-            self.structlog.threadlocal.bind_threadlocal(**data)
+            tokens = self.structlog.contextvars.bind_contextvars(**data)
             try:
                 yield
             finally:
-                self.structlog.threadlocal.clear_threadlocal()
-                self.structlog.threadlocal.bind_threadlocal(**memo)
+                self.structlog.contextvars.reset_contextvars(**tokens)
         else:
             yield

@@ -41,7 +41,7 @@ def setup_structlog() -> bool:
         return event_dict
 
     pre_chain = [
-        structlog.threadlocal.merge_threadlocal,
+        structlog.contextvars.merge_contextvars,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         unwrap_extra_data,
