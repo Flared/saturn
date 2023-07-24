@@ -1,12 +1,14 @@
 import typing as t
 
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 from saturn_engine.core import MessageId
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import QueueItemWithState
 from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.inventories import Inventory
+from saturn_engine.worker.inventory import Item
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.job_state.service import JobStateService
 from saturn_engine.worker.topics import Topic
@@ -35,14 +37,7 @@ class Job(Topic):
         try:
             async for item in self.inventory.iterate(after=cursor):
                 cursor = item.cursor
-                message = TopicMessage(
-                    id=MessageId(item.id),
-                    args=item.args,
-                    tags=item.tags,
-                    metadata=item.metadata | {"job": {"cursor": cursor}},
-                )
-
-                yield message
+                yield self.item_to_topic(item)
 
                 if cursor:
                     self.state_service.set_job_cursor(
@@ -53,3 +48,13 @@ class Job(Topic):
         except Exception as e:
             self.logger.exception("Exception raised from job")
             self.state_service.set_job_failed(self.queue_item.name, error=e)
+
+    @asynccontextmanager
+    async def item_to_topic(self, item_ctx: Item) -> t.AsyncIterator[TopicMessage]:
+        async with item_ctx as item:
+            yield TopicMessage(
+                id=MessageId(item.id),
+                args=item.args,
+                tags=item.tags,
+                metadata=item.metadata | {"job": {"cursor": item.cursor}},
+            )
