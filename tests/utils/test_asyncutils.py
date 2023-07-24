@@ -1,11 +1,14 @@
 import typing as t
 
 import asyncio
+from contextlib import AsyncExitStack
+from contextlib import asynccontextmanager
 from unittest.mock import Mock
 
 import pytest
 
 from saturn_engine.utils.asyncutils import DelayedThrottle
+from saturn_engine.utils.asyncutils import opened_acontext
 
 
 async def test_delayed_task() -> None:
@@ -157,3 +160,25 @@ async def test_delayed_throttle_wait() -> None:
     assert (await t1) == 2
     assert (await t2) == 2
     assert (await t3) == 3
+
+
+async def test_opened_acontext() -> None:
+    mock = Mock()
+
+    @asynccontextmanager
+    async def context() -> t.AsyncIterator[int]:
+        mock("before")
+        yield 1
+        mock("after")
+
+    stack = AsyncExitStack()
+    value = await stack.enter_async_context(context())
+    assert value == 1
+    mock.assert_called_once_with("before")
+    mock.reset_mock()
+
+    async with opened_acontext(stack, value) as opened_value:
+        assert opened_value == 1
+        mock.assert_not_called()
+
+    mock.assert_called_once_with("after")

@@ -13,6 +13,7 @@ import asyncstdlib as alib
 
 from saturn_engine.core import Cursor
 from saturn_engine.core import MessageId
+from saturn_engine.utils.log import getLogger
 from saturn_engine.utils.options import OptionsSchema
 
 MISSING = object()
@@ -46,6 +47,12 @@ class Item:
     def __post_init__(self) -> None:
         if self.cursor is MISSING:
             self.cursor = Cursor(self.id)
+
+    async def __aenter__(self) -> "Item":
+        return self
+
+    async def __aexit__(self, *exc: t.Any) -> t.Optional[bool]:
+        return None
 
 
 class MaxRetriesError(Exception):
@@ -99,7 +106,7 @@ class Inventory(abc.ABC, OptionsSchema):
 
     @cached_property
     def logger(self) -> logging.Logger:
-        return logging.getLogger(__name__ + ".Inventory")
+        return getLogger(__name__, self)
 
 
 class IteratorInventory(Inventory):

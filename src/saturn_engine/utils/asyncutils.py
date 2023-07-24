@@ -18,6 +18,13 @@ V = t.TypeVar("V")
 AsyncFNone = t.TypeVar("AsyncFNone", bound=t.Callable[..., Awaitable])
 
 
+@contextlib.asynccontextmanager
+async def opened_acontext(ctx: t.AsyncContextManager, value: T) -> t.AsyncIterator[T]:
+    async with contextlib.AsyncExitStack() as stack:
+        stack.push_async_exit(ctx)
+        yield value
+
+
 async def aiter2agen(iterator: AsyncIterator[T]) -> AsyncGenerator[T, None]:
     """
     Convert an async iterator into an async generator.
