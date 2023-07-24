@@ -3,7 +3,9 @@ import typing as t
 import asyncio
 
 import asyncstdlib as alib
+import pytest
 
+from saturn_engine.utils import ExceptionGroup
 from saturn_engine.utils import iterators
 
 
@@ -49,3 +51,44 @@ async def test_flatten() -> None:
     flatten_it = iterators.async_flatten(iterator)
     items = await alib.list(flatten_it)
     assert items == [1, 2, 3, 4, 5]
+
+
+async def test_fanin() -> None:
+    async def fast() -> t.AsyncIterator[int]:
+        for i in range(5):
+            await asyncio.sleep(1.1)
+            yield i
+
+    async def slow() -> t.AsyncIterator[int]:
+        for i in range(10, 14):
+            await asyncio.sleep(2)
+            yield i
+
+    assert await alib.list(iterators.fanin(fast(), slow())) == [
+        0,
+        10,
+        1,
+        2,
+        11,
+        3,
+        4,
+        12,
+        13,
+    ]
+
+
+async def test_fanin_fails() -> None:
+    async def nosleep() -> t.AsyncIterator[int]:
+        for i in range(5):
+            yield i
+
+    async def fail() -> t.AsyncIterator[int]:
+        yield 100
+        raise ValueError("Fail")
+
+    results = []
+    with pytest.raises(ExceptionGroup):
+        async for x in iterators.fanin(nosleep(), fail(), nosleep()):
+            results.append(x)
+
+    assert list(sorted(results)) == [0, 0, 1, 1, 100]

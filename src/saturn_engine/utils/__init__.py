@@ -1,5 +1,6 @@
 import typing as t
 
+import builtins
 import collections
 import enum
 import threading
@@ -194,3 +195,13 @@ class CINamespace(collections.UserDict):
 
 def assert_never(x: t.NoReturn) -> t.NoReturn:
     raise AssertionError("Unhandled type: {}".format(type(x).__name__))
+
+
+ExceptionGroup: t.Type
+
+if not (ExceptionGroup := getattr(builtins, "ExceptionGroup", None)):  # type: ignore
+
+    class ExceptionGroup(Exception):  # type: ignore[no-redef]
+        def __init__(self, msg: str, errors: list[Exception]) -> None:
+            super().__init__(msg)
+            self.errors = errors
