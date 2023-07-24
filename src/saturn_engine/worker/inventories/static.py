@@ -18,7 +18,7 @@ class StaticInventory(Inventory):
         self.items = options.items
 
     async def next_batch(self, after: t.Optional[Cursor] = None) -> list[Item]:
-        begin = int(after) + 1 if after else 0
+        begin = int(after) + 1 if after is not None else 0
         return [
             Item(id=MessageId(str(i)), args=args)
             for i, args in enumerate(self.items[begin:], start=begin)
