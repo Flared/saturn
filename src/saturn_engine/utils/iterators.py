@@ -46,7 +46,15 @@ async def async_flatten(
 
 async def async_enter(
     iterator: t.AsyncIterator[t.AsyncContextManager[T]],
+    *,
+    error: t.Optional[t.Callable[[Exception], t.Awaitable]] = None,
 ) -> t.AsyncIterator[tuple[t.AsyncContextManager[T], T]]:
     async for context in iterator:
-        item = await context.__aenter__()
+        try:
+            item = await context.__aenter__()
+        except Exception as e:
+            if error:
+                await error(e)
+                continue
+            raise
         yield (context, item)
