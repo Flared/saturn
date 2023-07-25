@@ -12,6 +12,7 @@ from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import QueueItem
 from saturn_engine.utils import iterators
 from saturn_engine.utils.config import LazyConfig
+from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.executors.parkers import Parkers
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources.manager import ResourceContext
@@ -89,6 +90,8 @@ class ExecutableQueue:
         output: dict[str, list[Topic]],
         services: Services,
     ):
+        self.logger = getLogger(__name__, self)
+
         self.definition = definition
         self.name: str = definition.name
         self.pipeline = definition.pipeline
@@ -203,7 +206,10 @@ class ExecutableQueue:
         return f"ExecutableQueue(name={self.name})"
 
     def _make_iterator(self) -> t.AsyncIterator[tuple[TopicOutput, TopicMessage]]:
-        iterator = iterators.async_enter(self.topic.run())
+        iterator = iterators.async_enter(
+            self.topic.run(),
+            error=self.log_message_error,
+        )
         # If we enable cursors states, we are going to decorate the iterator
         # to buffer multiple messages together and load their states.
         if self.options.batching_enabled:
@@ -215,6 +221,9 @@ class ExecutableQueue:
             emit_batches = self._emit_batches(buffered_iterator)
             iterator = iterators.async_flatten(emit_batches)
         return iterator
+
+    async def log_message_error(self, error: Exception) -> None:
+        self.logger.error("Failed to process message", exc_info=error)
 
     async def _emit_batches(
         self, iterator: t.AsyncIterator[list[tuple[TopicOutput, TopicMessage]]]

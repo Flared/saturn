@@ -2,6 +2,7 @@ import typing as t
 
 import asyncio
 import dataclasses
+from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock
 
 import asyncstdlib as alib
@@ -12,6 +13,8 @@ from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import QueueItem
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.executable import ExecutableQueue
+from saturn_engine.worker.topic import Topic
+from saturn_engine.worker.topic import TopicOutput
 from saturn_engine.worker.topics import MemoryTopic
 from tests.utils import TimeForwardLoop
 
@@ -120,3 +123,24 @@ async def test_executable_close(
 
     await close_task
     output_topic.close.assert_awaited()
+
+
+async def test_executable_context_error(
+    executable_queue_maker: t.Callable[..., ExecutableQueue],
+) -> None:
+    class FakeTopic(Topic):
+        async def run(self) -> t.AsyncGenerator[TopicOutput, None]:
+            yield self.bad_context_1()
+            yield TopicMessage(args={"x": 1})
+
+        @asynccontextmanager
+        async def bad_context_1(self) -> t.AsyncIterator[TopicMessage]:
+            raise ValueError("Oh no")
+            yield TopicMessage()
+
+    executable_queue = executable_queue_maker(topic=FakeTopic.from_options({}))
+    messages = []
+    async for xmsg in executable_queue.run():
+        async with xmsg._context:
+            messages.append(xmsg.message.message)
+    assert [m.args for m in messages] == [{"x": 1}]
