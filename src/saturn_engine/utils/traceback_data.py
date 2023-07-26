@@ -6,6 +6,9 @@ import itertools
 import linecache
 import sys
 import traceback
+from collections.abc import Collection
+from collections.abc import Mapping
+from contextlib import suppress
 from types import FrameType
 from types import TracebackType
 
@@ -18,6 +21,54 @@ _cause_message = (
 _context_message = (
     "\nDuring handling of the above exception, " "another exception occurred:\n\n"
 )
+
+
+def format_local(anyval: object, maxlen: int = 80) -> str:
+    val: str = "<???>"
+    with suppress(Exception):
+        if isinstance(anyval, (str, bytes)):
+            val = repr(anyval[:maxlen])
+        elif isinstance(anyval, (int, float)):
+            val = repr(anyval)
+        elif isinstance(anyval, Mapping):
+            val = ""
+            if not isinstance(anyval, dict):
+                val = f"{type(anyval)}"
+            val += "{"
+            vals = []
+            valslen = len(val)
+            for k, v in anyval.items():
+                ks = format_local(k, maxlen=maxlen - valslen)
+                valslen += len(ks)
+                vs = format_local(v, maxlen=maxlen - valslen)
+                valslen += len(vs) + 4
+                vals.append(f"{ks}: {vs}")
+                if valslen > maxlen:
+                    return val + ", ".join(vals)
+            return val + ", ".join(vals) + "}"
+        elif isinstance(anyval, Collection):
+            val = ""
+            if not isinstance(anyval, list):
+                val = f"{type(anyval)}"
+            val += "["
+            vals = []
+            valslen = len(val)
+            for v in anyval:
+                vs = format_local(v, maxlen=maxlen - valslen)
+                valslen += len(vs) + 2
+                vals.append(vs)
+                if valslen > maxlen:
+                    return val + ", ".join(vals)
+            return val + ", ".join(vals) + "]"
+        else:
+            val = str(type(anyval))
+
+    if len(val) >= maxlen:
+        if val[-1] == "'":
+            val = val[:-1] + "<...>"
+        else:
+            val += "<...>"
+    return val
 
 
 @dataclasses.dataclass
@@ -114,7 +165,7 @@ class TracebackData:
             linecache.lazycache(filename, f.f_globals)
             f_locals = f.f_locals
             _locals: dict[str, str] = (
-                {k: str(v) for k, v in f_locals.items()} if f_locals else {}
+                {k: format_local(v) for k, v in f_locals.items()} if f_locals else {}
             )
 
             firstlineno = co.co_firstlineno
