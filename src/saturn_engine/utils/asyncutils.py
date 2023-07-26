@@ -441,4 +441,7 @@ class Cancellable(t.Generic[R]):
             self.func(*args, **kwargs), name=f"cancellable({self.func})"
         )
         self._tasks.add(task)
-        return await task
+        try:
+            return await task
+        finally:
+            self._tasks.remove(task)
