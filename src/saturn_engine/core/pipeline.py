@@ -80,6 +80,6 @@ PipelineResultTypes = t.get_args(PipelineResult)
 
 @dataclasses.dataclass
 class PipelineResults:
-    outputs: list[PipelineOutput]
+    outputs: list[PipelineOutput] = dataclasses.field(default_factory=list)
     resources: list[ResourceUsed] = dataclasses.field(default_factory=list)
     events: list[PipelineEvent] = dataclasses.field(default_factory=list)

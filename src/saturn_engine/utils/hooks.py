@@ -1,3 +1,4 @@
+import typing as t
 from typing import Any
 from typing import Awaitable
 from typing import Callable
@@ -6,6 +7,7 @@ from typing import Optional
 from typing import TypeVar
 from typing import Union
 
+import contextlib
 from collections.abc import AsyncGenerator
 from collections.abc import Generator
 
@@ -20,10 +22,41 @@ GGenerators = list[Generator[None, A, None]]
 AGenerators = list[AsyncGenerator[None, A]]
 
 
+def call_handlers(
+    handlers: t.Iterable[t.Callable[[A], Any]],
+    arg: A,
+    error_handler: Optional[Callable[[Exception], t.Any]] = None,
+) -> None:
+    for handler in handlers:
+        try:
+            handler(arg)
+        except Exception as e:
+            if error_handler:
+                error_handler(e)
+
+
+async def call_async_handlers(
+    handlers: t.Iterable[t.Callable[[A], t.Awaitable]],
+    arg: A,
+    error_handler: Optional[Callable[[Exception], Awaitable]] = None,
+) -> None:
+    for handler in handlers:
+        try:
+            await handler(arg)
+        except Exception as e:
+            if error_handler:
+                await error_handler(e)
+
+
 class Handlers(Generic[F, E]):
-    def __init__(self, *, error_handler: Optional[Callable[[Exception], E]] = None):
+    def __init__(
+        self,
+        handlers: Optional[t.Iterable[F]] = None,
+        *,
+        error_handler: Optional[Callable[[Exception], E]] = None
+    ):
         self.error_handler = error_handler
-        self.handlers: list[F] = []
+        self.handlers: list[F] = list(handlers) if handlers is not None else []
 
     def register(self, handler: F) -> Callable[[A], Any]:
         self.handlers.append(handler)
@@ -38,22 +71,20 @@ class Handlers(Generic[F, E]):
 
 class EventHook(Generic[A], Handlers[Callable[[A], Any], None]):
     def emit(self, arg: A) -> None:
-        for handler in self.handlers:
-            try:
-                handler(arg)
-            except Exception as e:
-                if self.error_handler:
-                    self.error_handler(e)
+        call_handlers(
+            handlers=self.handlers,
+            arg=arg,
+            error_handler=self.error_handler,
+        )
 
 
 class AsyncEventHook(Generic[A], Handlers[Callable[[A], Awaitable], Awaitable]):
     async def emit(self, arg: A) -> None:
-        for handler in self.handlers:
-            try:
-                await handler(arg)
-            except Exception as e:
-                if self.error_handler:
-                    await self.error_handler(e)
+        await call_async_handlers(
+            handlers=self.handlers,
+            arg=arg,
+            error_handler=self.error_handler,
+        )
 
 
 class ContextHook(
@@ -61,12 +92,23 @@ class ContextHook(
     Handlers[Union[Callable[[A], Any], Callable[[A], Generator[None, R, None]]], None],
 ):
     def emit(self, scope: Callable[[A], R]) -> "ContextHookEmiter[A, R]":
-        return ContextHookEmiter(self, scope)
+        return ContextHookEmiter(
+            handlers=self.handlers, error_handler=self.error_handler, scope=scope
+        )
 
 
 class ContextHookEmiter(Generic[A, R]):
-    def __init__(self, hook: ContextHook[A, R], scope: Callable[[A], R]):
-        self.hook = hook
+    def __init__(
+        self,
+        *,
+        handlers: t.Iterable[
+            Union[Callable[[A], Any], Callable[[A], Generator[None, R, None]]]
+        ],
+        error_handler: Optional[Callable[[Exception], Any]],
+        scope: Callable[[A], R]
+    ):
+        self.handlers = handlers
+        self.error_handler = error_handler
         self.scope = scope
 
     def __call__(self, arg: A) -> R:
@@ -82,12 +124,13 @@ class ContextHookEmiter(Generic[A, R]):
     def on_call(self, arg: A) -> GGenerators:
         # Call handlers and collect generators
         generators = []
-        for handler in self.hook.handlers:
+        for handler in self.handlers:
             try:
                 result = handler(arg)
                 if isinstance(result, Generator):
-                    next(result)
-                    generators.append(result)
+                    with contextlib.suppress(StopIteration):
+                        next(result)
+                        generators.append(result)
             except Exception as e:
                 self.handle_error(e)
         return generators
@@ -129,8 +172,8 @@ class ContextHookEmiter(Generic[A, R]):
                 self.handle_error(e)
 
     def handle_error(self, error: Exception) -> None:
-        if self.hook.error_handler:
-            self.hook.error_handler(error)
+        if self.error_handler:
+            self.error_handler(error)
 
 
 class AsyncContextHook(
@@ -143,14 +186,23 @@ class AsyncContextHook(
     def emit(
         self, scope: Callable[[A], Awaitable[R]]
     ) -> "AsyncContextHookEmiter[A, R]":
-        return AsyncContextHookEmiter(self, scope)
+        return AsyncContextHookEmiter(
+            handlers=self.handlers, error_handler=self.error_handler, scope=scope
+        )
 
 
 class AsyncContextHookEmiter(Generic[A, R]):
     def __init__(
-        self, hook: AsyncContextHook[A, R], scope: Callable[[A], Awaitable[R]]
+        self,
+        *,
+        handlers: t.Iterable[
+            Union[Callable[[A], Awaitable], Callable[[A], AsyncGenerator[None, R]]]
+        ],
+        error_handler: Optional[Callable[[Exception], Awaitable]],
+        scope: Callable[[A], Awaitable[R]]
     ):
-        self.hook = hook
+        self.handlers = handlers
+        self.error_handler = error_handler
         self.scope = scope
 
     async def __call__(self, arg: A) -> R:
@@ -166,12 +218,13 @@ class AsyncContextHookEmiter(Generic[A, R]):
     async def on_call(self, arg: A) -> AGenerators:
         # Call handlers and collect generators
         generators = []
-        for handler in self.hook.handlers:
+        for handler in self.handlers:
             try:
                 result = handler(arg)
                 if isinstance(result, AsyncGenerator):
-                    await alib.anext(result)
-                    generators.append(result)
+                    with contextlib.suppress(StopAsyncIteration):
+                        await alib.anext(result)
+                        generators.append(result)
                 else:
                     await result
             except Exception as e:
@@ -215,5 +268,5 @@ class AsyncContextHookEmiter(Generic[A, R]):
                 await self.handle_error(e)
 
     async def handle_error(self, error: Exception) -> None:
-        if self.hook.error_handler:
-            await self.hook.error_handler(error)
+        if self.error_handler:
+            await self.error_handler(error)
