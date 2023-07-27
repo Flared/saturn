@@ -19,7 +19,7 @@ class ServicesManager:
         self.strict = config.c.services_manager.strict_services
         self.services: Services = ServicesNamespace(
             config=config,
-            hooks=Hooks(),
+            hooks=Hooks.from_options(config.r.get("hooks", {})),
             resources_manager=ResourcesManager(),
             strict=self.strict,
         )

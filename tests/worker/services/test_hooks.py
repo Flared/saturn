@@ -1,13 +1,26 @@
+import typing as t
+
+import dataclasses
 from collections.abc import AsyncGenerator
 from collections.abc import Generator
 from unittest import mock
 
 import pytest
 
+from saturn_engine.core.api import QueueItemWithState
+from saturn_engine.core.pipeline import PipelineOutput
+from saturn_engine.core.pipeline import PipelineResults
+from saturn_engine.core.topic import TopicMessage
 from saturn_engine.utils.hooks import AsyncContextHook
 from saturn_engine.utils.hooks import AsyncEventHook
 from saturn_engine.utils.hooks import ContextHook
 from saturn_engine.utils.hooks import EventHook
+from saturn_engine.worker.executors.executable import ExecutableMessage
+from saturn_engine.worker.executors.executable import ExecutableQueue
+from saturn_engine.worker.services.hooks import Hooks
+from saturn_engine.worker.services.hooks import ItemsBatch
+from saturn_engine.worker.services.hooks import MessagePublished
+from saturn_engine.worker.services.hooks import PipelineEventsEmitted
 
 
 def test_event_hook() -> None:
@@ -83,6 +96,12 @@ def test_context_hook() -> None:
         yield
         m(handler_after, "after")
 
+    @hook.register
+    def handler_noyield(a: str) -> Generator[None, str, None]:
+        m(handler_noyield, "before")
+        if False:
+            yield
+
     @hook.emit
     def scope(a: str) -> str:
         m("in", a)
@@ -95,6 +114,7 @@ def test_context_hook() -> None:
             mock.call(handler, "before"),
             mock.call(handler_before, "before"),
             mock.call(handler_after, "before"),
+            mock.call(handler_noyield, "before"),
             mock.call("in", "1"),
             mock.call(handler_after, "after"),
             mock.call(handler, "after", "c"),
@@ -118,6 +138,7 @@ def test_context_hook() -> None:
             mock.call(handler, "before"),
             mock.call(handler_before, "before"),
             mock.call(handler_after, "before"),
+            mock.call(handler_noyield, "before"),
             mock.call("in", "1"),
             mock.call(handler, "error", e),
         ]
@@ -151,6 +172,12 @@ async def test_async_context_hook() -> None:
         yield
         m(handler_after, "after")
 
+    @hook.register
+    async def handler_noyield(a: str) -> AsyncGenerator[None, str]:
+        m(handler_noyield, "before")
+        if False:
+            yield
+
     @hook.emit
     async def scope(a: str) -> str:
         m("in", a)
@@ -163,6 +190,7 @@ async def test_async_context_hook() -> None:
             mock.call(handler, "before"),
             mock.call(handler_before, "before"),
             mock.call(handler_after, "before"),
+            mock.call(handler_noyield, "before"),
             mock.call("in", "1"),
             mock.call(handler_after, "after"),
             mock.call(handler, "after", "c"),
@@ -186,6 +214,7 @@ async def test_async_context_hook() -> None:
             mock.call(handler, "before"),
             mock.call(handler_before, "before"),
             mock.call(handler_after, "before"),
+            mock.call(handler_noyield, "before"),
             mock.call("in", "1"),
             mock.call(handler, "error", e),
         ]
@@ -198,12 +227,6 @@ def test_context_hook_errors() -> None:
     error_handler = mock.Mock()
     m = mock.Mock()
     hook: ContextHook[None, None] = ContextHook(error_handler=error_handler)
-
-    @hook.register
-    def no_yield(_: None) -> Generator[None, None, None]:
-        m(no_yield)
-        if False:
-            yield
 
     @hook.register
     def call_raises(_: None) -> Generator[None, None, None]:
@@ -249,7 +272,6 @@ def test_context_hook_errors() -> None:
 
     m.assert_has_calls(
         [
-            mock.call(no_yield),
             mock.call(call_raises),
             mock.call(generator_raises),
             mock.call(generator_many_yield_wont_stop),
@@ -258,7 +280,7 @@ def test_context_hook_errors() -> None:
         ]
     )
 
-    assert error_handler.call_count == 6
+    assert error_handler.call_count == 5
 
 
 def test_context_hook_error_errors() -> None:
@@ -331,12 +353,6 @@ async def test_async_context_hook_errors() -> None:
     hook: AsyncContextHook[None, None] = AsyncContextHook(error_handler=error_handler)
 
     @hook.register
-    async def no_yield(_: None) -> AsyncGenerator[None, None]:
-        m(no_yield)
-        if False:
-            yield
-
-    @hook.register
     async def call_raises(_: None) -> None:
         m(call_raises)
         raise ValueError
@@ -380,7 +396,6 @@ async def test_async_context_hook_errors() -> None:
 
     m.assert_has_calls(
         [
-            mock.call(no_yield),
             mock.call(call_raises),
             mock.call(generator_raises),
             mock.call(generator_many_yield_wont_stop),
@@ -389,7 +404,7 @@ async def test_async_context_hook_errors() -> None:
         ]
     )
 
-    assert error_handler.await_count == 6
+    assert error_handler.await_count == 5
 
 
 @pytest.mark.asyncio
@@ -454,3 +469,214 @@ async def test_async_context_hook_error_errors() -> None:
     )
 
     assert error_handler.await_count == 3
+
+
+HookMock = mock.AsyncMock()
+SyncHookMock = mock.Mock()
+
+
+def context_mock(name: str) -> t.Callable:
+    async def handler(arg: str) -> t.AsyncGenerator[None, str]:
+        hook_mock = getattr(HookMock, name)
+        try:
+            await hook_mock.before(arg)
+            result = yield
+            await hook_mock.after(result)
+        except Exception as e:
+            await hook_mock.error(e)
+        await hook_mock.done()
+
+    return handler
+
+
+mock_message_executed_handler = context_mock("message_executed")
+mock_message_executed_handler_msg = context_mock("message_executed_msg")
+mock_message_published_handler = context_mock("message_published")
+mock_output_blocked_handler = context_mock("output_blocked")
+mock_work_queue_built_handler = context_mock("work_queue_built")
+
+
+async def mock_work_queue_built_handler_nocontext(arg: t.Any) -> None:
+    await HookMock.work_queue_built_nocontext(arg)
+    return None
+
+
+@pytest.fixture
+def hook_options() -> Hooks.Options:
+    HookMock.reset_mock()
+    SyncHookMock.reset_mock()
+
+    hook_names = [
+        "hook_failed",
+        "items_batched",
+        "message_polled",
+        "message_scheduled",
+        "message_submitted",
+        "pipeline_events_emitted",
+    ]
+    sync_hook_names = [
+        "executor_initialized",
+    ]
+    ctx_hook_names = [
+        "message_executed",
+        "message_published",
+        "output_blocked",
+        "work_queue_built",
+    ]
+
+    hooks_options = {}
+    for hook_name in hook_names:
+        hooks_options[hook_name] = [f"{__name__}.HookMock.{hook_name}"]
+    for hook_name in sync_hook_names:
+        hooks_options[hook_name] = [f"{__name__}.SyncHookMock.{hook_name}"]
+    for hook_name in ctx_hook_names:
+        hooks_options[hook_name] = [f"{__name__}.mock_{hook_name}_handler"]
+
+    return Hooks.Options(**hooks_options)
+
+
+async def test_hooks_service(
+    hook_options: Hooks.Options,
+    fake_queue_item: QueueItemWithState,
+    executable_maker: t.Callable[..., ExecutableMessage],
+) -> None:
+    hooks = Hooks(hook_options)
+
+    error = Exception()
+    batch = ItemsBatch(job=fake_queue_item, items=[])
+    xmsg = executable_maker()
+    msg_events = PipelineEventsEmitted(xmsg=xmsg, events=[])
+    message_published = MessagePublished(xmsg=xmsg, topic=None, output=None)  # type: ignore
+
+    await hooks.hook_failed.emit(error)
+    HookMock.hook_failed.assert_awaited_once_with(error)
+
+    await hooks.items_batched.emit(batch)
+    HookMock.items_batched.assert_awaited_once_with(batch)
+
+    await hooks.message_polled.emit(xmsg)
+    HookMock.message_polled.assert_awaited_once_with(xmsg)
+
+    await hooks.message_scheduled.emit(xmsg)
+    HookMock.message_scheduled.assert_awaited_once_with(xmsg)
+
+    await hooks.message_submitted.emit(xmsg)
+    HookMock.message_submitted.assert_awaited_once_with(xmsg)
+
+    await hooks.pipeline_events_emitted.emit(msg_events)
+    HookMock.pipeline_events_emitted.assert_awaited_once_with(msg_events)
+
+    hooks.executor_initialized.emit("executor_initialized")  # type: ignore
+    SyncHookMock.executor_initialized.assert_called_once_with("executor_initialized")
+
+    async def scope(arg: t.Any) -> t.Any:
+        return arg
+
+    await hooks.message_executed.emit(scope)(xmsg)
+    HookMock.message_executed.before.assert_awaited_once_with(xmsg)
+    HookMock.message_executed.after.assert_awaited_once_with(xmsg)
+
+    await hooks.message_published.emit(scope)(message_published)
+    HookMock.message_published.before.assert_awaited_once_with(message_published)
+    HookMock.message_published.after.assert_awaited_once_with(message_published)
+
+    await hooks.output_blocked.emit(scope)("topic")  # type: ignore
+    HookMock.output_blocked.before.assert_awaited_once_with("topic")
+    HookMock.output_blocked.after.assert_awaited_once_with("topic")
+
+    await hooks.work_queue_built.emit(scope)(fake_queue_item)
+    HookMock.work_queue_built.before.assert_awaited_once_with(fake_queue_item)
+    HookMock.work_queue_built.after.assert_awaited_once_with(fake_queue_item)
+
+    HookMock.hook_failed.assert_awaited_once_with(error)
+
+
+async def test_custom_hooks(
+    hook_options: Hooks.Options,
+    fake_queue_item: QueueItemWithState,
+    executable_maker: t.Callable[..., ExecutableMessage],
+    executable_queue_maker: t.Callable[..., ExecutableQueue],
+) -> None:
+    hook_options.work_queue_built.append(
+        f"{__name__}.mock_work_queue_built_handler_nocontext"
+    )
+    fake_queue_item.config["hooks"] = dataclasses.asdict(hook_options)
+    xqueue = executable_queue_maker(definition=fake_queue_item)
+    xmsg = executable_maker(executable_queue=xqueue)
+    xmsg_with_config = executable_maker(
+        executable_queue=xqueue,
+        message=TopicMessage(
+            args={},
+            config={
+                "hooks": {
+                    "message_submitted": [hook_options.message_submitted[0] + "_msg"],
+                    "message_executed": [hook_options.message_executed[0] + "_msg"],
+                }
+            },
+        ),
+    )
+    hooks = Hooks()
+
+    batch = ItemsBatch(job=fake_queue_item, items=[])
+    await hooks.items_batched.emit(batch)
+    HookMock.items_batched.assert_awaited_once_with(batch)
+
+    await hooks.message_polled.emit(xmsg)
+    HookMock.message_polled.assert_awaited_once_with(xmsg)
+
+    await hooks.message_scheduled.emit(xmsg)
+    HookMock.message_scheduled.assert_awaited_once_with(xmsg)
+
+    await hooks.message_submitted.emit(xmsg_with_config)
+    HookMock.message_submitted.assert_awaited_once_with(xmsg_with_config)
+    HookMock.message_submitted_msg.assert_awaited_once_with(xmsg_with_config)
+
+    msg_events = PipelineEventsEmitted(xmsg=xmsg_with_config, events=[])
+    await hooks.pipeline_events_emitted.emit(msg_events)
+    HookMock.pipeline_events_emitted.assert_awaited_once_with(msg_events)
+
+    pipeline_result = PipelineResults(
+        outputs=[PipelineOutput(channel="default", message=TopicMessage(args={}))]
+    )
+
+    @hooks.message_executed.emit
+    async def executed_scope(xmsg: ExecutableMessage) -> PipelineResults:
+        await HookMock.message_executed()
+        return pipeline_result
+
+    await executed_scope(xmsg_with_config)
+
+    HookMock.message_executed.before.assert_awaited_once_with(xmsg_with_config)
+    HookMock.message_executed.after.assert_awaited_once_with(pipeline_result)
+    HookMock.message_executed_msg.before.assert_awaited_once_with(xmsg_with_config)
+    HookMock.message_executed_msg.after.assert_awaited_once_with(pipeline_result)
+    HookMock.message_executed.assert_awaited_once_with()
+
+    @hooks.message_published.emit
+    async def publish_scope(msg: MessagePublished) -> None:
+        raise ValueError()
+
+    message_published = MessagePublished(xmsg=xmsg, topic=None, output=None)  # type: ignore
+    error = None
+    try:
+        await publish_scope(message_published)
+        raise AssertionError()
+    except ValueError as e:
+        error = e
+
+    HookMock.message_published.before.assert_awaited_once_with(message_published)
+    HookMock.message_published.error.assert_awaited_once_with(error)
+
+    @hooks.work_queue_built.emit
+    async def work_queue_scope(queue_item: QueueItemWithState) -> ExecutableQueue:
+        await HookMock.work_queue_built(queue_item)
+        return xqueue
+
+    await work_queue_scope(fake_queue_item)
+
+    HookMock.work_queue_built.before.assert_awaited_once_with(fake_queue_item)
+    HookMock.work_queue_built.after.assert_awaited_once_with(xqueue)
+    HookMock.work_queue_built_nocontext.assert_awaited_once_with(fake_queue_item)
+    HookMock.work_queue_built.assert_awaited_once_with(fake_queue_item)
+
+    HookMock.hook_failed.assert_not_awaited()
