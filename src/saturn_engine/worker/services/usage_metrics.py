@@ -14,8 +14,13 @@ from saturn_engine.worker.executors.executable import ExecutableMessage
 
 from . import MinimalService
 
+
+class PipelineName(t.NamedTuple):
+    executor: str
+    name: str
+
+
 Nanoseconds: t.TypeAlias = int
-PipelineName: t.TypeAlias = str
 PipelineMessages: t.TypeAlias = dict[PipelineName, WeakSet[ExecutableMessage]]
 
 PollingMessage = t.NewType("PollingMessage", ExecutableMessage)
@@ -28,6 +33,7 @@ U = t.TypeVar("U", bound=ExecutableMessage)
 
 
 class PipelineUsage(t.NamedTuple):
+    executor: str
     name: str
     usage: float
 
@@ -74,21 +80,28 @@ class StageState(t.Generic[T, U]):
         default_factory=dict
     )
 
-    def push(self, xmsg: T) -> None:
-        pipeline_state = self.pipelines.setdefault(
-            xmsg.message.info.name, PipelineState()
+    @staticmethod
+    def _name(xmsg: T) -> PipelineName:
+        return PipelineName(
+            executor=xmsg.queue.definition.executor or "default",
+            name=xmsg.message.info.name,
         )
+
+    def push(self, xmsg: T) -> None:
+        pipeline_state = self.pipelines.setdefault(self._name(xmsg), PipelineState())
         pipeline_state.add(xmsg)
 
     def pop(self, xmsg: ExecutableMessage) -> U:
-        if pipeline_state := self.pipelines.get(xmsg.message.info.name):
+        if pipeline_state := self.pipelines.get(self._name(xmsg)):
             pipeline_state.pop(xmsg)
 
         return t.cast(U, xmsg)
 
     def collect(self, *, now: Nanoseconds) -> t.Iterator[PipelineUsage]:
-        for pipeline, state in self.pipelines.items():
-            yield PipelineUsage(name=pipeline, usage=state.collect(now=now))
+        for k, state in self.pipelines.items():
+            yield PipelineUsage(
+                executor=k.executor, name=k.name, usage=state.collect(now=now)
+            )
 
 
 @dataclasses.dataclass
@@ -136,7 +149,12 @@ class UsageMetrics(MinimalService):
             stage: StageState = getattr(self.stages_state, stage_name)
             for pipeline in stage.collect(now=now):
                 yield Observation(
-                    pipeline.usage, {"pipeline": pipeline.name, "state": stage_name}
+                    pipeline.usage,
+                    {
+                        "executor": pipeline.executor,
+                        "pipeline": pipeline.name,
+                        "state": stage_name,
+                    },
                 )
 
     async def on_message_polled(self, xmsg: ExecutableMessage) -> None:

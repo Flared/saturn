@@ -21,9 +21,10 @@ async def test_message_metrics(
     for _ in range(5):
         xmsg: ExecutableMessage = Mock()
         xmsg.message.info.name = pipeline_name
+        xmsg.queue.definition.executor = None
         xmsgs.append(xmsg)
 
-    pipeline_params = {"pipeline": pipeline_name}
+    pipeline_params = {"pipeline": pipeline_name, "executor": "default"}
     results = PipelineResults(outputs=[], resources=[])
     metric = services_manager.services.cast_service(UsageMetrics)
 
