@@ -91,6 +91,7 @@ class LockResponse:
 @dataclasses.dataclass
 class LockInput:
     worker_id: str
+    selector: t.Optional[str] = None
 
 
 @dataclasses.dataclass

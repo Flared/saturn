@@ -50,6 +50,8 @@ class SaturnConfig:
     # Worker Manager URL used by clients and workers.
     worker_id: str
     worker_manager_url: str
+    # If set, select jobs matching the selector regex.
+    selector: t.Optional[str]
     services_manager: ServicesManagerConfig
     worker_manager: WorkerManagerConfig
     rabbitmq: RabbitMQConfig

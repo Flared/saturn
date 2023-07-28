@@ -1,3 +1,5 @@
+import typing as t
+
 import datetime
 
 from sqlalchemy import or_
@@ -25,7 +27,11 @@ def get_assigned_queues(
     session: AnySyncSession,
     worker_id: str,
     assigned_after: datetime.datetime,
+    selector: t.Optional[str] = None,
 ) -> list[Queue]:
+    extra_filters = []
+    if selector:
+        extra_filters.append(Queue.name.regexp_match(selector))
     assigned_jobs: list[Queue] = (
         session.execute(
             select(Queue)
@@ -34,6 +40,7 @@ def get_assigned_queues(
                 Queue.enabled.is_(True),
                 Queue.assigned_to == worker_id,
                 Queue.assigned_at >= assigned_after,
+                *extra_filters,
             )
             .order_by(Queue.name)
         )
@@ -47,8 +54,12 @@ def get_unassigned_queues(
     *,
     session: AnySyncSession,
     assigned_before: datetime.datetime,
+    selector: t.Optional[str] = None,
     limit: int,
 ) -> list[Queue]:
+    extra_filters = []
+    if selector:
+        extra_filters.append(Queue.name.regexp_match(selector))
     unassigned_queues: list[Queue] = (
         session.execute(
             select(Queue)
@@ -59,6 +70,7 @@ def get_unassigned_queues(
                     Queue.assigned_at.is_(None),
                     Queue.assigned_at < assigned_before,
                 ),
+                *extra_filters,
             )
             .limit(limit)
         )
