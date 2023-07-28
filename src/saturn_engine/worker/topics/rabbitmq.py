@@ -54,8 +54,8 @@ ContentTypeToSerializer: dict[str, RabbitMQSerializer] = {
 class RabbitMQTopic(Topic):
     """A queue that consume message from RabbitMQ"""
 
-    RETRY_PUBLISH_DELAY = timedelta(seconds=1)
-    FAILURE_RETRY_BACKOFFS = [timedelta(seconds=s) for s in (0, 1, 5, 15, 30)]
+    RETRY_PUBLISH_DELAY = timedelta(seconds=10)
+    FAILURE_RETRY_BACKOFFS = [timedelta(seconds=s) for s in (0, 5, 10, 20, 30, 60)]
 
     @dataclasses.dataclass
     class Options:
