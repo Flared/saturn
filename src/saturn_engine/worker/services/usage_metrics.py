@@ -81,7 +81,7 @@ class StageState(t.Generic[T, U]):
     )
 
     @staticmethod
-    def _name(xmsg: T) -> PipelineName:
+    def _name(xmsg: ExecutableMessage) -> PipelineName:
         return PipelineName(
             executor=xmsg.queue.definition.executor or "default",
             name=xmsg.message.info.name,

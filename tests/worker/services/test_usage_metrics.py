@@ -21,7 +21,7 @@ async def test_message_metrics(
     for _ in range(5):
         xmsg: ExecutableMessage = Mock()
         xmsg.message.info.name = pipeline_name
-        xmsg.queue.definition.executor = None
+        xmsg.queue.definition.executor = "default"
         xmsgs.append(xmsg)
 
     pipeline_params = {"pipeline": pipeline_name, "executor": "default"}
