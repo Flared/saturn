@@ -174,7 +174,8 @@ class Logger(Service[BaseServices, "Logger.Options"]):
 
     def result_data(self, results: PipelineResults) -> dict[str, t.Any]:
         return {
-            "output": [self.output_data(o) for o in results.outputs],
+            "output": [self.output_data(o) for o in results.outputs[:10]],
+            "output_count": len(results.outputs),
             "resources": self.resources_used(results.resources),
         }
 
