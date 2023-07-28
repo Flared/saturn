@@ -21,4 +21,5 @@ class ApiClient(Service[Services, None]):
             http_client=self.services.http_client.session,
             base_url=self.services.config.c.worker_manager_url,
             worker_id=self.services.config.c.worker_id,
+            selector=self.services.config.c.selector,
         )

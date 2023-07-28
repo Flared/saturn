@@ -21,14 +21,16 @@ class WorkerManagerClient:
         http_client: aiohttp.ClientSession,
         base_url: str,
         worker_id: Optional[str] = None,
+        selector: Optional[str] = None,
     ) -> None:
         self.worker_id: str = worker_id or socket.gethostname()
+        self.selector: Optional[str] = selector
         self.http_client = http_client
         self.base_url = base_url
 
     async def lock(self) -> LockResponse:
         lock_url = urlcat(self.base_url, "api/lock")
-        json = asdict(LockInput(worker_id=self.worker_id))
+        json = asdict(LockInput(worker_id=self.worker_id, selector=self.selector))
         async with self.http_client.post(lock_url, json=json) as response:
             return fromdict(await response.json(), LockResponse)
 

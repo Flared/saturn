@@ -34,6 +34,7 @@ def lock_jobs(
         queues_store.get_assigned_queues(
             session=session,
             worker_id=lock_input.worker_id,
+            selector=lock_input.selector,
             assigned_after=assignation_expiration_cutoff,
         )
     )
@@ -52,6 +53,7 @@ def lock_jobs(
                 session=session,
                 assigned_before=assignation_expiration_cutoff,
                 limit=max_assigned_items - len(assigned_items),
+                selector=lock_input.selector,
             )
         )
 

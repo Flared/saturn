@@ -177,6 +177,10 @@ def test_api_lock(
         "job-10",
     }
 
+    resp = client.post("/api/lock", json={"worker_id": "worker-2", "selector": "j.*-9"})
+    assert resp.status_code == 200
+    assert ids(resp) == {"job-9"}
+
 
 def test_api_lock_with_resources(
     client: FlaskClient,
