@@ -30,6 +30,11 @@ if t.TYPE_CHECKING:
 T = t.TypeVar("T")
 
 
+class ResultsProcessed(t.NamedTuple):
+    xmsg: "ExecutableMessage"
+    results: "PipelineResults"
+
+
 class MessagePublished(t.NamedTuple):
     xmsg: "ExecutableMessage"
     topic: "Topic"
@@ -57,6 +62,7 @@ class HooksLists(t.Generic[T]):
     message_scheduled: list[T] = listfield()
     message_submitted: list[T] = listfield()
     message_executed: list[T] = listfield()
+    results_processed: list[T] = listfield()
     message_published: list[T] = listfield()
     output_blocked: list[T] = listfield()
     pipeline_events_emitted: list[T] = listfield()
@@ -89,6 +95,7 @@ class Hooks(OptionsSchema):
                 message_submitted=self._load_hooks(self.message_submitted),
                 message_executed=self._load_hooks(self.message_executed),
                 message_published=self._load_hooks(self.message_published),
+                results_processed=self._load_hooks(self.results_processed),
                 output_blocked=self._load_hooks(self.output_blocked),
                 pipeline_events_emitted=self._load_hooks(self.pipeline_events_emitted),
                 work_queue_built=self._load_hooks(self.work_queue_built),
@@ -107,6 +114,7 @@ class Hooks(OptionsSchema):
     message_submitted: AsyncEventHook["ExecutableMessage"]
     message_executed: AsyncContextHook["ExecutableMessage", "PipelineResults"]
     message_published: AsyncContextHook["MessagePublished", None]
+    results_processed: AsyncContextHook["ResultsProcessed", None]
     output_blocked: AsyncContextHook["Topic", None]
     pipeline_events_emitted: AsyncEventHook[PipelineEventsEmitted]
 
@@ -141,6 +149,10 @@ class Hooks(OptionsSchema):
         )
         self.message_published = AsyncContextHook(
             hooks.message_published + [self.on_message_published],
+            error_handler=self.hook_failed.emit,
+        )
+        self.results_processed = AsyncContextHook(
+            hooks.results_processed + [self.on_results_processed],
             error_handler=self.hook_failed.emit,
         )
         self.output_blocked = AsyncContextHook(
@@ -253,6 +265,20 @@ class Hooks(OptionsSchema):
         self, msg: "MessagePublished"
     ) -> t.AsyncGenerator[None, None]:
         if not (context := self._msg_context(msg.xmsg, "message_published")):
+            return
+
+        g = await context.on_call(msg)
+        try:
+            result = yield
+            await context.on_result(g, result)
+        except Exception as e:
+            await context.on_error(g, e)
+
+    async def on_results_processed(
+        self,
+        msg: ResultsProcessed,
+    ) -> t.AsyncGenerator[None, None]:
+        if not (context := self._msg_context(msg.xmsg, "results_processed")):
             return
 
         g = await context.on_call(msg)

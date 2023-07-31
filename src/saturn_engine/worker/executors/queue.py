@@ -5,6 +5,7 @@ import sys
 
 from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResults
+from saturn_engine.utils import ExceptionGroup
 from saturn_engine.utils.asyncutils import Cancellable
 from saturn_engine.utils.asyncutils import TasksGroupRunner
 from saturn_engine.utils.log import getLogger
@@ -13,6 +14,7 @@ from saturn_engine.worker.resources.manager import ResourceUnavailable
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.hooks import MessagePublished
 from saturn_engine.worker.services.hooks import PipelineEventsEmitted
+from saturn_engine.worker.services.hooks import ResultsProcessed
 from saturn_engine.worker.topic import Topic
 
 from . import Executor
@@ -77,25 +79,31 @@ class ExecutorQueue:
                                 raise
                             return result
 
-                    output = await scope(processable)
-                    try:
-                        self.consuming_tasks.create_task(
-                            self.services.s.hooks.pipeline_events_emitted.emit(
-                                PipelineEventsEmitted(
-                                    events=output.events, xmsg=processable
-                                )
-                            ),
-                            name=f"emit-pipeline-events({processable})",
-                        )
-                        processable.update_resources_used(output.resources)
-                        self.consuming_tasks.create_task(
-                            self.consume_output(
-                                processable=processable, output=output.outputs
-                            ),
-                            name=f"consume-output({processable})",
-                        )
-                    except Exception:
-                        self.logger.exception("Error processing outputs")
+                    results = await scope(processable)
+                    self.consuming_tasks.create_task(
+                        self.process_results(xmsg=processable, results=results)
+                    )
+
+    async def process_results(
+        self, *, xmsg: ExecutableMessage, results: PipelineResults
+    ) -> None:
+        @self.services.s.hooks.results_processed.emit
+        async def scope(msg: ResultsProcessed) -> None:
+            msg.xmsg.update_resources_used(msg.results.resources)
+
+            await self.consume_output(processable=xmsg, output=msg.results.outputs)
+
+            await self.services.s.hooks.pipeline_events_emitted.emit(
+                PipelineEventsEmitted(events=msg.results.events, xmsg=xmsg)
+            )
+
+        with contextlib.suppress(Exception):
+            await scope(
+                ResultsProcessed(
+                    xmsg=xmsg,
+                    results=results,
+                )
+            )
 
     async def submit(self, processable: ExecutableMessage) -> None:
         # Get the lock to ensure we don't acquire resource if the submit queue
@@ -154,6 +162,7 @@ class ExecutorQueue:
         self, *, processable: ExecutableMessage, output: list[PipelineOutput]
     ) -> None:
         try:
+            errors = []
             for item in output:
                 topics = processable.output.get(item.channel, [])
                 for topic in topics:
@@ -173,10 +182,15 @@ class ExecutorQueue:
 
                         await scope(topic)
 
-                    with contextlib.suppress(Exception):
+                    try:
                         await scope(
                             MessagePublished(xmsg=processable, topic=topic, output=item)
                         )
+                    except Exception as e:
+                        errors.append(e)
+            if errors:
+                raise ExceptionGroup("Failed to process outputs", errors)
+
         finally:
             await processable.unpark()
 

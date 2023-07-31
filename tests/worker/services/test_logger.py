@@ -92,6 +92,7 @@ async def test_logger_message_executed(
             "resources": {FakeResource._typename(): "r1"},
             "pipeline": "tests.worker.services.test_logger.fake_pipeline",
             "result": {
+                "events_count": 0,
                 "output_count": 1,
                 "output": [
                     {

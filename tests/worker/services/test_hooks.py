@@ -21,6 +21,7 @@ from saturn_engine.worker.services.hooks import Hooks
 from saturn_engine.worker.services.hooks import ItemsBatch
 from saturn_engine.worker.services.hooks import MessagePublished
 from saturn_engine.worker.services.hooks import PipelineEventsEmitted
+from saturn_engine.worker.services.hooks import ResultsProcessed
 
 
 def test_event_hook() -> None:
@@ -492,6 +493,7 @@ def context_mock(name: str) -> t.Callable:
 mock_message_executed_handler = context_mock("message_executed")
 mock_message_executed_handler_msg = context_mock("message_executed_msg")
 mock_message_published_handler = context_mock("message_published")
+mock_results_processed_handler = context_mock("results_processed")
 mock_output_blocked_handler = context_mock("output_blocked")
 mock_work_queue_built_handler = context_mock("work_queue_built")
 
@@ -521,6 +523,7 @@ def hook_options() -> Hooks.Options:
         "message_executed",
         "message_published",
         "output_blocked",
+        "results_processed",
         "work_queue_built",
     ]
 
@@ -547,6 +550,7 @@ async def test_hooks_service(
     xmsg = executable_maker()
     msg_events = PipelineEventsEmitted(xmsg=xmsg, events=[])
     message_published = MessagePublished(xmsg=xmsg, topic=None, output=None)  # type: ignore
+    results_processed = ResultsProcessed(xmsg=xmsg, results=None)  # type: ignore
 
     await hooks.hook_failed.emit(error)
     HookMock.hook_failed.assert_awaited_once_with(error)
@@ -579,6 +583,10 @@ async def test_hooks_service(
     await hooks.message_published.emit(scope)(message_published)
     HookMock.message_published.before.assert_awaited_once_with(message_published)
     HookMock.message_published.after.assert_awaited_once_with(message_published)
+
+    await hooks.results_processed.emit(scope)(results_processed)
+    HookMock.results_processed.before.assert_awaited_once_with(results_processed)
+    HookMock.results_processed.after.assert_awaited_once_with(results_processed)
 
     await hooks.output_blocked.emit(scope)("topic")  # type: ignore
     HookMock.output_blocked.before.assert_awaited_once_with("topic")
@@ -666,6 +674,18 @@ async def test_custom_hooks(
 
     HookMock.message_published.before.assert_awaited_once_with(message_published)
     HookMock.message_published.error.assert_awaited_once_with(error)
+
+    @hooks.results_processed.emit
+    async def results_processed_scope(msg: ResultsProcessed) -> None:
+        await HookMock.results_processed()
+        return None
+
+    results_processed = ResultsProcessed(xmsg=xmsg, results=None)  # type: ignore
+    await results_processed_scope(results_processed)
+
+    HookMock.results_processed.before.assert_awaited_once_with(results_processed)
+    HookMock.results_processed.after.assert_awaited_once_with(None)
+    HookMock.results_processed.assert_awaited_once_with()
 
     @hooks.work_queue_built.emit
     async def work_queue_scope(queue_item: QueueItemWithState) -> ExecutableQueue:
