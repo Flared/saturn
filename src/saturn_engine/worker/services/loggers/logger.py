@@ -17,6 +17,7 @@ from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.executable import ExecutableQueue
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.services.hooks import MessagePublished
+from saturn_engine.worker.services.hooks import ResultsProcessed
 from saturn_engine.worker.services.tracing import get_trace_context
 
 from .. import BaseServices
@@ -77,6 +78,7 @@ class Logger(Service[BaseServices, "Logger.Options"]):
         self.services.hooks.message_submitted.register(self.on_message_submitted)
         self.services.hooks.message_executed.register(self.on_message_executed)
         self.services.hooks.message_published.register(self.on_message_published)
+        self.services.hooks.results_processed.register(self.on_results_processed)
         self.services.hooks.executor_initialized.register(on_executor_initialized)
 
     @property
@@ -167,6 +169,22 @@ class Logger(Service[BaseServices, "Logger.Options"]):
                 "Failed to publish message", extra={"data": self.published_data(event)}
             )
 
+    async def on_results_processed(
+        self, event: ResultsProcessed
+    ) -> AsyncGenerator[None, None]:
+        try:
+            yield
+        except Exception:
+            self.message_logger.exception(
+                "Failed to process message results",
+                extra={"data": self.results_processed_data(event)},
+            )
+
+    def results_processed_data(self, event: ResultsProcessed) -> dict[str, t.Any]:
+        return {
+            "from": pipeline_message_data(event.xmsg.message, verbose=self.verbose)
+        } | self.result_data(event.results)
+
     def published_data(self, event: MessagePublished) -> dict[str, t.Any]:
         return {
             "from": pipeline_message_data(event.xmsg.message, verbose=self.verbose)
@@ -176,6 +194,7 @@ class Logger(Service[BaseServices, "Logger.Options"]):
         return {
             "output": [self.output_data(o) for o in results.outputs[:10]],
             "output_count": len(results.outputs),
+            "events_count": len(results.events),
             "resources": self.resources_used(results.resources),
         }
 
