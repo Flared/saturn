@@ -55,9 +55,12 @@ class ExecutorQueue:
     async def run_queue(self) -> None:
         while self.is_running:
             processable = await self.poll()
-            processable._context.callback(self.queue.task_done)
+            processable._executing_context.callback(self.queue.task_done)
             with contextlib.suppress(Exception):
-                async with processable._context:
+                async with (
+                    processable._context,
+                    processable._executing_context,
+                ):
 
                     @self.services.s.hooks.message_executed.emit
                     async def scope(
@@ -81,11 +84,20 @@ class ExecutorQueue:
 
                     results = await scope(processable)
                     self.consuming_tasks.create_task(
-                        self.process_results(xmsg=processable, results=results)
+                        self.process_results(
+                            xmsg=processable,
+                            results=results,
+                            # Transfer the message context to the results processing scope.
+                            context=processable._context.pop_all(),
+                        )
                     )
 
     async def process_results(
-        self, *, xmsg: ExecutableMessage, results: PipelineResults
+        self,
+        *,
+        xmsg: ExecutableMessage,
+        results: PipelineResults,
+        context: contextlib.AsyncExitStack,
     ) -> None:
         @self.services.s.hooks.results_processed.emit
         async def scope(msg: ResultsProcessed) -> None:
@@ -98,12 +110,13 @@ class ExecutorQueue:
             )
 
         with contextlib.suppress(Exception):
-            await scope(
-                ResultsProcessed(
-                    xmsg=xmsg,
-                    results=results,
+            async with context:
+                await scope(
+                    ResultsProcessed(
+                        xmsg=xmsg,
+                        results=results,
+                    )
                 )
-            )
 
     async def submit(self, processable: ExecutableMessage) -> None:
         # Get the lock to ensure we don't acquire resource if the submit queue
