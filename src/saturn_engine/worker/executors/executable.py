@@ -37,6 +37,7 @@ class ExecutableMessage:
     ):
         self.message = message
         self._context = contextlib.AsyncExitStack()
+        self._executing_context = contextlib.AsyncExitStack()
         if message_context:
             self._context.push_async_exit(message_context)
         self._parker = parker
@@ -57,7 +58,9 @@ class ExecutableMessage:
     async def attach_resources(
         self, resources_context: ResourcesContext
     ) -> dict[str, dict[str, object]]:
-        self.resources = await self._context.enter_async_context(resources_context)
+        self.resources = await self._executing_context.enter_async_context(
+            resources_context
+        )
         resources_data = {
             k: ({"name": r.resource.name} | r.resource.data)
             for k, r in self.resources.items()
