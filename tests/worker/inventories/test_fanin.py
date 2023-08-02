@@ -1,3 +1,5 @@
+import json
+
 import asyncstdlib as alib
 import pytest
 
@@ -29,6 +31,9 @@ async def test_fanin_inventory() -> None:
     )
     messages = await alib.list(inventory.iterate())
     assert {m.args["n"] for m in messages} == set(range(6))
+    m = messages[-1]
+    assert m.cursor
+    assert json.loads(m.cursor) == {"a": "3", "b": "1"}
 
     messages = await alib.list(inventory.iterate(after=Cursor('{"a": "3", "b": "0"}')))
     assert messages == [

@@ -34,8 +34,9 @@ class FanIn(IteratorInventory):
         async with AsyncExitStack() as ctx:
             aiters: list[t.AsyncIterator[tuple[str, Item]]] = []
             for k, inventory in self.inputs.items():
+                to_tuple: t.Callable = lambda m, k=k: (k, m)
                 i_iter = inventory.iterate(after=cursors.get(k))
-                j_iter = alib.map(lambda m: (k, m), i_iter)
+                j_iter = alib.map(to_tuple, i_iter)
                 k_iter = alib.scoped_iter(j_iter)
                 aiters.append(await ctx.enter_async_context(k_iter))
 
