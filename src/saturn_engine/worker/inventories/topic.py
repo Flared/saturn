@@ -10,14 +10,6 @@ from saturn_engine.worker.inventory import IteratorInventory
 from saturn_engine.worker.services import Services
 
 
-@dataclasses.dataclass
-class ItemAdapter(Item):
-    _context: AsyncExitStack = None  # type: ignore[assignment]
-
-    async def __aexit__(self, *exc: t.Any) -> t.Optional[bool]:
-        return await self._context.__aexit__(*exc)
-
-
 class TopicAdapter(IteratorInventory):
     @dataclasses.dataclass
     class Options:
@@ -34,7 +26,7 @@ class TopicAdapter(IteratorInventory):
             try:
                 async with AsyncExitStack() as stack:
                     message = await stack.enter_async_context(message_ctx)
-                    yield ItemAdapter(
+                    yield Item(
                         id=message.id,
                         cursor=None,
                         args=message.args,

@@ -32,7 +32,7 @@ def run_saturn_inventory(
     async def run_inventory() -> None:
         count = 0
         async for item in inventory.iterate(after=after):
-            items.append(asdict(item))
+            items.append(asdict(item.as_topic_message()))
             count = count + 1
             if limit and count >= limit:
                 break
@@ -54,7 +54,9 @@ def run_saturn_inventory_test(
         after=inventory_test.spec.after,
     )
 
-    expected_items: list[dict] = [asdict(item) for item in inventory_test.spec.items]
+    expected_items: list[dict] = [
+        asdict(item.as_topic_message()) for item in inventory_test.spec.items
+    ]
 
     if items != expected_items:
         diff: str = get_diff(

@@ -101,6 +101,9 @@ class TasksGroup:
             if not task.done():
                 task.cancel()
 
+        if not self.tasks:
+            return
+
         # Collect results to log errors.
         done, pending = await asyncio.wait(self.tasks, timeout=timeout)
         for task in done:
