@@ -6,6 +6,7 @@ import dataclasses
 import logging
 import uuid
 from collections.abc import AsyncIterator
+from contextlib import AsyncExitStack
 from datetime import timedelta
 from functools import cached_property
 
@@ -13,6 +14,7 @@ import asyncstdlib as alib
 
 from saturn_engine.core import Cursor
 from saturn_engine.core import MessageId
+from saturn_engine.core.topic import TopicMessage
 from saturn_engine.utils.log import getLogger
 from saturn_engine.utils.options import OptionsSchema
 
@@ -28,6 +30,17 @@ class Item:
     cursor: t.Optional[Cursor] = MISSING  # type: ignore[assignment]
     tags: dict[str, str] = dataclasses.field(default_factory=dict)
     metadata: dict[str, t.Any] = dataclasses.field(default_factory=dict)
+    _context: AsyncExitStack = dataclasses.field(
+        default_factory=AsyncExitStack, compare=False
+    )
+
+    def as_topic_message(self) -> TopicMessage:
+        return TopicMessage(
+            id=self.id,
+            args=self.args,
+            tags=self.tags,
+            metadata=self.metadata | {"job": {"cursor": self.cursor}},
+        )
 
     # Hack to allow building object with `str` instead of new types `MessageId`
     # and `Cursor`.
@@ -41,6 +54,7 @@ class Item:
             cursor: t.Optional[str] = None,
             tags: dict[str, str] = None,  # type: ignore[assignment]
             metadata: dict[str, t.Any] = None,  # type: ignore[assignment]
+            _context: AsyncExitStack = None,  # type: ignore[assignment]
         ) -> None:
             ...
 
@@ -49,10 +63,11 @@ class Item:
             self.cursor = Cursor(self.id)
 
     async def __aenter__(self) -> "Item":
+        await self._context.__aenter__()
         return self
 
     async def __aexit__(self, *exc: t.Any) -> t.Optional[bool]:
-        return None
+        return await self._context.__aexit__(*exc)
 
 
 class MaxRetriesError(Exception):

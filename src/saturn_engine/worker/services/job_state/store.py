@@ -96,3 +96,6 @@ class JobsStatesSyncStore:
         except BaseException:
             self._current_state = flushing_state.merge(self._current_state)
             raise
+
+    def job_state(self, job_name: JobId) -> JobState:
+        return self._current_state.jobs[job_name]
