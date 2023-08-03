@@ -23,17 +23,19 @@ def test_dataclass_from_params() -> None:
         y: t.Optional[str] = None,
         *args: t.Any,
         z: Foo,
+        zz: t.Union[str, list[str]],
         **kwargs: t.Any
     ) -> None:
-        spy(*args, x=x, y=y, z=z, **kwargs)
+        spy(*args, x=x, y=y, z=z, zz=zz, **kwargs)
 
     dataclass = dataclass_from_params(func)
-    args = dataclass(x=1, z=Foo(x=1))
+    args = dataclass(x=1, z=Foo(x=1), zz="foo")
     args.call(kwargs={"foo": "bar"})
     spy.assert_called_once_with(
         x=1,
         y=None,
         z=Foo(x=1),
+        zz="foo",
         foo="bar",
     )
 
