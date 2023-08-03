@@ -163,7 +163,11 @@ def signature(func: t.Callable) -> inspect.Signature:
 def unwrap_optional(typ: t.Any) -> t.Optional[t.Type]:
     origin = t.get_origin(typ)
     if origin is t.Union:
-        target_args = [arg for arg in t.get_args(typ) if not isinstance(None, arg)]
+        target_args = [
+            arg
+            for arg in t.get_args(typ)
+            if not (not t.get_args(arg) and isinstance(None, arg))
+        ]
         if len(target_args) == 1:
             return target_args[0]
     return None
