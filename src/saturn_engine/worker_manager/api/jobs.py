@@ -1,3 +1,4 @@
+import flask
 from flask import Blueprint
 
 from saturn_engine.core.api import FetchCursorsStatesInput
@@ -5,9 +6,11 @@ from saturn_engine.core.api import FetchCursorsStatesResponse
 from saturn_engine.core.api import JobInput
 from saturn_engine.core.api import JobResponse
 from saturn_engine.core.api import JobsResponse
+from saturn_engine.core.api import JobsStartResponse
 from saturn_engine.core.api import JobsStatesSyncInput
 from saturn_engine.core.api import JobsStatesSyncResponse
 from saturn_engine.core.api import JobsSyncResponse
+from saturn_engine.core.api import StartJobInput
 from saturn_engine.core.api import UpdateResponse
 from saturn_engine.database import session_scope
 from saturn_engine.stores import jobs_store
@@ -93,3 +96,26 @@ def post_fetch_states() -> Json[FetchCursorsStatesResponse]:
             session=session,
         )
     return jsonify(FetchCursorsStatesResponse(cursors=cursors))
+
+
+@bp.route("/_start", methods=("POST",))
+def post_start_job() -> Json[JobsStartResponse]:
+    restart: bool = flask.request.args.get("restart", "false") == "true"
+    start_input = marshall_request(StartJobInput)
+    if not start_input.name and not start_input.job_definition_name:
+        abort(http_code=400, error_code="MUST_SPECIFY_JOB")
+    elif start_input.name and start_input.job_definition_name:
+        abort(http_code=400, error_code="MUST_SPECIFY_ONE_JOB")
+
+    with session_scope() as session:
+        try:
+            job = jobs_store.start(
+                start_input=start_input,
+                static_definitions=current_app.saturn.static_definitions,
+                session=session,
+                restart=restart,
+            )
+        except ValueError as e:
+            abort(http_code=400, error_code="JOB_START_ERROR", message=str(e))
+
+        return jsonify(JobsStartResponse(name=job.name))

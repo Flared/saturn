@@ -1,6 +1,7 @@
 import typing as t
 from typing import Optional
 
+import time
 from datetime import datetime
 
 from sqlalchemy import select
@@ -11,6 +12,8 @@ from sqlalchemy.orm import joinedload
 from saturn_engine.core import Cursor
 from saturn_engine.core import JobId
 from saturn_engine.core.api import JobsStates
+from saturn_engine.core.api import QueueItem
+from saturn_engine.core.api import StartJobInput
 from saturn_engine.models import Job
 from saturn_engine.models.job import JobCursorState
 from saturn_engine.models.queue import Queue
@@ -19,6 +22,7 @@ from saturn_engine.utils import utcnow
 from saturn_engine.utils.sqlalchemy import AnySession
 from saturn_engine.utils.sqlalchemy import AnySyncSession
 from saturn_engine.utils.sqlalchemy import upsert
+from saturn_engine.worker_manager.config.static_definitions import StaticDefinitions
 
 
 def create_job(
@@ -206,3 +210,54 @@ def fetch_cursors_states(
         states[row.name][row.cursor] = row.state
 
     return states
+
+
+def start(
+    start_input: StartJobInput,
+    static_definitions: StaticDefinitions,
+    session: AnySyncSession,
+    restart: bool,
+) -> Job:
+    queue_item: QueueItem | None = None
+    job_definition_name: str | None = start_input.job_definition_name
+    job: Job | None = None
+
+    if start_input.name:
+        queue_item = static_definitions.jobs.get(start_input.name)
+        if not queue_item:
+            job = get_job(name=start_input.name, session=session)
+            if job:
+                job_definition_name = job.job_definition_name
+
+    if job_definition_name:
+        job_definition = static_definitions.job_definitions.get(job_definition_name)
+        if job_definition:
+            queue_item = job_definition.template
+            if not job:
+                job = get_last_job(
+                    session=session, job_definition_name=job_definition_name
+                )
+
+    if not queue_item:
+        raise ValueError("Job not Found.")
+
+    if job and not job.completed_at:
+        if restart:
+            update_job(
+                session=session,
+                name=job.name,
+                completed_at=utcnow(),
+                error="Cancelled",
+            )
+        else:
+            raise ValueError("Job already started.")
+
+    job_name = f"{queue_item.name}-{int(time.time())}"
+    job_queue = queues_store.create_queue(session=session, name=job_name)
+    new_job = create_job(
+        session=session,
+        name=job_name,
+        queue_name=job_queue.name,
+        job_definition_name=job_definition_name,
+    )
+    return new_job

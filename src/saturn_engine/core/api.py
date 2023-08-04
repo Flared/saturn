@@ -193,6 +193,12 @@ class JobInput:
 
 
 @dataclasses.dataclass
+class StartJobInput:
+    name: Optional[JobId] = None
+    job_definition_name: Optional[str] = None
+
+
+@dataclasses.dataclass
 class JobsResponse(ListResponse[JobItem]):
     items: list[JobItem]
 
@@ -210,3 +216,8 @@ class UpdateResponse:
 @dataclasses.dataclass
 class JobsSyncResponse:
     pass
+
+
+@dataclasses.dataclass
+class JobsStartResponse:
+    name: str
