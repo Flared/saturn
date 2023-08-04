@@ -69,14 +69,16 @@ class ExecutorQueue:
                         try:
                             return await self.executor.process_message(xmsg)
                         except Exception:
-                            _, exc_value, exc_traceback = sys.exc_info()
-                            # Shouldn't be None but we want to make mypy happy
-                            if exc_value is None or exc_traceback is None:
-                                raise
+                            exc_type, exc_value, exc_traceback = sys.exc_info()
+                            assert (  # noqa: S101
+                                exc_type and exc_value and exc_traceback
+                            )
                             result = process_pipeline_exception(
-                                xmsg.queue.definition.output,
-                                exc_value,
-                                exc_traceback,
+                                queue=xmsg.queue.definition,
+                                message=xmsg.message.message,
+                                exc_type=exc_type,
+                                exc_value=exc_value,
+                                exc_traceback=exc_traceback,
                             )
                             if not result:
                                 raise
