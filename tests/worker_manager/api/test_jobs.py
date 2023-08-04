@@ -715,3 +715,118 @@ def test_fetch_cursors_states(
             "do-not-exist": {"a": None},
         }
     }
+
+
+def test_start_job_without_restart(
+    client: FlaskClient,
+    session: Session,
+    fake_job_definition: api.JobDefinition,
+    static_definitions: StaticDefinitions,
+    frozen_time: FreezeTime,
+) -> None:
+    resp = client.post("/api/jobs/_start", json={})
+    assert resp.status_code == 400
+    assert resp.json
+    assert resp.json["error"]["code"] == "MUST_SPECIFY_JOB"
+
+    resp = client.post(
+        "/api/jobs/_start",
+        json={"name": "name", "job_definition_name": "job_definition_name"},
+    )
+    assert resp.status_code == 400
+    assert resp.json
+    assert resp.json["error"]["code"] == "MUST_SPECIFY_ONE_JOB"
+
+    resp = client.post("/api/jobs/_start", json={"name": "try to find this"})
+    assert resp.status_code == 400
+    assert resp.json
+    assert resp.json["error"]["code"] == "JOB_START_ERROR"
+
+    queue = queues_store.create_queue(session=session, name="fake-queue")
+    session.flush()
+    first_job = jobs_store.create_job(
+        name=queue.name,
+        session=session,
+        queue_name=queue.name,
+        job_definition_name=fake_job_definition.name,
+    )
+    session.commit()
+
+    frozen_time.tick()
+
+    resp = client.post("/api/jobs/_start", json={"name": first_job.name})
+    assert resp.status_code == 400
+    assert resp.json
+    assert resp.json["error"]["code"] == "JOB_START_ERROR"
+
+    jobs_store.update_job(session=session, name=first_job.name, completed_at=utcnow())
+    session.commit()
+
+    resp = client.post("/api/jobs/_start", json={"name": first_job.name})
+    assert resp.status_code == 200
+    assert resp.json
+
+    second_job = jobs_store.get_job(session=session, name=resp.json["name"])
+    assert second_job
+
+    jobs_store.update_job(session=session, name=second_job.name, completed_at=utcnow())
+    session.commit()
+
+    frozen_time.tick()
+
+    resp = client.post(
+        "/api/jobs/_start", json={"job_definition_name": fake_job_definition.name}
+    )
+
+    assert resp.status_code == 200
+    assert resp.json
+
+    third_job = jobs_store.get_job(session=session, name=resp.json["name"])
+    assert third_job
+
+
+def test_start_job_with_restart(
+    client: FlaskClient,
+    session: Session,
+    fake_job_definition: api.JobDefinition,
+    frozen_time: FreezeTime,
+) -> None:
+    queue = queues_store.create_queue(session=session, name="fake-queue")
+    session.flush()
+    first_job = jobs_store.create_job(
+        name=queue.name,
+        session=session,
+        queue_name=queue.name,
+        job_definition_name=fake_job_definition.name,
+    )
+    session.commit()
+
+    frozen_time.tick()
+
+    resp = client.post("/api/jobs/_start?restart=true", json={"name": first_job.name})
+
+    assert resp.status_code == 200
+    assert resp.json
+
+    second_job = jobs_store.get_job(session=session, name=resp.json["name"])
+    session.refresh(first_job)
+
+    assert second_job
+    assert first_job.completed_at is not None
+    assert first_job.error == "Cancelled"
+
+    frozen_time.tick()
+
+    resp = client.post(
+        "/api/jobs/_start?restart=true",
+        json={"job_definition_name": fake_job_definition.name},
+    )
+    assert resp.status_code == 200
+    assert resp.json
+
+    third_job = jobs_store.get_job(session=session, name=resp.json["name"])
+    session.refresh(second_job)
+
+    assert third_job
+    assert second_job.completed_at is not None
+    assert second_job.error == "Cancelled"
