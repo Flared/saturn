@@ -254,10 +254,7 @@ class PipelineLogger:
     @contextlib.contextmanager
     def log_context(self, data: dict) -> Iterator[None]:
         if self.set_context:
-            tokens = self.structlog.contextvars.bind_contextvars(**data)
-            try:
+            with self.structlog.contextvars.bound_contextvars(**data):
                 yield
-            finally:
-                self.structlog.contextvars.reset_contextvars(**tokens)
         else:
             yield

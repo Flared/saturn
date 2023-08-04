@@ -19,7 +19,7 @@ class TopicClosedError(Exception):
 
 
 class Topic(OptionsSchema):
-    name: str
+    name: str = "unnamed-topic"
 
     async def run(self) -> AsyncGenerator[TopicOutput, None]:
         raise NotImplementedError()

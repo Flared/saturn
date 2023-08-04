@@ -45,13 +45,18 @@ def run_saturn_pipeline_test(
         pipeline_result = None
         try:
             pipeline_result = bootstraper.bootstrap_pipeline(pipeline_message)
-        except Exception as err:
-            _, exc_value, exc_traceback = sys.exc_info()
+        except Exception:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+
             # Shouldn't be None but we want to make mypy happy
-            if exc_value is None or exc_traceback is None:
-                raise err
+            assert exc_type and exc_value and exc_traceback  # noqa: S101
+
             pipeline_result = process_pipeline_exception(
-                job_definition.template.output, exc_value, exc_traceback
+                queue=job_definition.template,
+                message=pipeline_message.message,
+                exc_type=exc_type,
+                exc_value=exc_value,
+                exc_traceback=exc_traceback,
             )
             if pipeline_result is None:
                 raise

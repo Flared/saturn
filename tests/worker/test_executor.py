@@ -225,15 +225,12 @@ async def test_executor_error_handler(
             )
         ]
     }
+    xmsg = fake_executable_maker_with_output(
+        output=output_topics,
+    )
     # Execute our failing message
     async with event_loop.until_idle():
-        asyncio.create_task(
-            executor_manager.submit(
-                fake_executable_maker_with_output(
-                    output=output_topics,
-                )
-            )
-        )
+        asyncio.create_task(executor_manager.submit(xmsg))
 
     # Our pipeline should cause a test exception and publish it in its channel
     assert output_queue.qsize() == 1
@@ -244,12 +241,13 @@ async def test_executor_error_handler(
     expected_message = TopicMessage(
         id=output.id,
         args={
+            "cause": xmsg.message.message,
             "error": ErrorMessageArgs(
-                type="Exception",
+                type="builtins.Exception",
                 module="tests.worker.test_executor",
                 message="TEST_EXCEPTION",
                 traceback=cast(ErrorMessageArgs, output.args["error"]).traceback,
-            )
+            ),
         },
         config={},
         metadata={},

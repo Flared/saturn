@@ -21,6 +21,8 @@ class MemoryOptions:
 
 
 class MemoryTopic(Topic):
+    name = "memory_topic"
+
     Options = MemoryOptions
 
     def __init__(self, options: MemoryOptions, **kwargs: Any):
