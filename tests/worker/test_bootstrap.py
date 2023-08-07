@@ -2,9 +2,15 @@ from typing import Optional
 
 import pickle  # noqa: S403
 import sys
+from unittest.mock import Mock
 
+from saturn_engine.core.pipeline import PipelineInfo
+from saturn_engine.core.topic import TopicMessage
+from saturn_engine.utils.hooks import EventHook
+from saturn_engine.worker.executors.bootstrap import PipelineBootstrap
 from saturn_engine.worker.executors.bootstrap import RemoteException
 from saturn_engine.worker.executors.bootstrap import wrap_remote_exception
+from saturn_engine.worker.pipeline_message import PipelineMessage
 
 
 class MyError(Exception):
@@ -52,6 +58,11 @@ def raises_remote(
     # And we would be back in the host process
     local_error = pickle.loads(remote_error)  # noqa: S301
     raise local_error
+
+
+def pipeline(a: int, topic_message: TopicMessage, *, spy: Mock) -> int:
+    spy(a=a, topic_message=topic_message)
+    return 1
 
 
 def test_remote_exception() -> None:
@@ -110,3 +121,25 @@ def test_remote_exception() -> None:
         assert e.remote_traceback.stack[-1].line.strip() == "raise e from cause"
         assert e.remote_traceback.stack[-1].locals
         assert e.remote_traceback.stack[-1].locals["x"] == "{'foo': 'bar'}"
+
+
+def test_bootstrap_run_pipeline() -> None:
+    spy = Mock()
+    args: dict = {
+        "a": 1,
+        "spy": spy,
+    }
+    topic_message = TopicMessage(args=args)
+
+    pipeline_message = PipelineMessage(
+        info=PipelineInfo.from_pipeline(pipeline),
+        message=topic_message,
+    )
+
+    bootstraper = PipelineBootstrap(EventHook())
+    bootstraper.bootstrap_pipeline(pipeline_message)
+
+    spy.assert_called_once_with(
+        a=1,
+        topic_message=topic_message,
+    )
