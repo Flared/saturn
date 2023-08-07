@@ -28,6 +28,7 @@ class PipelineBootstrap:
         self.logger = logging.getLogger("saturn.bootstrap")
 
     def bootstrap_pipeline(self, message: PipelineMessage) -> PipelineResults:
+        message.set_meta_arg(meta_type=TopicMessage, value=message.message)
         return self.pipeline_hook.emit(self.run_pipeline)(message)
 
     def run_pipeline(self, message: PipelineMessage) -> PipelineResults:
