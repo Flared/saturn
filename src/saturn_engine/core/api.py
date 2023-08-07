@@ -26,6 +26,21 @@ class ComponentDefinition:
 
 
 @dataclasses.dataclass
+class RepublishOptions:
+    channel: str
+    max_retry: int
+
+
+@dataclasses.dataclass
+class ErrorHandler:
+    set_handled: bool = True
+    republish: t.Optional[RepublishOptions] = None
+
+
+OutputDefinition = t.Union[ComponentDefinition, ErrorHandler]
+
+
+@dataclasses.dataclass
 class ResourceRateLimitItem:
     rate_limits: list[str]
     strategy: str = "fixed-window"
@@ -52,7 +67,7 @@ class ResourcesProviderItem:
 class QueueItem:
     name: JobId
     pipeline: QueuePipeline
-    output: dict[str, list[ComponentDefinition]]
+    output: dict[str, list[OutputDefinition]]
     input: ComponentDefinition
     config: dict[str, Any] = field(default_factory=dict)
     labels: dict[str, str] = field(default_factory=dict)

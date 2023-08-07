@@ -1,3 +1,4 @@
+import typing as t
 from typing import Optional
 from typing import Type
 
@@ -8,13 +9,20 @@ from functools import lru_cache
 from textwrap import dedent
 from types import TracebackType
 
+from saturn_engine.core.api import ErrorHandler
+from saturn_engine.core.api import OutputDefinition
 from saturn_engine.core.api import QueueItem
+from saturn_engine.core.api import RepublishOptions
 from saturn_engine.core.error import ErrorMessageArgs
 from saturn_engine.core.pipeline import PipelineOutput
 from saturn_engine.core.pipeline import PipelineResults
 from saturn_engine.core.topic import TopicMessage
 from saturn_engine.utils.traceback_data import TracebackData
 from saturn_engine.worker.executors.bootstrap import RemoteException
+
+
+class ErrorHandlerMeta(t.TypedDict):
+    retried: int
 
 
 @dataclass
@@ -34,6 +42,20 @@ class ExceptionFilter:
     lineno: int
 
 
+class HandledError(Exception):
+    def __init__(self, *, results: PipelineResults, handled: bool) -> None:
+        super().__init__("Error handled")
+        self.results = results
+        self.handled = handled
+
+    def reraise(self) -> None:
+        """reraise self if handled, otherwise reraise the original exception"""
+        cause = self.__cause__
+        if self.handled or not cause:
+            raise self from self.__cause__
+        raise cause from cause.__cause__
+
+
 def process_pipeline_exception(
     *,
     queue: QueueItem,
@@ -41,12 +63,12 @@ def process_pipeline_exception(
     exc_type: Type[BaseException],
     exc_value: BaseException,
     exc_traceback: TracebackType,
-) -> Optional[PipelineResults]:
+) -> None:
     outputs = queue.output
     exc_details = get_exception_details(exc_type, exc_value, exc_traceback)
 
     # Match the exception and consume it if found, else reraise the exception
-    for channel in outputs.keys():
+    for channel, handlers in outputs.items():
         if not is_output_error_handler(channel):
             continue
 
@@ -55,31 +77,78 @@ def process_pipeline_exception(
 
             if not does_error_match(exception=exc_details, exception_filter=exc_filter):
                 continue
-
-            return PipelineResults(
-                outputs=[
-                    PipelineOutput(
-                        channel=channel,
-                        message=TopicMessage(
-                            args={
-                                "cause": message,
-                                "error": ErrorMessageArgs(
-                                    type=exc_details.exception_type,
-                                    module=exc_details.module,
-                                    message=exc_details.message,
-                                    traceback=exc_details.traceback,
-                                ),
-                            }
-                        ),
-                    )
-                ],
-                resources=[],
-            )
         except Exception:
             logging.getLogger(__name__).exception(
                 "Failed to process error channel", extra={"data": {"channel": channel}}
             )
+
+        output_msgs = [
+            PipelineOutput(
+                channel=channel,
+                message=TopicMessage(
+                    args={
+                        "cause": message,
+                        "error": ErrorMessageArgs(
+                            type=exc_details.exception_type,
+                            module=exc_details.module,
+                            message=exc_details.message,
+                            traceback=exc_details.traceback,
+                        ),
+                    }
+                ),
+            )
+        ]
+        handled = is_handled(handlers)
+        republish_outputs = republish_handlers(handlers)
+        if republish_outputs:
+            republished_msgs = republish(message, republish_outputs)
+            output_msgs.extend(republished_msgs)
+            if not republished_msgs:
+                handled = False
+
+        raise HandledError(
+            results=PipelineResults(
+                outputs=output_msgs,
+                resources=[],
+            ),
+            handled=handled,
+        ) from exc_value
     return None
+
+
+def republish(
+    message: TopicMessage, republish_handlers: list[RepublishOptions]
+) -> list[PipelineOutput]:
+    meta: ErrorHandlerMeta = t.cast(
+        ErrorHandlerMeta, message.metadata.setdefault("error_handler", {})
+    )
+    retried: int = meta.setdefault("retried", 0)
+    meta["retried"] += 1
+
+    outputs = []
+
+    for handler in republish_handlers:
+        if retried >= handler.max_retry:
+            continue
+        outputs.append(
+            PipelineOutput(
+                channel=handler.channel,
+                message=message,
+            )
+        )
+    return outputs
+
+
+def republish_handlers(
+    handlers: t.Iterable[OutputDefinition],
+) -> list[RepublishOptions]:
+    return [
+        h.republish for h in handlers if isinstance(h, ErrorHandler) and h.republish
+    ]
+
+
+def is_handled(handlers: t.Iterable[OutputDefinition]) -> bool:
+    return all(h.set_handled for h in handlers if isinstance(h, ErrorHandler))
 
 
 def does_error_match(

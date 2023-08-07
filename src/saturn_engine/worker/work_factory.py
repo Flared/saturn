@@ -26,7 +26,8 @@ def build(queue_item: QueueItemWithState, *, services: Services) -> ExecutableQu
         k: [
             output
             for t in ts
-            if isinstance(output := build_item(t, services=services), Topic)
+            if isinstance(t, ComponentDefinition)
+            and isinstance(output := build_item(t, services=services), Topic)
         ]
         for k, ts in queue_item.output.items()
     }

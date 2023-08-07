@@ -67,8 +67,9 @@ spec:
     - outputs:
         - channel: error::ZeroDivisionError
           args:
+            cause: __any__
             error:
-              type: ZeroDivisionError
+              type: builtins.ZeroDivisionError
               module: 'example.pipelines'
               message: division by zero
               traceback: __any__
@@ -91,8 +92,9 @@ spec:
     - outputs:
         - channel: error:.*Ignorable Exception.*:Exception
           args:
+            cause: __any__
             error:
-              type: Exception
+              type: builtins.Exception
               module: 'example.pipelines'
               message: Ignorable Exception
               traceback: __any__

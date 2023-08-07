@@ -12,6 +12,7 @@ from saturn_engine.core import PipelineResults
 from saturn_engine.core import ResourceUsed
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import QueueItem
+from saturn_engine.worker.error_handling import HandledError
 from saturn_engine.worker.executors.bootstrap import PipelineBootstrap
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.executable import ExecutableQueue
@@ -139,6 +140,19 @@ class Logger(Service[BaseServices, "Logger.Options"]):
                 extra={
                     "data": {
                         "result": self.result_data(result),
+                    }
+                    | trace_info
+                    | executable_message_data(xmsg, verbose=self.verbose)
+                },
+            )
+        except HandledError as e:
+            self.message_logger.warning(
+                "Failed to execute message, error handled: %s: %s",
+                e.__cause__.__class__.__name__,
+                str(e.__cause__),
+                extra={
+                    "data": {
+                        "result": self.result_data(e.results),
                     }
                     | trace_info
                     | executable_message_data(xmsg, verbose=self.verbose)
