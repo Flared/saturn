@@ -36,14 +36,25 @@ class JobInput:
 
 
 @dataclasses.dataclass
-class JobOutput:
+class JobOutputTopic:
     topic: str
 
     def to_core_object(
         self,
         static_definitions: StaticDefinitions,
-    ) -> api.ComponentDefinition:
+    ) -> api.OutputDefinition:
         return static_definitions.topics[self.topic]
+
+
+class JobOutputErrorHandler(api.ErrorHandler):
+    def to_core_object(
+        self,
+        static_definitions: StaticDefinitions,
+    ) -> api.OutputDefinition:
+        return self
+
+
+JobOutput = t.Union[JobOutputTopic, JobOutputErrorHandler]
 
 
 @dataclasses.dataclass
@@ -77,8 +88,8 @@ class JobSpec:
                 name=JobId(queue_item_name),
                 input=job_input.to_core_object(static_definitions),
                 output={
-                    key: [t.to_core_object(static_definitions) for t in topics]
-                    for key, topics in self.output.items()
+                    key: [o.to_core_object(static_definitions) for o in outputs]
+                    for key, outputs in self.output.items()
                 },
                 pipeline=api.QueuePipeline(
                     info=self.pipeline.to_core_object(),

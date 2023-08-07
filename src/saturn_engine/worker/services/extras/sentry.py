@@ -1,5 +1,6 @@
 import typing as t
 
+import contextlib
 import logging
 import os
 from collections.abc import AsyncGenerator
@@ -16,6 +17,7 @@ from saturn_engine.core.api import QueueItem
 from saturn_engine.utils.options import asdict
 from saturn_engine.utils.traceback_data import FrameData
 from saturn_engine.utils.traceback_data import TracebackData
+from saturn_engine.worker.error_handling import HandledError
 from saturn_engine.worker.executors.bootstrap import RemoteException
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.executable import ExecutableQueue
@@ -131,7 +133,8 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
 
             scope.add_event_processor(_event_processor)
             try:
-                yield
+                with contextlib.suppress(HandledError):
+                    yield
             except Exception as e:
                 self._capture_exception(e)
 

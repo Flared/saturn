@@ -25,6 +25,7 @@ from saturn_engine.core import Resource
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.core.api import LockResponse
+from saturn_engine.core.api import OutputDefinition
 from saturn_engine.core.api import QueueItemWithState
 from saturn_engine.worker.broker import Broker
 from saturn_engine.worker.broker import WorkManagerInit
@@ -238,7 +239,7 @@ def fake_executable_maker_with_output(
         message: t.Optional[TopicMessage] = None,
         parker: t.Optional[Parkers] = None,
         pipeline_info: PipelineInfo = fake_pipeline_info,
-        output: t.Optional[dict[str, list[ComponentDefinition]]] = None,
+        output: t.Optional[dict[str, list[OutputDefinition]]] = None,
     ) -> ExecutableMessage:
         queue_item = QueueItemWithState(
             name=JobId("fake-failing-queue"),
@@ -259,6 +260,7 @@ def fake_executable_maker_with_output(
             output_topics[channel] = [
                 MemoryTopic(MemoryTopic.Options(name=topic_item.name))
                 for topic_item in topic_items
+                if isinstance(topic_item, ComponentDefinition)
             ]
 
         executable_queue = ExecutableQueue(

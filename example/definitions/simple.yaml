@@ -114,6 +114,11 @@ spec:
         - topic: stdout
       error::ZeroDivisionError:
         - topic: logging-error
+        - error_handler:
+            set_handled: false
+            republish:
+              channel: default
+              max_retry: 5
 
     pipeline:
       name: example.pipelines.echo_with_error

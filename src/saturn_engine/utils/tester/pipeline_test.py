@@ -7,6 +7,7 @@ from saturn_engine.utils.tester.json_utils import find_nodes
 from saturn_engine.utils.tester.json_utils import get_node_value
 from saturn_engine.utils.tester.json_utils import normalize_json
 from saturn_engine.utils.tester.json_utils import replace_node
+from saturn_engine.worker.error_handling import HandledError
 from saturn_engine.worker.error_handling import process_pipeline_exception
 from saturn_engine.worker.executors.bootstrap import PipelineBootstrap
 from saturn_engine.worker.pipeline_message import PipelineMessage
@@ -51,14 +52,17 @@ def run_saturn_pipeline_test(
             # Shouldn't be None but we want to make mypy happy
             assert exc_type and exc_value and exc_traceback  # noqa: S101
 
-            pipeline_result = process_pipeline_exception(
-                queue=job_definition.template,
-                message=pipeline_message.message,
-                exc_type=exc_type,
-                exc_value=exc_value,
-                exc_traceback=exc_traceback,
-            )
-            if pipeline_result is None:
+            try:
+                process_pipeline_exception(
+                    queue=job_definition.template,
+                    message=pipeline_message.message,
+                    exc_type=exc_type,
+                    exc_value=exc_value,
+                    exc_traceback=exc_traceback,
+                )
+            except HandledError as e:
+                pipeline_result = e.results
+            else:
                 raise
 
         pipeline_results.append(

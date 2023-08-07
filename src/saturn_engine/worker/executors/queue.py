@@ -9,6 +9,7 @@ from saturn_engine.utils import ExceptionGroup
 from saturn_engine.utils.asyncutils import Cancellable
 from saturn_engine.utils.asyncutils import TasksGroupRunner
 from saturn_engine.utils.log import getLogger
+from saturn_engine.worker.error_handling import HandledError
 from saturn_engine.worker.error_handling import process_pipeline_exception
 from saturn_engine.worker.resources.manager import ResourceUnavailable
 from saturn_engine.worker.services import Services
@@ -73,26 +74,35 @@ class ExecutorQueue:
                             assert (  # noqa: S101
                                 exc_type and exc_value and exc_traceback
                             )
-                            result = process_pipeline_exception(
+                            process_pipeline_exception(
                                 queue=xmsg.queue.definition,
                                 message=xmsg.message.message,
                                 exc_type=exc_type,
                                 exc_value=exc_value,
                                 exc_traceback=exc_traceback,
                             )
-                            if not result:
-                                raise
-                            return result
+                            raise
 
-                    results = await scope(processable)
-                    self.consuming_tasks.create_task(
-                        self.process_results(
-                            xmsg=processable,
-                            results=results,
-                            # Transfer the message context to the results processing scope.
-                            context=processable._context.pop_all(),
-                        )
-                    )
+                    results = None
+                    error = None
+                    try:
+                        results = await scope(processable)
+                    except HandledError as e:
+                        results = e.results
+                        error = e
+                    finally:
+                        if results:
+                            self.consuming_tasks.create_task(
+                                self.process_results(
+                                    xmsg=processable,
+                                    results=results,
+                                    # Transfer the message context to the results
+                                    # processing scope.
+                                    context=processable._context.pop_all(),
+                                )
+                            )
+                    if error:
+                        error.reraise()
 
     async def process_results(
         self,

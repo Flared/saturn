@@ -1,3 +1,4 @@
+import typing as t
 from typing import Callable
 from typing import cast
 
@@ -11,7 +12,10 @@ from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResults
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import ComponentDefinition
+from saturn_engine.core.api import ErrorHandler
+from saturn_engine.core.api import RepublishOptions
 from saturn_engine.core.error import ErrorMessageArgs
+from saturn_engine.worker.error_handling import HandledError
 from saturn_engine.worker.executors import Executor
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.parkers import Parkers
@@ -48,7 +52,22 @@ class FakeExecutor(Executor):
 class FakeFailingExecutor(FakeExecutor):
     async def process_message(self, message: ExecutableMessage) -> PipelineResults:
         self.processed += 1
-        raise Exception("TEST_EXCEPTION")
+        try:
+            try:
+                raise ValueError("CONTEXT")
+            except Exception:
+                cause = None
+                try:
+                    try:
+                        raise ValueError("CAUSE_CONTEXT") from None
+                    except Exception:
+                        raise ValueError("CAUSE") from None
+                except Exception as e:
+                    cause = e
+                raise Exception("TEST_EXCEPTION") from cause
+        except Exception as e:
+            self.error = e
+            raise
 
 
 @pytest.mark.asyncio
@@ -228,6 +247,13 @@ async def test_executor_error_handler(
     xmsg = fake_executable_maker_with_output(
         output=output_topics,
     )
+    exc_infos = []
+
+    async def collect_exit(*args: t.Any) -> None:
+        exc_infos.append(args)
+
+    xmsg._executing_context.push_async_exit(collect_exit)
+
     # Execute our failing message
     async with event_loop.until_idle():
         asyncio.create_task(executor_manager.submit(xmsg))
@@ -255,3 +281,123 @@ async def test_executor_error_handler(
     )
 
     assert expected_message == output
+    assert [e for e, *_ in exc_infos] == [HandledError]
+
+
+@pytest.mark.asyncio
+async def test_executor_error_handler_unhandled(
+    fake_executable_maker_with_output: Callable[..., ExecutableMessage],
+    event_loop: TimeForwardLoop,
+    executor_queue_maker: Callable[..., ExecutorQueue],
+) -> None:
+    executor = FakeFailingExecutor()
+    executor.concurrency = 1
+    executor_manager = executor_queue_maker(executor=executor)
+    output_queue = get_queue("q1", maxsize=1)
+    output_topics = {
+        "error:TEST_EXCEPTION:Exception": [
+            ComponentDefinition(
+                "q1",
+                "MemoryTopic",
+            ),
+            ErrorHandler(
+                set_handled=False,
+            ),
+        ]
+    }
+    xmsg = fake_executable_maker_with_output(
+        output=output_topics,
+    )
+    exc_infos = []
+
+    async def collect_exit(*args: t.Any) -> None:
+        exc_infos.append(args)
+
+    xmsg._executing_context.push_async_exit(collect_exit)
+
+    # Execute our failing message
+    async with event_loop.until_idle():
+        asyncio.create_task(executor_manager.submit(xmsg))
+
+    # A message is outputed to error topic.
+    assert output_queue.qsize() == 1
+
+    # The exception raised to the hooks and contexts is the original one.
+    assert len(exc_infos) == 1
+    e = exc_infos[0][1]
+    assert repr(e) == "Exception('TEST_EXCEPTION')"
+    assert repr(e.__cause__) == "ValueError('CAUSE')"
+    assert repr(e.__cause__.__context__) == "ValueError('CAUSE_CONTEXT')"
+    assert repr(e.__context__) == "ValueError('CONTEXT')"
+
+
+@pytest.mark.asyncio
+async def test_executor_error_handler_republish(
+    fake_executable_maker_with_output: Callable[..., ExecutableMessage],
+    event_loop: TimeForwardLoop,
+    executor_queue_maker: Callable[..., ExecutorQueue],
+) -> None:
+    executor = FakeFailingExecutor()
+    executor.concurrency = 1
+    executor_manager = executor_queue_maker(executor=executor)
+    output_queue = get_queue("q1", maxsize=1)
+    retry_queue = get_queue("q2", maxsize=1)
+    output_topics = {
+        "error:TEST_EXCEPTION:Exception": [
+            ComponentDefinition(
+                "q1",
+                "MemoryTopic",
+            ),
+            ErrorHandler(
+                republish=RepublishOptions(
+                    channel="retry",
+                    max_retry=1,
+                )
+            ),
+        ],
+        "retry": [
+            ComponentDefinition(
+                "q2",
+                "MemoryTopic",
+            ),
+        ],
+    }
+    exc_infos = []
+
+    async def collect_exit(*args: t.Any) -> None:
+        exc_infos.append(args)
+
+    xmsg = fake_executable_maker_with_output(
+        output=output_topics,
+    )
+    xmsg._executing_context.push_async_exit(collect_exit)
+
+    # Execute our failing message
+    async with event_loop.until_idle():
+        asyncio.create_task(executor_manager.submit(xmsg))
+
+    # The error should be republished to the `retry` channel.
+    assert output_queue.qsize() == 1
+    output_queue.get_nowait()
+    assert retry_queue.qsize() == 1
+    retry_message = retry_queue.get_nowait()
+    assert retry_message.args == {}
+    assert [e for e, *_ in exc_infos] == [HandledError]
+    exc_infos.clear()
+
+    # Execute the retry message
+    xmsg = fake_executable_maker_with_output(
+        message=retry_message,
+        output=output_topics,
+    )
+    xmsg._executing_context.push_async_exit(collect_exit)
+    async with event_loop.until_idle():
+        asyncio.create_task(executor_manager.submit(xmsg))
+
+    # The error should reach max retry and not republish.
+    # The original error is reraised unhandled.
+    assert output_queue.qsize() == 1
+    output_queue.get_nowait()
+    assert retry_queue.qsize() == 0
+    assert len(exc_infos) == 1
+    assert repr(exc_infos[0][1]) == "Exception('TEST_EXCEPTION')"

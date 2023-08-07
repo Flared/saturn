@@ -5,6 +5,7 @@ from opentelemetry.metrics import get_meter
 
 from saturn_engine.core import PipelineResults
 from saturn_engine.utils.telemetry import get_timer
+from saturn_engine.worker.error_handling import HandledError
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.services.hooks import MessagePublished
 from saturn_engine.worker.topic import Topic
@@ -86,8 +87,14 @@ class Metrics(MinimalService):
         self.message_counter.add(1, params | {"state": "executing"})
         try:
             with get_timer(self.message_duration).time(params):
-                results = yield
-            self.message_counter.add(1, params | {"state": "success"})
+                try:
+                    results = yield
+                except HandledError as e:
+                    results = e.results
+                    self.message_counter.add(1, params | {"state": "failed_handled"})
+                else:
+                    self.message_counter.add(1, params | {"state": "success"})
+
             for resource in results.resources:
                 self.resource_counter.add(1, {"type": resource.type})
 

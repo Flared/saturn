@@ -255,6 +255,11 @@ def register_hooks_handler(services: Services) -> AsyncMock:
     return _hooks_handler
 
 
+class EqualAny:
+    def __eq__(self, other: t.Any) -> bool:
+        return True
+
+
 class EqualAnyOrder:
     def __init__(self, expected: t.Iterable):
         self.expected = expected
