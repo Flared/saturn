@@ -2,6 +2,7 @@ import typing as t
 
 import asyncio
 import contextlib
+import dataclasses
 
 import asyncstdlib as alib
 
@@ -77,40 +78,104 @@ async def scoped_aiters(
         yield scoped_aiters
 
 
-async def fanin(*iterators: t.AsyncIterator[T]) -> t.AsyncIterator[T]:
-    anext_tasks: dict[asyncio.Task, t.AsyncIterator[T]] = {
-        asyncio.create_task(alib.anext(i), name="fanin.anext"): i for i in iterators
-    }
-    errors: list[Exception] = []
-    while True:
-        if not anext_tasks:
-            break
+class Scheduler(t.Generic[T]):
+    iterators: list[t.AsyncIterator[T]]
 
-        done, _ = await asyncio.wait(
-            anext_tasks.keys(), return_when=asyncio.FIRST_COMPLETED
-        )
-        for task in done:
-            iterator = anext_tasks.pop(task)
-            if task.cancelled():
-                continue
+    def __init__(self, iterators: list[t.AsyncIterator[T]]) -> None:
+        self.iterators = iterators
 
-            e = task.exception()
-            if e is None:
-                yield task.result()
-            elif isinstance(e, StopAsyncIteration):
-                continue
-            elif isinstance(e, Exception):
-                for task in anext_tasks:
-                    if task not in done:
-                        task.cancel()
-                errors.append(e)
-            else:
-                raise e
+    async def __aiter__(self) -> t.AsyncIterator[T]:
+        anext_tasks: dict[asyncio.Task, t.AsyncIterator[T]] = {
+            asyncio.create_task(alib.anext(i), name="fanin.anext"): i
+            for i in self.iterators
+        }
+        errors: list[Exception] = []
+        while True:
+            if not anext_tasks:
+                break
 
-            if not errors:
-                anext_tasks[
-                    asyncio.create_task(alib.anext(iterator), name="fanin.anext")
-                ] = iterator
+            done, _ = await asyncio.wait(
+                anext_tasks.keys(), return_when=asyncio.FIRST_COMPLETED
+            )
+            iterators = {anext_tasks[t]: t for t in done}
+            for iterator in self.schedule(iterators.keys()):
+                task = iterators[iterator]
+                anext_tasks.pop(task)
+                if task.cancelled():
+                    continue
 
-    if errors:
-        raise ExceptionGroup("One iterator failed", errors)
+                e = task.exception()
+                if e is None:
+                    yield task.result()
+                elif isinstance(e, StopAsyncIteration):
+                    continue
+                elif isinstance(e, Exception):
+                    for task in anext_tasks:
+                        if task not in done:
+                            task.cancel()
+                    errors.append(e)
+                else:
+                    raise e
+
+                if not errors:
+                    anext_tasks[
+                        asyncio.create_task(alib.anext(iterator), name="fanin.anext")
+                    ] = iterator
+
+        if errors:
+            raise ExceptionGroup("One iterator failed", errors)
+
+    def schedule(
+        self, ready: t.Iterable[t.AsyncIterator[T]]
+    ) -> t.Iterator[t.AsyncIterator[T]]:
+        yield from ready
+
+
+@dataclasses.dataclass
+class IteratorPriority(t.Generic[T]):
+    priority: int
+    iterator: t.AsyncIterator[T]
+
+
+@dataclasses.dataclass
+class Credits:
+    priority: int
+    credits: int
+
+    @property
+    def cost(self) -> int:
+        return self.priority - self.credits
+
+    def add(self, credits: int) -> None:
+        self.credits = min(self.priority, self.credits + credits)
+
+    def schedule(self) -> bool:
+        if self.credits >= self.priority:
+            self.credits = 0
+            return True
+        return False
+
+
+@dataclasses.dataclass
+class CreditsScheduler(t.Generic[T], Scheduler[T]):
+    def __init__(self, iterators: list[IteratorPriority[T]]) -> None:
+        super().__init__([i.iterator for i in iterators])
+        self.credits = {
+            i.iterator: Credits(
+                priority=i.priority,
+                credits=0,
+            )
+            for i in iterators
+        }
+
+    def schedule(
+        self, ready: t.Iterable[t.AsyncIterator[T]]
+    ) -> t.Iterator[t.AsyncIterator[T]]:
+        cost = min(self.credits[i].cost for i in ready)
+        if cost:
+            for credits in self.credits.values():
+                credits.add(cost)
+
+        for iterator in ready:
+            if self.credits[iterator].schedule():
+                yield iterator
