@@ -14,8 +14,12 @@ from saturn_engine.worker.inventory import IteratorInventory
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.work_factory import build_inventory
 
+T = t.TypeVar("T")
+
 
 class FanIn(IteratorInventory):
+    name = "fanin"
+
     @dataclasses.dataclass
     class Options:
         inputs: list[ComponentDefinition]
@@ -40,6 +44,46 @@ class FanIn(IteratorInventory):
                 k_iter = alib.scoped_iter(j_iter)
                 aiters.append(await ctx.enter_async_context(k_iter))
 
-            async for name, message in iterators.fanin(*aiters):
+            scheduler = self.make_scheduler(aiters)
+            async for name, message in scheduler:
                 cursors[name] = message.cursor
                 yield dataclasses.replace(message, cursor=Cursor(json.dumps(cursors)))
+
+    def make_scheduler(
+        self, aiters: list[t.AsyncIterator[T]]
+    ) -> iterators.Scheduler[T]:
+        return iterators.Scheduler(aiters)
+
+
+@dataclasses.dataclass
+class PriorityInput:
+    priority: int
+    inventory: ComponentDefinition
+
+
+class PriorityFanIn(FanIn):
+    name = "priority_fanin"
+
+    @dataclasses.dataclass
+    class Options:
+        inputs: list[PriorityInput]
+
+    def __init__(self, options: Options, services: Services, **kwargs: object) -> None:
+        super().__init__(
+            options=FanIn.Options(inputs=[i.inventory for i in options.inputs]),
+            services=services,
+        )
+        self.priority = [i.priority for i in options.inputs]
+
+    def make_scheduler(
+        self, aiters: list[t.AsyncIterator[T]]
+    ) -> iterators.Scheduler[T]:
+        credits = [
+            iterators.IteratorPriority(
+                priority=p,
+                iterator=i,
+            )
+            for i, p in zip(aiters, self.priority, strict=True)
+        ]
+
+        return iterators.CreditsScheduler(credits)
