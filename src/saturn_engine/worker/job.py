@@ -50,11 +50,6 @@ class Job(Topic):
         try:
             async with item_ctx as item:
                 yield item.as_topic_message()
-        except Exception:
-            self.logger.exception(
-                "Failed to process item",
-                extra={"data": {"message": {"id": item_ctx.id}}},
-            )
         finally:
             self._set_item_done(item_ctx)
 
