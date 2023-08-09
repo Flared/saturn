@@ -111,7 +111,8 @@ async def test_inventory_set_cursor_after_completed(
         #    |0|1|2|3|4|5|6|
         # -> |.|.|R|.|.|R|.|
         #    Nothing commited.
-        await xmsg_ctxs[2].aclose()
+        with pytest.raises(ValueError):
+            await xmsg_ctxs[2].aclose()
         await xmsg_ctxs[5].aclose()
         assert job_state_store.job_state(job_id).cursor is None
 
