@@ -73,6 +73,10 @@ spec:
               module: 'example.pipelines'
               message: division by zero
               traceback: __any__
+        - channel: default
+          args:
+            api_key: {key: test, name: test-key-1}
+            message: test-hello
       resources: []
 ---
 apiVersion: saturn.flared.io/v1alpha1
