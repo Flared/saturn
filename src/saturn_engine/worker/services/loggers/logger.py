@@ -157,6 +157,7 @@ class Logger(Service[BaseServices, "Logger.Options"]):
                     | trace_info
                     | executable_message_data(xmsg, verbose=self.verbose)
                 },
+                exc_info=False,
             )
         except Exception:
             self.message_logger.exception(
