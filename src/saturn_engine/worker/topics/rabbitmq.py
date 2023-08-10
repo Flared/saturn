@@ -119,6 +119,7 @@ class RabbitMQTopic(Topic):
 
         async with self._publish_lock.reserve() as reservation:
             while True:
+                body = self._serialize(message)
                 try:
                     await self.ensure_queue()  # Ensure the queue is created.
                     channel = await self.channel
@@ -128,7 +129,7 @@ class RabbitMQTopic(Topic):
 
                     await exchange.publish(
                         aio_pika.Message(
-                            body=self._serialize(message),
+                            body=body,
                             delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
                             content_type=self.options.serializer.content_type,
                         ),
@@ -167,16 +168,18 @@ class RabbitMQTopic(Topic):
                     has_locked = reservation.locked() or not self._publish_lock.locked()
                     await reservation.acquire()
                     if has_locked:
-                        await self.backoff_sleep(attempt)
+                        if not await self.backoff_sleep(attempt):
+                            raise
                         attempt += 1
 
             return False
 
-    async def backoff_sleep(self, attempt: int) -> None:
-        retry_delay = self.FAILURE_RETRY_BACKOFFS[-1]
-        if attempt < len(self.FAILURE_RETRY_BACKOFFS):
-            retry_delay = self.FAILURE_RETRY_BACKOFFS[attempt]
+    async def backoff_sleep(self, attempt: int) -> bool:
+        if attempt >= len(self.FAILURE_RETRY_BACKOFFS):
+            return False
+        retry_delay = self.FAILURE_RETRY_BACKOFFS[attempt]
         await asyncio.sleep(retry_delay.total_seconds())
+        return True
 
     @asynccontextmanager
     async def message_context(
