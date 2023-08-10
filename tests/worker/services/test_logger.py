@@ -63,7 +63,7 @@ async def test_logger_message_executed(
         assert r.message == "Executing message"
         assert r.data == {
             "input": "fake-topic",
-            "job": "fake-queue",
+            "job": {"name": "fake-queue"},
             "message": {
                 "id": "m1",
                 "tags": {},
@@ -83,7 +83,9 @@ async def test_logger_message_executed(
         assert r.message == "Executed message"
         assert r.data == {
             "input": "fake-topic",
-            "job": "fake-queue",
+            "job": {
+                "name": "fake-queue",
+            },
             "message": {
                 "id": "m1",
                 "tags": {},

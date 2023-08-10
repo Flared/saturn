@@ -6,6 +6,7 @@ import enum
 import threading
 from collections.abc import Iterable
 from collections.abc import Iterator
+from collections.abc import Mapping
 from datetime import datetime
 from datetime import timezone
 from functools import wraps
@@ -205,3 +206,14 @@ if not (ExceptionGroup := getattr(builtins, "ExceptionGroup", None)):  # type: i
         def __init__(self, msg: str, errors: list[Exception]) -> None:
             super().__init__(msg)
             self.errors = errors
+
+
+def deep_merge(*dicts: Mapping) -> dict:
+    merged: dict = {}
+    for d in dicts:
+        for k, v in d.items():
+            mv = merged.get(k, ...)
+            if mv is not ... and isinstance(v, Mapping) and isinstance(mv, Mapping):
+                v = deep_merge(mv, v)
+            merged[k] = v
+    return merged

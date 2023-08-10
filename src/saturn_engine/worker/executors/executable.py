@@ -13,6 +13,8 @@ from saturn_engine.core.api import QueueItem
 from saturn_engine.utils import iterators
 from saturn_engine.utils.config import LazyConfig
 from saturn_engine.utils.log import getLogger
+from saturn_engine.worker.context import job_context
+from saturn_engine.worker.context import message_context
 from saturn_engine.worker.executors.parkers import Parkers
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.resources.manager import ResourceContext
@@ -83,6 +85,11 @@ class ExecutableMessage:
     def __str__(self) -> str:
         return str(self.message.message.id)
 
+    @contextlib.contextmanager
+    def saturn_context(self) -> t.Iterator[None]:
+        with job_context(self.queue.definition), message_context(self.message.message):
+            yield
+
 
 class ExecutableQueue:
     def __init__(
@@ -120,24 +127,26 @@ class ExecutableQueue:
     async def run(self) -> AsyncGenerator[ExecutableMessage, None]:
         try:
             async for context, message in self._make_iterator():
-                pipeline_message = PipelineMessage(
-                    info=self.pipeline.info,
-                    message=message.extend(self.pipeline.args),
-                )
-                executable_message = ExecutableMessage(
-                    queue=self,
-                    parker=self.parkers,
-                    message=pipeline_message,
-                    message_context=context,
-                    output=self.output,
-                )
-                await self.services.s.hooks.message_polled.emit(executable_message)
-                await self.parkers.wait()
-                with self.pending_context() as message_context:
-                    executable_message._context.enter_context(message_context())
+                with message_context(message):
+                    pipeline_message = PipelineMessage(
+                        info=self.pipeline.info,
+                        message=message.extend(self.pipeline.args),
+                    )
+                    executable_message = ExecutableMessage(
+                        queue=self,
+                        parker=self.parkers,
+                        message=pipeline_message,
+                        message_context=context,
+                        output=self.output,
+                    )
+                    await self.services.s.hooks.message_polled.emit(executable_message)
+                    await self.parkers.wait()
+                with self.pending_context() as pending_context:
+                    executable_message._context.enter_context(pending_context())
                     yield executable_message
         finally:
-            await self.close()
+            with job_context(self.definition):
+                await self.close()
 
     async def close(self) -> None:
         if self.is_closed:
@@ -223,7 +232,12 @@ class ExecutableQueue:
             )
             emit_batches = self._emit_batches(buffered_iterator)
             iterator = iterators.async_flatten(emit_batches)
-        return iterator
+        return iterators.contextualize(iterator, context=self.job_context)
+
+    @contextlib.asynccontextmanager
+    async def job_context(self) -> t.AsyncIterator[None]:
+        with job_context(self.definition):
+            yield
 
     async def log_message_error(self, error: Exception) -> None:
         self.logger.error("Failed to process message", exc_info=error)
