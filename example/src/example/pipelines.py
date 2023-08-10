@@ -8,10 +8,12 @@ import sqlite3
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
+from datetime import datetime
 
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.job_state import CursorState
 from saturn_engine.core.job_state import CursorStateUpdated
+from saturn_engine.core.pipeline import PipelineOutput
 from saturn_engine.core.pipeline import PipelineResult
 
 from .resources import BackpressureApiKey
@@ -70,6 +72,20 @@ def slow(api_key: BackpressureApiKey, **kwargs: t.Any) -> TopicMessage:
 def fast(**kwargs: t.Any) -> TopicMessage:
     trace_pipeline("fast", kwargs)
     return TopicMessage(args=kwargs)
+
+
+def paginate(p: int = 0, **kwargs: t.Any) -> t.Optional[PipelineOutput]:
+    trace_pipeline("paginate", kwargs)
+    time.sleep(0.1)
+
+    if p < 20:
+        return PipelineOutput(
+            channel="more",
+            message=TopicMessage(
+                args={"p": p + 1, "x": datetime.now()}, tags={"p": str(p)}
+            ),
+        )
+    raise ValueError()
 
 
 @dataclasses.dataclass

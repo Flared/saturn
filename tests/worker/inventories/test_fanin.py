@@ -39,7 +39,12 @@ async def test_fanin_inventory() -> None:
 
     messages = await alib.list(inventory.iterate(after=Cursor('{"a": "3", "b": "0"}')))
     assert messages == [
-        Item(id=MessageId("1"), cursor='{"a": "3", "b": "1"}', args={"n": 5})
+        Item(
+            id=MessageId("1"),
+            cursor='{"a": "3", "b": "1"}',
+            args={"n": 5},
+            tags={"inventory.name": "b"},
+        )
     ]
 
 

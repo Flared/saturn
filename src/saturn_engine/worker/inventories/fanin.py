@@ -47,6 +47,7 @@ class FanIn(IteratorInventory):
             scheduler = self.make_scheduler(aiters)
             async for name, message in scheduler:
                 cursors[name] = message.cursor
+                message.tags.setdefault("inventory.name", name)
                 yield dataclasses.replace(message, cursor=Cursor(json.dumps(cursors)))
 
     def make_scheduler(

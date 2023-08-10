@@ -1,0 +1,66 @@
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnInventory
+metadata:
+  name: fanin-inventory
+spec:
+  type: saturn_engine.worker.inventories.fanin.PriorityFanIn
+  options:
+    inputs:
+    - priority: 1
+      inventory:
+        type: saturn_engine.worker.inventories.static.StaticInventory
+        name: fanin-static-inventory-1
+        options:
+          repeat: true
+          items:
+            - {x: 1}
+            - {x: 2}
+            - {x: 3}
+    - priority: 0
+      inventory:
+        type: saturn_engine.worker.inventories.topic.TopicAdapter
+        name: more
+        options:
+          topic:
+            type: RabbitMQTopic
+            name: fanin-more-topic
+            options:
+              queue_name: feed-indexer
+              max_length: 100
+              prefetch_count: 10
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnTopic
+metadata:
+  name: fanin-more-topic
+spec:
+  type: RabbitMQTopic
+  options:
+    queue_name: feed-indexer
+    max_length: 100
+    prefetch_count: 10
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJobDefinition
+metadata:
+  name: fanin-inventory
+  labels:
+    owner: team-saturn
+spec:
+  minimalInterval: "@weekly"
+  template:
+    input:
+      inventory: fanin-inventory
+    output:
+      default:
+        - topic: stdout
+      more:
+        - topic: fanin-more-topic
+      error:.*:
+      - republish:
+          channel: more
+          max_retry: 3
+    pipeline:
+      name: example.pipelines.paginate
+---
+
