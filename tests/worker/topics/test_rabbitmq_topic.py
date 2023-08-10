@@ -2,6 +2,7 @@ import typing as t
 
 import asyncio
 from collections.abc import Awaitable
+from datetime import datetime
 from datetime import timedelta
 
 import asyncstdlib as alib
@@ -177,3 +178,14 @@ async def test_closed_rabbitmq_topic(
     await topic.close()
     with pytest.raises(TopicClosedError):
         await topic.publish(TopicMessage(id=MessageId("0"), args={"n": 0}), wait=True)
+
+
+@pytest.mark.asyncio
+async def test_rabbitmq_topic_serialization_error(
+    rabbitmq_topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]]
+) -> None:
+    topic = await rabbitmq_topic_maker(RabbitMQTopic)
+    with pytest.raises(TypeError):
+        await topic.publish(
+            TopicMessage(id=MessageId("0"), args={"n": datetime.now()}), wait=True
+        )
