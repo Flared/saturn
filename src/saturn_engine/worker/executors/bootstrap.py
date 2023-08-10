@@ -13,6 +13,8 @@ from saturn_engine.core.pipeline import PipelineResultTypes
 from saturn_engine.utils.hooks import ContextHook
 from saturn_engine.utils.hooks import EventHook
 from saturn_engine.utils.traceback_data import TracebackData
+from saturn_engine.worker.context import message_context
+from saturn_engine.worker.context import pipeline_context
 from saturn_engine.worker.pipeline_message import PipelineMessage
 
 PipelineHook = ContextHook[PipelineMessage, PipelineResults]
@@ -29,7 +31,8 @@ class PipelineBootstrap:
 
     def bootstrap_pipeline(self, message: PipelineMessage) -> PipelineResults:
         message.set_meta_arg(meta_type=TopicMessage, value=message.message)
-        return self.pipeline_hook.emit(self.run_pipeline)(message)
+        with pipeline_context(message.info), message_context(message.message):
+            return self.pipeline_hook.emit(self.run_pipeline)(message)
 
     def run_pipeline(self, message: PipelineMessage) -> PipelineResults:
         execute_result = message.execute()

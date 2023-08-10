@@ -2,6 +2,7 @@ from typing import Any
 
 import pytest
 
+from saturn_engine.utils import deep_merge
 from saturn_engine.utils import get_own_attr
 from saturn_engine.utils import has_own_attr
 from saturn_engine.utils import lazy
@@ -74,3 +75,20 @@ def test_lazy() -> None:
     compute.clear()
     assert compute() == "aa"
     assert count == 2
+
+
+def test_deep_merge() -> None:
+    assert deep_merge(
+        {
+            "a": 1,
+            "b": 0,
+            "c": {"x": 1, "z": 3},
+        },
+        {
+            "b": {"x": 1},
+            "c": {"y": 2, "z": 0},
+        },
+        {
+            "d": "foo",
+        },
+    ) == {"a": 1, "b": {"x": 1}, "c": {"x": 1, "y": 2, "z": 0}, "d": "foo"}

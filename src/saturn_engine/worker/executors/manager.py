@@ -107,8 +107,9 @@ class ExecutorWorker:
 
         # Go through all queue in the Ready state.
         async for message in self.scheduler.run():
-            await self.services.s.hooks.message_scheduled.emit(message)
-            await self.executor_queue.submit(message)
+            with message.saturn_context():
+                await self.services.s.hooks.message_scheduled.emit(message)
+                await self.executor_queue.submit(message)
         self.logger.debug("Executor worker done")
 
     async def close(self) -> None:

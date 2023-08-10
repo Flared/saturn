@@ -66,6 +66,18 @@ async def async_enter(
         yield (context, item)
 
 
+async def contextualize(
+    iterator: t.AsyncIterator[T], *, context: t.Callable[[], t.AsyncContextManager]
+) -> t.AsyncIterator[T]:
+    while True:
+        async with context():
+            try:
+                item = await iterator.__anext__()
+            except StopAsyncIteration:
+                break
+        yield item
+
+
 @contextlib.asynccontextmanager
 async def scoped_aiters(
     *iterators: t.AsyncIterator[T],

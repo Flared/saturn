@@ -17,6 +17,7 @@ from saturn_engine.core.api import QueueItemWithState
 from saturn_engine.core.api import ResourceItem
 from saturn_engine.utils.log import getLogger
 from saturn_engine.worker import work_factory
+from saturn_engine.worker.context import job_context
 from saturn_engine.worker.executors.executable import ExecutableQueue
 from saturn_engine.worker.resources.manager import ResourceData
 from saturn_engine.worker.resources.manager import ResourceRateLimit
@@ -126,15 +127,16 @@ class WorkManager:
     async def build_queue_for_worker_item(
         self, item: QueueItemWithState
     ) -> Optional[ExecutableQueue]:
-        try:
+        with job_context(item):
+            try:
 
-            @self.services.s.hooks.work_queue_built.emit
-            async def scope(item: QueueItemWithState) -> ExecutableQueue:
-                return work_factory.build(item, services=self.services)
+                @self.services.s.hooks.work_queue_built.emit
+                async def scope(item: QueueItemWithState) -> ExecutableQueue:
+                    return work_factory.build(item, services=self.services)
 
-            return await scope(item)
-        except Exception:
-            return None
+                return await scope(item)
+            except Exception:
+                return None
 
     async def load_resources(
         self, lock_response: LockResponse

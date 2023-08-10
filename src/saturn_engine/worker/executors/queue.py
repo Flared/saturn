@@ -57,7 +57,7 @@ class ExecutorQueue:
         while self.is_running:
             processable = await self.poll()
             processable._executing_context.callback(self.queue.task_done)
-            with contextlib.suppress(Exception):
+            with contextlib.suppress(Exception), processable.saturn_context():
                 async with (
                     processable._context,
                     processable._executing_context,
@@ -121,7 +121,7 @@ class ExecutorQueue:
                 PipelineEventsEmitted(events=msg.results.events, xmsg=xmsg)
             )
 
-        with contextlib.suppress(Exception):
+        with contextlib.suppress(Exception), xmsg.saturn_context():
             async with context:
                 await scope(
                     ResultsProcessed(
@@ -171,13 +171,14 @@ class ExecutorQueue:
 
     async def delayed_submit(self, processable: ExecutableMessage) -> None:
         """Submit a pipeline after waiting to acquire its resources"""
-        try:
-            await self.acquire_resources(processable, wait=True)
-        finally:
-            await processable.unpark()
+        with processable.saturn_context():
+            try:
+                await self.acquire_resources(processable, wait=True)
+            finally:
+                await processable.unpark()
 
-        async with self.submit_lock:
-            await self.queue_submit(processable)
+            async with self.submit_lock:
+                await self.queue_submit(processable)
 
     async def queue_submit(self, processable: ExecutableMessage) -> None:
         await self.services.s.hooks.message_submitted.emit(processable)

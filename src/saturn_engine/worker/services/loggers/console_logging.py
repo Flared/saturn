@@ -3,7 +3,9 @@ import typing as t
 import logging
 import logging.config
 
+from saturn_engine.utils import deep_merge
 from saturn_engine.utils.serializer import human_encode
+from saturn_engine.worker import context
 
 from .. import MinimalService
 
@@ -19,6 +21,11 @@ class ConsoleLogging(MinimalService):
 def setup(*args: t.Any) -> None:
     if not setup_structlog():
         setup_logging()
+
+
+def merge_contextvars(logger: t.Any, method_name: str, event_dict: dict) -> dict:
+    summary = context.ContextVars.context_summary()
+    return deep_merge(summary, event_dict) if summary else event_dict
 
 
 def setup_structlog() -> bool:
@@ -42,6 +49,7 @@ def setup_structlog() -> bool:
 
     pre_chain = [
         structlog.contextvars.merge_contextvars,
+        merge_contextvars,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         unwrap_extra_data,
