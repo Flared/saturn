@@ -87,9 +87,6 @@ freezegun = "*"
 types-freezegun = "*"
 autoflake8 = "*"
 
-[tool.poetry.group.dev.dependencies]
-sphinx = "^7.0.1"
-
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 addopts = '''
