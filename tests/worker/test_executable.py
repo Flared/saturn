@@ -2,6 +2,7 @@ import typing as t
 
 import asyncio
 import dataclasses
+from contextlib import AsyncExitStack
 from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock
 
@@ -11,11 +12,13 @@ import pytest
 from saturn_engine.config import Config
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import QueueItem
+from saturn_engine.core.api import QueueItemWithState
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.executors.executable import ExecutableQueue
 from saturn_engine.worker.topic import Topic
 from saturn_engine.worker.topic import TopicOutput
 from saturn_engine.worker.topics import MemoryTopic
+from saturn_engine.worker.topics.static import StaticTopic
 from tests.utils import TimeForwardLoop
 
 
@@ -144,3 +147,37 @@ async def test_executable_context_error(
         async with xmsg._context:
             messages.append(xmsg.message.message)
     assert [m.args for m in messages] == [{"x": 1}]
+
+
+async def test_execurablt_concurrency(
+    executable_queue_maker: t.Callable[..., ExecutableQueue],
+    fake_queue_item: QueueItemWithState,
+    event_loop: TimeForwardLoop,
+) -> None:
+    topic = StaticTopic(
+        options=StaticTopic.Options(
+            messages=[{"args": {}}],
+            cycle=True,
+        )
+    )
+    fake_queue_item.config["job"] = {"max_concurrency": 2}
+    xqueue = executable_queue_maker(topic=topic, definition=fake_queue_item)
+
+    async with alib.scoped_iter(xqueue.run()) as xrun, AsyncExitStack() as stack:
+        msg1 = await xrun.__anext__()
+        msg2 = await xrun.__anext__()
+        async with event_loop.until_idle():
+            next_task = asyncio.create_task(alib.anext(xrun))
+        assert not next_task.done()
+
+        async with event_loop.until_idle():
+            await stack.enter_async_context(msg1._context)
+        assert not next_task.done()
+
+        async with event_loop.until_idle():
+            async with stack:
+                pass
+        assert next_task.done()
+
+        await stack.enter_async_context(msg2._context)
+        await stack.enter_async_context(next_task.result()._context)

@@ -7,10 +7,13 @@ from collections.abc import AsyncGenerator
 from collections.abc import Iterator
 from functools import cached_property
 
+from asyncstdlib import nullcontext
+
 from saturn_engine.core import ResourceUsed
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import QueueItem
 from saturn_engine.utils import iterators
+from saturn_engine.utils import sync_context
 from saturn_engine.utils.config import LazyConfig
 from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.context import job_context
@@ -112,6 +115,10 @@ class ExecutableQueue:
         self.services = services
 
         self.parkers = Parkers()
+        self.concurrency_sem: t.AsyncContextManager = nullcontext()
+        if self.options.max_concurrency:
+            self.concurrency_sem = asyncio.Semaphore(self.options.max_concurrency)
+
         self.iterable = self.run()
 
         self.is_closed = False
@@ -123,11 +130,18 @@ class ExecutableQueue:
         batching_enabled: bool = False
         buffer_flush_after: t.Optional[float] = 5
         buffer_size: t.Optional[int] = 10
+        max_concurrency: t.Optional[int] = None
 
     async def run(self) -> AsyncGenerator[ExecutableMessage, None]:
         try:
             async for context, message in self._make_iterator():
-                with message_context(message):
+                async with (
+                    contextlib.AsyncExitStack() as stack,
+                    sync_context(message_context(message)),
+                ):
+                    await stack.enter_async_context(self.concurrency_sem)
+                    stack.push_async_exit(context)
+
                     pipeline_message = PipelineMessage(
                         info=self.pipeline.info,
                         message=message.extend(self.pipeline.args),
@@ -136,7 +150,7 @@ class ExecutableQueue:
                         queue=self,
                         parker=self.parkers,
                         message=pipeline_message,
-                        message_context=context,
+                        message_context=stack.pop_all(),
                         output=self.output,
                     )
                     await self.services.s.hooks.message_polled.emit(executable_message)
@@ -232,6 +246,7 @@ class ExecutableQueue:
             )
             emit_batches = self._emit_batches(buffered_iterator)
             iterator = iterators.async_flatten(emit_batches)
+
         return iterators.contextualize(iterator, context=self.job_context)
 
     @contextlib.asynccontextmanager

@@ -7,6 +7,7 @@ import threading
 from collections.abc import Iterable
 from collections.abc import Iterator
 from collections.abc import Mapping
+from contextlib import asynccontextmanager
 from datetime import datetime
 from datetime import timezone
 from functools import wraps
@@ -217,3 +218,9 @@ def deep_merge(*dicts: Mapping) -> dict:
                 v = deep_merge(mv, v)
             merged[k] = v
     return merged
+
+
+@asynccontextmanager
+async def sync_context(cm: t.ContextManager[T]) -> t.AsyncIterator[T]:
+    with cm as value:
+        yield value
