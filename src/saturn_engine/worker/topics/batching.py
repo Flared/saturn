@@ -27,6 +27,7 @@ class BatchingTopic(Topic):
     @dataclasses.dataclass
     class Options:
         topic: ComponentDefinition
+        flatten: bool = False
         batch_size: int = 10
         flush_timeout: timedelta = timedelta(seconds=10)
 
@@ -50,7 +51,15 @@ class BatchingTopic(Topic):
     async def _flush(self) -> AsyncGenerator[TopicOutput, None]:
         self.start_time = datetime.utcnow()
 
-        if self.batch:
+        if not self.batch:
+            return
+
+        if self.options.flatten:
+            batch = self.batch
+            self.batch = []
+            for message in batch:
+                yield message
+        else:
             yield self.message_context(self.batch[: self.options.batch_size])
             self.batch = self.batch[self.options.batch_size :]
 
@@ -109,14 +118,13 @@ class BatchingTopic(Topic):
     ) -> AsyncIterator[TopicMessage]:
         context = contextlib.AsyncExitStack()
         message_args: list[dict] = []
-
-        for message_context in batch:
-            message: TopicMessage
-            if isinstance(message_context, AsyncContextManager):
-                message = await context.enter_async_context(message_context)
-            else:
-                message = message_context
-            message_args.append(message.args)
-
         async with context:
+            for message_context in batch:
+                message: TopicMessage
+                if isinstance(message_context, AsyncContextManager):
+                    message = await context.enter_async_context(message_context)
+                else:
+                    message = message_context
+                message_args.append(message.args)
+
             yield TopicMessage(args={"batch": message_args})
