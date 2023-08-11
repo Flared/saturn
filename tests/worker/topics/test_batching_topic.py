@@ -149,3 +149,27 @@ async def test_batching_topic_context_manager(
 
     assert batch_number == 2
     await topic.close()
+
+
+@pytest.mark.asyncio
+async def test_batching_topic_batch_flatten() -> None:
+    BATCH_SIZE = 7
+
+    topic = BatchingTopic(
+        options=BatchingTopic.Options(
+            topic=ComponentDefinition(
+                name="static-topic-with-infinite-messages",
+                type="StaticTopic",
+                options={
+                    "messages": [{"args": {}}] * 10,
+                },
+            ),
+            batch_size=BATCH_SIZE,
+            flatten=True,
+        ),
+        services=ServicesNamespace(strict=False),
+    )
+
+    messages = await alib.list(topic.run())
+    await topic.close()
+    assert len(messages) == 10
