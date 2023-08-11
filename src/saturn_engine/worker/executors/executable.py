@@ -7,13 +7,13 @@ from collections.abc import AsyncGenerator
 from collections.abc import Iterator
 from functools import cached_property
 
+import asyncstdlib as alib
 from asyncstdlib import nullcontext
 
 from saturn_engine.core import ResourceUsed
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import QueueItem
 from saturn_engine.utils import iterators
-from saturn_engine.utils import sync_context
 from saturn_engine.utils.config import LazyConfig
 from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.context import job_context
@@ -135,13 +135,7 @@ class ExecutableQueue:
     async def run(self) -> AsyncGenerator[ExecutableMessage, None]:
         try:
             async for context, message in self._make_iterator():
-                async with (
-                    contextlib.AsyncExitStack() as stack,
-                    sync_context(message_context(message)),
-                ):
-                    await stack.enter_async_context(self.concurrency_sem)
-                    stack.push_async_exit(context)
-
+                with message_context(message):
                     pipeline_message = PipelineMessage(
                         info=self.pipeline.info,
                         message=message.extend(self.pipeline.args),
@@ -150,7 +144,7 @@ class ExecutableQueue:
                         queue=self,
                         parker=self.parkers,
                         message=pipeline_message,
-                        message_context=stack.pop_all(),
+                        message_context=context,
                         output=self.output,
                     )
                     await self.services.s.hooks.message_polled.emit(executable_message)
@@ -233,7 +227,7 @@ class ExecutableQueue:
 
     def _make_iterator(self) -> t.AsyncIterator[tuple[TopicOutput, TopicMessage]]:
         iterator = iterators.async_enter(
-            self.topic.run(),
+            alib.map(self.concurrency_context, self.topic.run()),
             error=self.log_message_error,
         )
         # If we enable cursors states, we are going to decorate the iterator
@@ -248,6 +242,13 @@ class ExecutableQueue:
             iterator = iterators.async_flatten(emit_batches)
 
         return iterators.contextualize(iterator, context=self.job_context)
+
+    @contextlib.asynccontextmanager
+    async def concurrency_context(
+        self, message_context: TopicOutput
+    ) -> t.AsyncIterator[TopicMessage]:
+        async with self.concurrency_sem, message_context as message:
+            yield message
 
     @contextlib.asynccontextmanager
     async def job_context(self) -> t.AsyncIterator[None]:
