@@ -12,6 +12,7 @@ from datetime import timedelta
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.utils.asyncutils import TasksGroup
+from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.services import Services
 from saturn_engine.worker.topic import TopicOutput
 
@@ -32,6 +33,7 @@ class BatchingTopic(Topic):
         flush_timeout: timedelta = timedelta(seconds=10)
 
     def __init__(self, options: Options, services: Services, **kwargs: object) -> None:
+        self.logger = getLogger(__name__, self)
         self.options = options
         self.queue: asyncio.Queue[TopicOutput] = asyncio.Queue(
             maxsize=self.options.batch_size
@@ -75,7 +77,12 @@ class BatchingTopic(Topic):
                     self.options.flush_timeout - (datetime.utcnow() - self.start_time)
                 ).total_seconds()
 
-                message = await asyncio.wait_for(self.queue.get(), timeout=time_left)
+                if self.queue.empty():
+                    message = await asyncio.wait_for(
+                        self.queue.get(), timeout=time_left
+                    )
+                else:
+                    message = self.queue.get_nowait()
                 self.batch.append(message)
 
                 if len(self.batch) >= self.options.batch_size:
@@ -94,6 +101,8 @@ class BatchingTopic(Topic):
         try:
             async for message in self.topic.run():
                 await self.queue.put(message)
+        except Exception:
+            self.logger.exception("Subtopic failed")
         finally:
             self.force_done = True
 
