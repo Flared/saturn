@@ -1,12 +1,17 @@
 import typing as t
 
+import asyncio
 import dataclasses
 
+import aioredis.errors
 from arq import create_pool
 from arq.connections import ArqRedis
 from arq.connections import RedisSettings
+from arq.jobs import Job
+from arq.jobs import JobStatus
 
 from saturn_engine.core import PipelineResults
+from saturn_engine.utils.asyncutils import TasksGroup
 from saturn_engine.utils.asyncutils import cached_property
 from saturn_engine.utils.config import LazyConfig
 from saturn_engine.utils.log import getLogger
@@ -17,8 +22,14 @@ from .. import Executor
 from . import EXECUTE_FUNC_NAME
 from . import QUEUE_TIMEOUT
 from . import RESULT_TIMEOUT
+from . import healthcheck_interval
+from . import healthcheck_key
 
 ARQ_EXECUTOR_NAMESPACE: t.Final[str] = "arq_executor"
+
+
+class WorkerDiedError(Exception):
+    pass
 
 
 class ARQExecutor(Executor):
@@ -48,13 +59,49 @@ class ARQExecutor(Executor):
         config = self.config.load_object(message.config)
         options = config.cast_namespace(ARQ_EXECUTOR_NAMESPACE, ARQExecutor.Options)
 
-        job = await (await self.redis_queue).enqueue_job(
-            EXECUTE_FUNC_NAME,
-            message.message,
-            _expires=options.queue_timeout,
-            _queue_name=options.queue_name,
+        try:
+            job = await (await self.redis_queue).enqueue_job(
+                EXECUTE_FUNC_NAME,
+                message.message,
+                _expires=options.queue_timeout,
+                _queue_name=options.queue_name,
+            )
+        except (OSError, aioredis.errors.ConnectionClosedError):
+            del self.redis_queue
+            raise
+
+        tasks = TasksGroup(name=f"saturn.arq.process_message({message.id})")
+        result_task: asyncio.Task[PipelineResults] = tasks.create_task(
+            job.result(timeout=self.options.result_timeout)
         )
-        return await job.result(timeout=self.options.result_timeout)
+        healthcheck_task = tasks.create_task(self.monitor_job_healthcheck(job))
+        async with tasks:
+            while not (done := await tasks.wait(remove=False)):
+                pass
+            if result_task in done:
+                tasks.remove(result_task)
+                return result_task.result()
+            if healthcheck_task in done:
+                tasks.remove(healthcheck_task)
+                raise WorkerDiedError() from healthcheck_task.exception()
+            raise RuntimeError("Unreachable")
+
+    async def monitor_job_healthcheck(self, job: Job) -> None:
+        # Wait for the job to not be enqueued.
+        while True:
+            await asyncio.sleep(healthcheck_interval)
+            if await job.status() is not JobStatus.queued:
+                break
+
+        # Monitor the job healthcheck.
+        while True:
+            await asyncio.sleep(healthcheck_interval)
+            if not await job._redis.get(healthcheck_key(job.job_id)):
+                break
+
+        # Sleep a little, to avoid any race condition where the healthcheck
+        # complete before the result is fetch.
+        await asyncio.sleep(10)
 
     @property
     def concurrency(self) -> int:

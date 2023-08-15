@@ -61,7 +61,7 @@ class TasksGroup:
     def notify(self) -> None:
         self.updated.set()
 
-    async def wait(self) -> set[asyncio.Task]:
+    async def wait(self, *, remove: bool = True) -> set[asyncio.Task]:
         done, _ = await asyncio.wait(
             self.tasks | {self.updated_task}, return_when=asyncio.FIRST_COMPLETED
         )
@@ -72,8 +72,8 @@ class TasksGroup:
             name = f"task-group-{self.name}.wait" if self.name else None
             self.updated_task = asyncio.create_task(self.updated.wait(), name=name)
 
-        self.tasks.difference_update(done)
-
+        if remove:
+            self.tasks.difference_update(done)
         return done
 
     async def wait_all(self) -> set[asyncio.Task]:
@@ -115,6 +115,12 @@ class TasksGroup:
             self.logger.error("Task '%s' won't complete", task)
 
         self.tasks.clear()
+
+    async def __aenter__(self) -> "TasksGroup":
+        return self
+
+    async def __aexit__(self, *exc_info: t.Any) -> None:
+        await self.close()
 
     def all(self) -> set[asyncio.Task]:
         return self.tasks
@@ -293,6 +299,9 @@ class CachedProperty(t.Generic[T]):
             return self
         return self._get_attribute(instance)
 
+    def __delete__(self, instance: t.Any) -> None:
+        instance.__dict__.pop(self._name, None)
+
     async def _get_attribute(self, instance: t.Any) -> T:
         future = instance.__dict__.get(self._name)
         if future is None:
@@ -305,7 +314,7 @@ class CachedProperty(t.Generic[T]):
                     future.set_result(value)
                 except BaseException as e:
                     future.set_exception(e)
-                    del instance.__dict__[self._name]
+                    instance.__dict__.pop(self._name, None)
 
             asyncio.create_task(
                 wrapper(),
