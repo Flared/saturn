@@ -189,3 +189,26 @@ async def test_rabbitmq_topic_serialization_error(
         await topic.publish(
             TopicMessage(id=MessageId("0"), args={"n": datetime.now()}), wait=True
         )
+
+
+@pytest.mark.asyncio
+async def test_rabbitmq_topic_expiring_message(
+    rabbitmq_topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]]
+) -> None:
+    topic = await rabbitmq_topic_maker(RabbitMQTopic)
+
+    message = TopicMessage(id=MessageId("0"), args={"n": "1"}, expire_after=None)
+    messages = [
+        TopicMessage(
+            id=MessageId("1"), args={"n": "2"}, expire_after=timedelta(seconds=0)
+        ),
+        message,
+    ]
+
+    for m in messages:
+        await topic.publish(m, wait=True)
+
+    async with alib.scoped_iter(topic.run()) as topic_iter:
+        assert await unwrap(await alib.anext(topic_iter)) == message
+
+    await topic.close()

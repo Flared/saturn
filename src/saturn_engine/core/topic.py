@@ -1,6 +1,7 @@
 import typing as t
 
 import dataclasses
+import datetime
 import uuid
 
 from .types import MessageId
@@ -29,6 +30,8 @@ class TopicMessage:
         default_factory=dict
     )
 
+    expire_after: t.Optional[float] = None
+
     # Hack to allow building object with `str` instead of new types `MessageId`
     # and `Cursor`.
     if t.TYPE_CHECKING:
@@ -41,8 +44,13 @@ class TopicMessage:
             tags: dict[str, str] = None,  # type: ignore[assignment]
             config: dict[str, dict[str, t.Optional[t.Any]]] = None,  # type: ignore[assignment]
             metadata: dict[str, dict[str, t.Optional[t.Any]]] = None,  # type: ignore[assignment]
+            expire_after: t.Optional[datetime.timedelta | float] = None,
         ) -> None:
             ...
+
+    def __post_init__(self) -> None:
+        if isinstance(self.expire_after, datetime.timedelta):
+            self.expire_after = self.expire_after.total_seconds()
 
     def extend(self, args: dict[str, object]) -> "TopicMessage":
         return dataclasses.replace(self, args=args | self.args)
