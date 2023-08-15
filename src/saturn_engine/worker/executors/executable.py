@@ -49,6 +49,7 @@ class ExecutableMessage:
         self.output = output
         self.resources: dict[str, ResourceContext] = {}
         self.queue = queue
+        self.is_cancelled = False
 
     @property
     def id(self) -> str:
@@ -92,6 +93,9 @@ class ExecutableMessage:
     def saturn_context(self) -> t.Iterator[None]:
         with job_context(self.queue.definition), message_context(self.message.message):
             yield
+
+    def cancel(self) -> None:
+        self.is_cancelled = True
 
 
 class ExecutableQueue:
