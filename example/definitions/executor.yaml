@@ -25,4 +25,4 @@ spec:
   type: ARQExecutor
   options:
     redis_url: "redis://localhost"
-    concurrency: 4
+    concurrency: 2
