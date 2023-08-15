@@ -132,6 +132,7 @@ class RabbitMQTopic(Topic):
                             body=body,
                             delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
                             content_type=self.options.serializer.content_type,
+                            expiration=message.expire_after,
                         ),
                         routing_key=self.options.queue_name,
                     )
