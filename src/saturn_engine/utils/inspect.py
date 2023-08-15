@@ -2,6 +2,7 @@ import typing as t
 
 import dataclasses
 import functools
+import importlib
 import inspect
 import sys
 import threading
@@ -65,17 +66,6 @@ def eval_class_annotations(
 _import_lock = threading.Lock()
 
 
-def synchronized_import(name: str, *, level: int) -> t.Any:
-    """Import a module from name holding a lock.
-    __import__ is not threadsafe since Python 3.3, having two thread importing
-    module at once can (and has) led to circular import that would otherwise
-    never happen on a single thread.
-    This function is pretty much the old behaviour: Use a "global" lock.
-    """
-    with _import_lock:
-        return __import__(name, level=level)
-
-
 # Taken from CPython pickle.py
 def get_import_name(obj: t.Callable) -> str:
     name = getattr(obj, "__qualname__", None)
@@ -84,8 +74,7 @@ def get_import_name(obj: t.Callable) -> str:
 
     module_name = whichmodule(obj, name)
     try:
-        synchronized_import(module_name, level=0)
-        module = sys.modules[module_name]
+        module = importlib.import_module(module_name)
         obj2, parent = getattribute(module, name)
     except (ImportError, KeyError, AttributeError):
         raise ValueError(
@@ -143,9 +132,8 @@ def import_name(name: str) -> t.Any:
     module, _, name = name.rpartition(".")
     while module:
         try:
-            if module not in sys.modules:
-                synchronized_import(module, level=0)
-            return getattribute(sys.modules[module], name)[0]
+            mod = importlib.import_module(module)
+            return getattribute(mod, name)[0]
         except ModuleNotFoundError:
             prev_name = name
             module, _, name = module.rpartition(".")
