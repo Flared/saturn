@@ -4,8 +4,10 @@ import asyncio
 from concurrent import futures
 
 import arq.worker
+from arq.connections import ArqRedis
 
 from saturn_engine.core import PipelineResults
+from saturn_engine.utils.asyncutils import TasksGroup
 from saturn_engine.utils.hooks import EventHook
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.services import tracing
@@ -14,6 +16,8 @@ from saturn_engine.worker.services.loggers import logger
 from ..bootstrap import PipelineBootstrap
 from ..bootstrap import wrap_remote_exception
 from . import EXECUTE_FUNC_NAME
+from . import healthcheck_interval
+from . import healthcheck_key
 
 
 class WorkerOptions(t.TypedDict, total=False):
@@ -24,6 +28,8 @@ class WorkerOptions(t.TypedDict, total=False):
 class Context(WorkerOptions):
     executor: futures.Executor
     bootstraper: PipelineBootstrap
+    redis: ArqRedis
+    job_id: str
 
 
 async def remote_execute(ctx: Context, message: PipelineMessage) -> PipelineResults:
@@ -31,9 +37,32 @@ async def remote_execute(ctx: Context, message: PipelineMessage) -> PipelineResu
     bootstraper = ctx["bootstraper"]
     with wrap_remote_exception():
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            executor, bootstraper.bootstrap_pipeline, message
+        tasks = TasksGroup(name=f"saturn.arq.remote({message.id})")
+
+        async def execute_message() -> PipelineResults:
+            return await loop.run_in_executor(
+                executor, bootstraper.bootstrap_pipeline, message
+            )
+
+        executor_task = tasks.create_task(execute_message())
+        tasks.create_task(remote_job_healthcheck(ctx))
+        async with tasks:
+            while not (done := await tasks.wait(remove=False)):
+                pass
+            if executor_task in done:
+                tasks.remove(executor_task)
+                return executor_task.result()
+            raise RuntimeError("Healthcheck should not finish")
+
+
+async def remote_job_healthcheck(ctx: Context) -> None:
+    while True:
+        await ctx["redis"].psetex(
+            healthcheck_key(ctx["job_id"]),
+            int((healthcheck_interval * 2) * 1000),
+            b"healthy",
         )
+        await asyncio.sleep(healthcheck_interval)
 
 
 async def startup(ctx: Context) -> None:
