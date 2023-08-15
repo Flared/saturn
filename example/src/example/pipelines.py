@@ -74,6 +74,11 @@ def fast(**kwargs: t.Any) -> TopicMessage:
     return TopicMessage(args=kwargs)
 
 
+def sleep(delay: float = 10, **kwargs: t.Any) -> None:
+    logging.info(kwargs)
+    time.sleep(delay)
+
+
 def paginate(p: int = 0, **kwargs: t.Any) -> t.Optional[PipelineOutput]:
     trace_pipeline("paginate", kwargs)
     time.sleep(0.1)
