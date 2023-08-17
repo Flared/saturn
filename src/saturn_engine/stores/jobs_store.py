@@ -143,16 +143,16 @@ def sync_jobs_states(
                     "enabled": False,
                 }
             )
+
+        namespace = job_definition_by_name.get(job_id) or job_id
         for cursor, cursor_state in job_state.cursors_states.items():
-            job_definition_name = job_definition_by_name.get(job_id)
-            if job_definition_name:
-                job_cursors.append(
-                    {
-                        "job_definition_name": job_definition_name,
-                        "cursor": cursor,
-                        "state": cursor_state,
-                    }
-                )
+            job_cursors.append(
+                {
+                    "job_definition_name": namespace,
+                    "cursor": cursor,
+                    "state": cursor_state,
+                }
+            )
 
         if job_values:
             job_values["name"] = job_id

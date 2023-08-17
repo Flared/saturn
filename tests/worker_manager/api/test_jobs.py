@@ -665,6 +665,7 @@ def test_sync_states(
         {"job": r.job_definition_name, "cursor": r.cursor, "state": r.state}
         for r in database_state
     ] == [
+        {"job": "orphan-test", "cursor": "a", "state": {"x": 1}},
         {"job": "test", "cursor": "a", "state": {"x": 1}},
         {"job": "test", "cursor": "b", "state": {"x": 3}},
     ]

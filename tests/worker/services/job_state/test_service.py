@@ -201,17 +201,20 @@ async def test_job_state_set_message_cursor_state(
     job_state_service = services_manager.services.cast_service(JobStateService)
     fetch_cursors = mocker.spy(job_state_service, "fetch_cursors_states")
     job_state_service.set_job_cursor_state(
-        fake_queue_item.name, cursor=Cursor("1"), cursor_state={"x": 1}
+        JobId("test-job"), cursor=Cursor("1"), cursor_state={"x": 1}
     )
     job_state_service.set_job_cursor_state(
-        fake_queue_item.name, cursor=Cursor("2"), cursor_state={"x": 2}
+        JobId("test-job"), cursor=Cursor("2"), cursor_state={"x": 2}
     )
     fake_queue_item.config["job"] = {
         "buffer_flush_after": 7,
         "buffer_size": 2,
     }
     fake_queue_item.pipeline.info = PipelineInfo.from_pipeline(pipeline)
-    fake_queue_item.config["job_state"] = {"cursors_states_enabled": True}
+    fake_queue_item.config["job_state"] = {
+        "cursors_states_enabled": True,
+        "cursors_states_namespace": "test-job",
+    }
 
     @services_manager.services.s.hooks.work_queue_built.emit
     async def fake_work_builder(queue: QueueItemWithState) -> t.Any:
@@ -257,13 +260,13 @@ async def test_job_state_set_message_cursor_state(
     ]
 
     assert fetch_cursors.call_args_list == [
-        call(fake_queue_item.name, cursors=[Cursor("0")]),
-        call(fake_queue_item.name, cursors=[Cursor("1"), Cursor("2")]),
-        call(fake_queue_item.name, cursors=[Cursor("3"), Cursor("a")]),
+        call("test-job", cursors=[Cursor("0")]),
+        call("test-job", cursors=[Cursor("1"), Cursor("2")]),
+        call("test-job", cursors=[Cursor("3"), Cursor("a")]),
     ]
 
     state = job_state_service._store._current_state
-    assert len(state.jobs) == 1
+    assert len(state.jobs) == 2
     job_state = state.jobs[fake_queue_item.name]
     assert job_state.cursor == "4"
     assert job_state.completion
