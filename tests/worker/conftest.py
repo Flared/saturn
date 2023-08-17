@@ -446,7 +446,9 @@ class InMemoryCursorsFetcher(CursorsStatesFetcher):
 
 
 @pytest.fixture
-async def inmemory_cursors_fetcher(services_manager: ServicesManager) -> None:
+async def inmemory_cursors_fetcher(
+    services_manager: ServicesManager,
+) -> None:
     job_state_service = services_manager.services.cast_service(JobStateService)
     job_state_service._cursors_fetcher = InMemoryCursorsFetcher(
         job_state=job_state_service

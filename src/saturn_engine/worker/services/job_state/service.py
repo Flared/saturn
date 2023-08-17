@@ -97,8 +97,13 @@ class JobStateService(Service[Services, Options]):
         cursors = [
             c for i in batch.items if (c := i.metadata["job_state"]["state_cursor"])
         ]
+        namespace = (
+            batch.job.config.get("job_state", {}).get("cursors_states_namespace")
+            or batch.job.name
+        )
+
         cursors_states: dict = await self.fetch_cursors_states(
-            batch.job.name, cursors=cursors
+            namespace, cursors=cursors
         )
         for item in batch.items:
             metadata = item.metadata.setdefault("job_state", {})
@@ -114,12 +119,20 @@ class JobStateService(Service[Services, Options]):
         for event in pevents.events:
             if not isinstance(event, CursorStateUpdated):
                 continue
-            job = pevents.xmsg.queue.definition.name
+
             message = pevents.xmsg.message.message
             cursor = message.metadata.get("job_state", {}).get("state_cursor")
             if not cursor:
                 continue
-            self.set_job_cursor_state(job, cursor=cursor, cursor_state=event.state)
+
+            queue = pevents.xmsg.queue.definition
+            namespace = (
+                queue.config.get("job_state", {}).get("cursors_states_namespace")
+                or queue.name
+            )
+            self.set_job_cursor_state(
+                namespace, cursor=cursor, cursor_state=event.state
+            )
 
     def set_job_cursor(self, job_name: JobId, *, cursor: Cursor) -> None:
         self._store.set_job_cursor(job_name, cursor)
