@@ -35,6 +35,10 @@ ExcInfo = tuple[
 ]
 
 
+def get_hub() -> Hub:
+    return Hub(Hub.current)
+
+
 def set_event_tags_from_queue(event: dict, *, queue: QueueItem) -> None:
     tags = event.setdefault("tags", {})
     tags["saturn.job.name"] = queue.name
@@ -96,12 +100,14 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
         return event
 
     async def on_hook_failed(self, error: Exception) -> None:
-        self._capture_exception(error)
+        hub = get_hub()
+        self._capture_exception(error, hub=hub)
 
     async def on_work_queue_built(
         self, item: QueueItem
     ) -> AsyncGenerator[None, ExecutableQueue]:
-        with Hub.current.push_scope() as scope:
+        hub = get_hub()
+        with hub.push_scope() as scope:
 
             def _event_processor(event: Event, hint: Hint) -> Event:
                 with capture_internal_exceptions():
@@ -115,13 +121,14 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
             try:
                 yield
             except Exception as e:
-                self._capture_exception(e)
+                self._capture_exception(e, hub=hub)
 
     async def on_message_executed(
         self, xmsg: ExecutableMessage
     ) -> AsyncGenerator[None, PipelineResults]:
         message = xmsg.message
-        with Hub.current.push_scope() as scope:
+        hub = get_hub()
+        with hub.push_scope() as scope:
 
             def _event_processor(event: Event, hint: Hint) -> Event:
                 with capture_internal_exceptions():
@@ -136,12 +143,13 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
                 with contextlib.suppress(HandledError):
                     yield
             except Exception as e:
-                self._capture_exception(e)
+                self._capture_exception(e, hub=hub)
 
     async def on_message_published(
         self, publish: MessagePublished
     ) -> AsyncGenerator[None, None]:
-        with Hub.current.push_scope() as scope:
+        hub = get_hub()
+        with hub.push_scope() as scope:
 
             def _event_processor(event: Event, hint: Hint) -> Event:
                 with capture_internal_exceptions():
@@ -157,10 +165,9 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
             try:
                 yield
             except Exception as e:
-                self._capture_exception(e)
+                self._capture_exception(e, hub=hub)
 
-    def _capture_exception(self, exc_info: Exception) -> None:
-        hub = Hub.current
+    def _capture_exception(self, exc_info: Exception, hub: Hub) -> None:
         client = hub.client
         if not client:
             return
