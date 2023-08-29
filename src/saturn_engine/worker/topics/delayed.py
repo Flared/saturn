@@ -16,7 +16,7 @@ from saturn_engine.worker.topics.rabbitmq import RabbitMQTopic
 
 @dataclasses.dataclass
 class DelayedTopicMetadata:
-    not_before: datetime
+    not_before: str
 
 
 class DelayedTopic(RabbitMQTopic):
@@ -45,7 +45,8 @@ class DelayedTopic(RabbitMQTopic):
                 message.metadata[DelayedTopic._METADATA_NAME], DelayedTopicMetadata
             )
 
-            sleep_time = (meta.not_before - utcnow()).total_seconds()
+            not_before = datetime.fromisoformat(meta.not_before)
+            sleep_time = (not_before - utcnow()).total_seconds()
             if sleep_time > 0:
                 await asyncio.sleep(sleep_time)
 
@@ -58,7 +59,7 @@ class DelayedTopic(RabbitMQTopic):
     ) -> bool:
         message.metadata[DelayedTopic._METADATA_NAME] = asdict(
             DelayedTopicMetadata(
-                not_before=utcnow() + timedelta(seconds=self.delay),
+                not_before=(utcnow() + timedelta(seconds=self.delay)).isoformat(),
             )
         )
 
