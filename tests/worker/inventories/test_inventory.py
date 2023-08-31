@@ -1,12 +1,15 @@
 import typing as t
 
+import json
 from datetime import timedelta
 
+import asyncstdlib as alib
 import pytest
 
 from saturn_engine.core import Cursor
 from saturn_engine.core import MessageId
 from saturn_engine.utils import utcnow
+from saturn_engine.worker.inventories.static import StaticInventory
 from saturn_engine.worker.inventory import Inventory
 from saturn_engine.worker.inventory import Item
 from saturn_engine.worker.inventory import MaxRetriesError
@@ -70,3 +73,17 @@ async def test_next_batch_max_retries(frozen_time: FreezeTime) -> None:
     assert utcnow() >= (start_date + timedelta(seconds=50))
     # And it was retried.
     assert inventory.retried == 6
+
+
+async def test_legacy_cursor() -> None:
+    inventory = StaticInventory(
+        options=StaticInventory.Options(items=[{"x": 1}, {"x": 2}])
+    )
+    items = await alib.list(inventory.run(after=Cursor("0")))
+    assert [i.args for i in items] == [{"x": 2}]
+    assert json.loads(inventory.cursor) == {"v": 1, "a": "0"}
+
+    async with items[0].context:
+        pass
+
+    assert json.loads(inventory.cursor) == {"v": 1, "a": "1"}

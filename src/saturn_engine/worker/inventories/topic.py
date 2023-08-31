@@ -32,7 +32,7 @@ class TopicAdapter(IteratorInventory):
                         args=message.args,
                         tags=message.tags,
                         metadata=message.metadata,
-                        _context=stack.pop_all(),
+                        context=stack.pop_all(),
                     )
             except Exception:
                 self.logger.exception("Failed to convert message")

@@ -268,7 +268,7 @@ async def test_job_state_set_message_cursor_state(
     state = job_state_service._store._current_state
     assert len(state.jobs) == 2
     job_state = state.jobs[fake_queue_item.name]
-    assert job_state.cursor == "4"
+    assert job_state.cursor == '{"v": 1, "a": "4"}'
     assert job_state.completion
 
     assert results == [None, "1", "2", None, None]

@@ -1,78 +1,146 @@
-from typing import Any
-from typing import NamedTuple
-from typing import Optional
+import typing as t
 
-import abc
+import contextlib
 import dataclasses
 import json
-from collections.abc import AsyncIterator
+import operator
+from contextlib import AsyncExitStack
+from functools import reduce
 
 from saturn_engine.core import Cursor
-from saturn_engine.core.api import ComponentDefinition
-from saturn_engine.worker.services import Services
-
-from . import Inventory
-from . import Item
-from . import IteratorInventory
+from saturn_engine.worker.inventory import Inventory
+from saturn_engine.worker.inventory import Item
 
 
-class MultiItems(NamedTuple):
+class MultiItems(t.NamedTuple):
     ids: dict[str, str]
-    cursors: dict[str, Optional[str]]
-    args: dict[str, dict[str, Any]]
+    cursors: dict[str, t.Optional[str]]
+    args: dict[str, dict[str, t.Any]]
+    tags: dict[str, str]
+    metadata: dict[str, t.Any]
 
-
-class MultiInventory(IteratorInventory, abc.ABC):
-    @dataclasses.dataclass
-    class Options:
-        inventories: list[ComponentDefinition]
-        batch_size: int = 10
-        flatten: bool = False
-        alias: Optional[str] = None
-
-    def __init__(self, options: Options, services: Services, **kwargs: object) -> None:
-        super().__init__(
-            options=options,
-            services=services,
-            batch_size=options.batch_size,
-            **kwargs,
+    @classmethod
+    def from_one(cls, item: Item, *, name: str) -> "MultiItems":
+        return MultiItems(
+            ids={name: item.id},
+            cursors={name: item.cursor},
+            args={name: item.args},
+            tags=item.tags,
+            metadata=item.metadata,
         )
-        self.flatten: bool = options.flatten
-        self.alias: Optional[str] = options.alias
 
-        # This import must be done late since work_factory depends on this module.
-        from saturn_engine.worker.work_factory import build_inventory
+    def with_item(self, item: Item, *, name: str) -> "MultiItems":
+        return self._replace(
+            ids=self.ids | {name: item.id},
+            cursors=self.cursors | {name: item.cursor},
+            args=self.args | {name: item.args},
+            tags=self.tags | item.tags,
+            metadata=self.metadata | item.metadata,
+        )
 
-        self.inventories = []
-        for inventory in options.inventories:
-            self.inventories.append(
-                (inventory.name, build_inventory(inventory, services=services))
-            )
+    def as_item(
+        self,
+        *,
+        alias: t.Optional[str] = None,
+        flatten: bool = False,
+        context: t.Optional[AsyncExitStack] = None,
+    ) -> Item:
+        args = self.args
+        if flatten:
+            args = reduce(operator.or_, args.values(), {})
+        if alias:
+            args = {alias: args}
 
-    async def iterate(self, after: Optional[Cursor] = None) -> AsyncIterator[Item]:
-        cursors = json.loads(after) if after else {}
+        return Item(
+            id=json.dumps(self.ids),
+            cursor=json.dumps(self.cursors),
+            args=args,
+            metadata=self.metadata,
+            tags=self.tags,
+            context=context or AsyncExitStack(),
+        )
 
-        async for item in self.inventories_iterator(
-            inventories=self.inventories, after=cursors
-        ):
-            args: dict[str, Any] = item.args
-            if self.flatten:
-                args = {}
-                for sub_inventory_args in item.args.values():
-                    args.update(sub_inventory_args)
-            if self.alias:
-                args = {
-                    self.alias: args,
-                }
-            yield Item(
-                id=json.dumps(item.ids),
-                cursor=json.dumps(item.cursors),
-                args=args,
-            )
 
-    @abc.abstractmethod
-    async def inventories_iterator(
-        self, *, inventories: list[tuple[str, Inventory]], after: dict[str, Cursor]
-    ) -> AsyncIterator[MultiItems]:
-        raise NotImplementedError()
-        yield
+@dataclasses.dataclass
+class MultiCursorsState:
+    after: t.Optional[Cursor] = None
+    partials: dict[Cursor, Cursor] = dataclasses.field(default_factory=dict)
+
+    @classmethod
+    def from_cursor(cls, raw: t.Optional[Cursor], /) -> "MultiCursorsState":
+        state = None
+        if raw:
+            # Try parsing cursor format that might be in the old unstructured
+            # format. We valid it is both parseable in json and has the
+            # expected fields.
+            with contextlib.suppress(json.JSONDecodeError):
+                data = json.loads(raw)
+                if (
+                    isinstance(data, dict)
+                    and data.get("v") == 1
+                    and not (data.keys() - ["v", "a", "p"])
+                ):
+                    state = data
+            if state is None:
+                state = {"a": raw}
+        return cls.from_dict(state or {})
+
+    @classmethod
+    def from_dict(cls, state: dict) -> "MultiCursorsState":
+        return cls(
+            after=state.get("a"),
+            partials=state.get("p") or {},
+        )
+
+    def as_dict(self) -> dict:
+        data: dict = {"v": 1}
+        if self.after is not None:
+            data["a"] = self.after
+        if self.partials:
+            data["p"] = self.partials
+        return data
+
+    def as_cursor(self) -> Cursor:
+        return Cursor(json.dumps(self.as_dict()))
+
+    def process_root(self, inventory: Inventory) -> "RootCursors":
+        return RootCursors(cursors=self, inventory=inventory)
+
+    def process_sub(self, subinv: Inventory, *, parent: Item) -> "SubCursors":
+        return SubCursors(cursors=self, parent=parent, inventory=subinv)
+
+
+@dataclasses.dataclass
+class RootCursors:
+    cursors: MultiCursorsState
+    inventory: Inventory
+
+    @contextlib.contextmanager
+    def process(self, item: Item) -> t.Iterator[None]:
+        try:
+            yield
+        finally:
+            self.cursors.after = self.inventory.cursor
+            if item.cursor is not None:
+                self.cursors.partials.pop(item.cursor, None)
+
+
+@dataclasses.dataclass
+class SubCursors:
+    parent: Item
+    cursors: MultiCursorsState
+    inventory: Inventory
+
+    @contextlib.contextmanager
+    def process(self) -> t.Iterator[None]:
+        try:
+            yield
+        finally:
+            if (c := self.parent.cursor) is not None:
+                self.cursors.partials[c] = self.inventory.cursor
+
+    @property
+    def cursor(self) -> t.Optional[Cursor]:
+        if (c := self.parent.cursor) is not None:
+            return self.cursors.partials.get(c)
+        return None

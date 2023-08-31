@@ -1,7 +1,6 @@
 import typing as t
 
 import asyncio
-import dataclasses
 from collections import Counter
 from collections.abc import AsyncGenerator
 from collections.abc import AsyncIterator
@@ -28,14 +27,8 @@ async def scheduler(
 T = t.TypeVar("T")
 
 
-@dataclasses.dataclass(eq=False)
-class SimpleSchedulable(t.Generic[T]):
-    iterable: AsyncGenerator[T, None]
-    name: str
-
-
 def make_schedulable(iterable: AsyncGenerator[T, None]) -> Schedulable[T]:
-    return SimpleSchedulable(iterable=iterable, name="")
+    return Schedulable(iterable=iterable, name="")
 
 
 @pytest.mark.asyncio

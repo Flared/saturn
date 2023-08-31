@@ -29,14 +29,12 @@ class Job(Topic):
         self.services = services
         self.queue_item = queue_item
         self.state_service = services.cast_service(JobStateService)
-        self._pendings: dict[int, tuple[bool, Item]] = {}
 
     async def run(self) -> AsyncGenerator[TopicOutput, None]:
         cursor = self.queue_item.state.cursor
 
         try:
-            async for item in self.inventory.iterate(after=cursor):
-                cursor = item.cursor
+            async for item in self.inventory.run(after=cursor):
                 yield self.item_to_topic(item)
 
             self.state_service.set_job_completed(self.queue_item.name)
@@ -46,34 +44,11 @@ class Job(Topic):
 
     @asynccontextmanager
     async def item_to_topic(self, item_ctx: Item) -> t.AsyncIterator[TopicMessage]:
-        self._set_item_pending(item_ctx)
         try:
             async with item_ctx as item:
                 yield item.as_topic_message()
         finally:
-            self._set_item_done(item_ctx)
-
-    def _set_item_pending(self, item: Item) -> None:
-        self._pendings[id(item)] = (True, item)
-
-    def _set_item_done(self, item: Item) -> None:
-        self._pendings[id(item)] = (False, item)
-
-        # Collect the serie of done item from the beginning.
-        items_done = []
-        for pending, item in self._pendings.values():
-            if pending:
-                break
-            items_done.append(item)
-
-        # Remove all done item from the pendings
-        for item in items_done:
-            del self._pendings[id(item)]
-
-        # Commit last cursor.
-        for item in reversed(items_done):
-            if item.cursor:
+            if self.inventory.cursor is not None:
                 self.state_service.set_job_cursor(
-                    self.queue_item.name, cursor=item.cursor
+                    self.queue_item.name, cursor=self.inventory.cursor
                 )
-                break

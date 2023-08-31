@@ -110,8 +110,6 @@ def build_resources_provider(
 from saturn_engine.worker.inventories.batching import BatchingInventory
 from saturn_engine.worker.inventories.chained import ChainedInventory
 from saturn_engine.worker.inventories.dummy import DummyInventory
-from saturn_engine.worker.inventories.joined import JoinedInventory
-from saturn_engine.worker.inventories.joined_sub import JoinedSubInventory
 from saturn_engine.worker.inventories.periodic import PeriodicInventory
 from saturn_engine.worker.inventories.static import StaticInventory
 from saturn_engine.worker.topics.batching import BatchingTopic
@@ -128,8 +126,6 @@ from saturn_engine.worker.topics.static import StaticTopic
 BUILTINS: dict[str, t.Union[t.Type[Inventory], t.Type[Topic]]] = {
     "DummyInventory": DummyInventory,
     "StaticInventory": StaticInventory,
-    "JoinedInventory": JoinedInventory,
-    "JoinedSubInventory": JoinedSubInventory,
     "ChainedInventory": ChainedInventory,
     "PeriodicInventory": PeriodicInventory,
     "BatchingInventory": BatchingInventory,

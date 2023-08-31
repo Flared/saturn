@@ -42,8 +42,7 @@ class TasksGroup:
         self.updated = asyncio.Event()
         self.name = name
 
-        name = f"task-group-{self.name}.wait" if self.name else None
-        self.updated_task = asyncio.create_task(self.updated.wait(), name=name)
+        self.updated_task: t.Optional[asyncio.Task] = None
 
     def add(self, task: asyncio.Task) -> None:
         self.tasks.add(task)
@@ -62,15 +61,19 @@ class TasksGroup:
         self.updated.set()
 
     async def wait(self, *, remove: bool = True) -> set[asyncio.Task]:
+        if self.updated_task is None:
+            name = f"task-group-{self.name}.wait" if self.name else "task-group.wait"
+            self.updated_task = asyncio.create_task(self.updated.wait(), name=name)
+
+        updated_task = self.updated_task
         done, _ = await asyncio.wait(
-            self.tasks | {self.updated_task}, return_when=asyncio.FIRST_COMPLETED
+            self.tasks | {updated_task}, return_when=asyncio.FIRST_COMPLETED
         )
 
-        if self.updated_task in done:
+        if updated_task in done:
             self.updated.clear()
-            done.remove(self.updated_task)
-            name = f"task-group-{self.name}.wait" if self.name else None
-            self.updated_task = asyncio.create_task(self.updated.wait(), name=name)
+            done.remove(updated_task)
+            self.updated_task = None
 
         if remove:
             self.tasks.difference_update(done)
@@ -85,9 +88,11 @@ class TasksGroup:
 
     async def close(self, timeout: t.Optional[float] = None) -> None:
         # Cancel the update event task.
-        self.updated_task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await self.updated_task
+        if self.updated_task:
+            self.updated_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await self.updated_task
+            self.updated_task = None
 
         if not self.tasks:
             return

@@ -2,11 +2,14 @@ import typing as t
 
 import abc
 import asyncio
+import contextlib
 import dataclasses
+import json
 import logging
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import AsyncExitStack
+from contextlib import suppress
 from datetime import timedelta
 from functools import cached_property
 
@@ -30,7 +33,7 @@ class Item:
     cursor: t.Optional[Cursor] = MISSING  # type: ignore[assignment]
     tags: dict[str, str] = dataclasses.field(default_factory=dict)
     metadata: dict[str, t.Any] = dataclasses.field(default_factory=dict)
-    _context: AsyncExitStack = dataclasses.field(
+    context: AsyncExitStack = dataclasses.field(
         default_factory=AsyncExitStack, compare=False
     )
 
@@ -54,7 +57,7 @@ class Item:
             cursor: t.Optional[str] = None,
             tags: dict[str, str] = None,  # type: ignore[assignment]
             metadata: dict[str, t.Any] = None,  # type: ignore[assignment]
-            _context: AsyncExitStack = None,  # type: ignore[assignment]
+            context: AsyncExitStack = None,  # type: ignore[assignment]
         ) -> None:
             ...
 
@@ -63,11 +66,11 @@ class Item:
             self.cursor = Cursor(self.id)
 
     async def __aenter__(self) -> "Item":
-        await self._context.__aenter__()
+        await self.context.__aenter__()
         return self
 
     async def __aexit__(self, *exc: t.Any) -> t.Optional[bool]:
-        return await self._context.__aexit__(*exc)
+        return await self.context.__aexit__(*exc)
 
 
 class MaxRetriesError(Exception):
@@ -87,6 +90,89 @@ class RetryBatch(Exception):
     def check_max_retries(self, retries_count: int) -> None:
         if retries_count >= self.max_retries:
             raise MaxRetriesError() from self.__cause__
+
+
+class PendingItem(t.NamedTuple):
+    is_pending: bool
+    item: Item
+
+
+@dataclasses.dataclass
+class CursorsState:
+    after: t.Optional[Cursor] = None
+    partials: set[Cursor] = dataclasses.field(default_factory=set)
+    _pendings: dict[int, PendingItem] = dataclasses.field(
+        default_factory=dict, init=False, repr=False
+    )
+
+    @classmethod
+    def from_cursor(cls, raw: t.Optional[Cursor], /) -> "CursorsState":
+        state = None
+        if raw:
+            # Try parsing cursor format that might be in the old unstructured
+            # format. We valid it is both parseable in json and has the
+            # expected fields.
+            with suppress(json.JSONDecodeError):
+                data = json.loads(raw)
+                if (
+                    isinstance(data, dict)
+                    and data.get("v") == 1
+                    and not (data.keys() - ["v", "a", "p"])
+                ):
+                    state = data
+            if state is None:
+                state = {"a": raw}
+        return cls.from_dict(state or {})
+
+    @classmethod
+    def from_dict(cls, state: dict) -> "CursorsState":
+        return cls(
+            after=state.get("a"),
+            partials=set(state.get("p") or set()),
+        )
+
+    def as_dict(self) -> dict:
+        data: dict = {"v": 1}
+        if self.after is not None:
+            data["a"] = self.after
+
+        partials = self.partials | {
+            p.item.cursor
+            for p in self._pendings.values()
+            if not p.is_pending and p.item.cursor is not None
+        }
+        if partials:
+            data["p"] = list(sorted(partials))
+
+        return data
+
+    def as_cursor(self) -> Cursor:
+        return Cursor(json.dumps(self.as_dict()))
+
+    @contextlib.contextmanager
+    def process_item(self, item: Item) -> t.Iterator[None]:
+        self._pendings[id(item)] = PendingItem(True, item)
+        try:
+            yield
+        finally:
+            self._pendings[id(item)] = PendingItem(False, item)
+
+            # Collect the serie of done item from the beginning.
+            items_done = []
+            for pending, item in self._pendings.values():
+                if pending:
+                    break
+                items_done.append(item)
+
+            # Remove all done item from the pendings
+            for item in items_done:
+                del self._pendings[id(item)]
+
+            # Commit last cursor.
+            for item in reversed(items_done):
+                if item.cursor:
+                    self.after = item.cursor
+                    break
 
 
 class Inventory(abc.ABC, OptionsSchema):
@@ -118,6 +204,16 @@ class Inventory(abc.ABC, OptionsSchema):
             for item in batch:
                 yield item
             after = item.cursor
+
+    async def run(self, after: t.Optional[Cursor] = None) -> t.AsyncIterator[Item]:
+        self._cursors = CursorsState.from_cursor(after)
+        async for item in self.iterate(after=self._cursors.after):
+            item.context.enter_context(self._cursors.process_item(item))
+            yield item
+
+    @property
+    def cursor(self) -> Cursor:
+        return self._cursors.as_cursor()
 
     @cached_property
     def logger(self) -> logging.Logger:
