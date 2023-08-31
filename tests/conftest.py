@@ -1,6 +1,7 @@
 import typing as t
 
 import asyncio
+import gc
 from collections.abc import Awaitable
 from collections.abc import Iterator
 
@@ -66,6 +67,7 @@ def event_loop(
         freezer=freezer,
         frozen_time=frozen_time,
     )
+    loop.set_debug(True)
     yield loop
     loop.run_until_complete(loop.shutdown_asyncgens())
     loop.run_until_complete(loop.shutdown_default_executor())
@@ -74,6 +76,8 @@ def event_loop(
     try:
         assert not tasks
     finally:
+        # Allow collecting and logging potential task not awaited.
+        gc.collect()
         loop.close()
 
 

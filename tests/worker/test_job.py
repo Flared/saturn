@@ -1,6 +1,7 @@
 import typing as t
 
 import dataclasses
+import json
 from contextlib import AsyncExitStack
 
 import asyncstdlib as alib
@@ -61,7 +62,8 @@ async def test_inventory_set_cursor(
         async with xmsg._context:
             pass
 
-    assert job_state_store.job_state(job_id).cursor == "2"
+    assert (cursor := job_state_store.job_state(job_id).cursor)
+    assert json.loads(cursor) == {"v": 1, "a": "2"}
 
 
 @pytest.mark.asyncio
@@ -80,7 +82,7 @@ async def test_inventory_set_cursor_after_completed(
             items=[
                 Item(cursor=Cursor("0"), args={"x": 1}),
                 Item(cursor=None, args={"x": 1}),
-                Item(cursor=Cursor("2"), args={"x": 1}, _context=failing_stack),
+                Item(cursor=Cursor("2"), args={"x": 1}, context=failing_stack),
                 Item(cursor=None, args={"x": 1}),
                 Item(cursor=Cursor("4"), args={"x": 1}),
                 Item(cursor=Cursor("5"), args={"x": 1}),
@@ -114,7 +116,8 @@ async def test_inventory_set_cursor_after_completed(
         with pytest.raises(ValueError):
             await xmsg_ctxs[2].aclose()
         await xmsg_ctxs[5].aclose()
-        assert job_state_store.job_state(job_id).cursor is None
+        assert (cursor := job_state_store.job_state(job_id).cursor)
+        assert json.loads(cursor) == {"v": 1, "p": ["2", "5"]}
 
         # .: Pending, R: Ready
         #    |0|1|2|3|4|5|6|
@@ -122,14 +125,16 @@ async def test_inventory_set_cursor_after_completed(
         #    Message 0 is commited.
         await xmsg_ctxs[3].aclose()
         await xmsg_ctxs[0].aclose()
-        assert job_state_store.job_state(job_id).cursor == "0"
+        assert (cursor := job_state_store.job_state(job_id).cursor)
+        assert json.loads(cursor) == {"v": 1, "a": "0", "p": ["2", "5"]}
 
         # .: Pending, R: Ready
         #    |0|1|2|3|4|5|6|
         # -> |C|R|C|R|.|R|.|
         #    Message 2 is commited (Message 3 has no cursor)
         await xmsg_ctxs[1].aclose()
-        assert job_state_store.job_state(job_id).cursor == "2"
+        assert (cursor := job_state_store.job_state(job_id).cursor)
+        assert json.loads(cursor) == {"v": 1, "a": "2", "p": ["5"]}
 
         # .: Pending, R: Ready
         #    |0|1|2|3|4|5|6|
@@ -137,4 +142,5 @@ async def test_inventory_set_cursor_after_completed(
         #    Message 6 is commited
         await xmsg_ctxs[6].aclose()
         await xmsg_ctxs[4].aclose()
-        assert job_state_store.job_state(job_id).cursor == "6"
+        assert (cursor := job_state_store.job_state(job_id).cursor)
+        assert json.loads(cursor) == {"v": 1, "a": "6"}

@@ -12,7 +12,13 @@ from saturn_engine.utils.log import getLogger
 T = t.TypeVar("T")
 
 
-class Schedulable(t.Protocol, t.Generic[T]):
+class SchedulableProtocol(t.Protocol, t.Generic[T]):
+    iterable: AsyncGenerator[T, None]
+    name: str
+
+
+@dataclasses.dataclass(eq=False)
+class Schedulable(t.Generic[T]):
     iterable: AsyncGenerator[T, None]
     name: str
 
@@ -21,31 +27,34 @@ class Schedulable(t.Protocol, t.Generic[T]):
 class ScheduleSlot(t.Generic[T]):
     generator: AsyncGenerator[T, None]
     task: asyncio.Task
+    future: asyncio.Future[None]
     order: int = 0
     is_running: bool = True
 
 
 class Scheduler(t.Generic[T]):
-    schedule_slots: dict[Schedulable[T], ScheduleSlot[T]]
-    tasks: dict[asyncio.Task, Schedulable[T]]
+    schedule_slots: dict[SchedulableProtocol[T], ScheduleSlot[T]]
+    tasks: dict[asyncio.Task, SchedulableProtocol[T]]
 
     def __init__(self) -> None:
         self.logger = getLogger(__name__, self)
         self.schedule_slots = {}
         self.tasks = {}
         self.tasks_group = TasksGroup()
-        self.is_running = False
+        self.is_running: t.Optional[bool] = None
 
-    def add(self, item: Schedulable[T]) -> None:
+    def add(self, item: SchedulableProtocol[T]) -> asyncio.Future[None]:
         generator = t.cast(AsyncGenerator[T, None], item.iterable.__aiter__())
         name = f"scheduler.anext({item.name})"
         anext = t.cast(Coroutine[t.Any, t.Any, T], generator.__anext__())
         task = asyncio.create_task(anext, name=name)
-        self.schedule_slots[item] = ScheduleSlot(task=task, generator=generator)
+        slot = ScheduleSlot(task=task, generator=generator, future=asyncio.Future())
+        self.schedule_slots[item] = slot
         self.tasks[task] = item
         self.tasks_group.add(task)
+        return slot.future
 
-    def remove(self, item: Schedulable[T]) -> None:
+    def remove(self, item: SchedulableProtocol[T]) -> None:
         schedule_slot = self.schedule_slots.get(item)
         if schedule_slot:
             self.stop_slot(schedule_slot)
@@ -68,8 +77,13 @@ class Scheduler(t.Generic[T]):
             await schedule_slot.generator.aclose()
         except Exception:
             self.logger.exception("Failed to close item: %s", schedule_slot)
+        finally:
+            schedule_slot.future.set_result(None)
 
     async def run(self) -> AsyncIterator[T]:
+        if self.is_running is False:
+            return
+
         self.is_running = True
         while self.is_running or self.tasks_group.tasks:
             done = await self.tasks_group.wait()
@@ -126,7 +140,7 @@ class Scheduler(t.Generic[T]):
                     await self._requeue_task(item=item, schedule_slot=schedule_slot)
 
     async def _requeue_task(
-        self, *, item: Schedulable[T], schedule_slot: ScheduleSlot[T]
+        self, *, item: SchedulableProtocol[T], schedule_slot: ScheduleSlot[T]
     ) -> None:
         name = f"scheduler.anext({item.name})"
         anext = t.cast(Coroutine[t.Any, t.Any, T], schedule_slot.generator.__anext__())
@@ -144,3 +158,9 @@ class Scheduler(t.Generic[T]):
             # Maximum priority so we clean the task as soon as possible.
             return -1
         return schedule_slot.order
+
+    def __len__(self) -> int:
+        return len(self.schedule_slots)
+
+    def __bool__(self) -> int:
+        return bool(self.schedule_slots)
