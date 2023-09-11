@@ -136,8 +136,10 @@ class SubCursors:
         try:
             yield
         finally:
-            if (c := self.parent.cursor) is not None:
-                self.cursors.partials[c] = self.inventory.cursor
+            parent_cursor = self.parent.cursor
+            sub_cursor = self.inventory.cursor
+            if parent_cursor is not None and sub_cursor is not None:
+                self.cursors.partials[parent_cursor] = sub_cursor
 
     @property
     def cursor(self) -> t.Optional[Cursor]:

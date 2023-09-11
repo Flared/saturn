@@ -81,9 +81,11 @@ async def test_legacy_cursor() -> None:
     )
     items = await alib.list(inventory.run(after=Cursor("0")))
     assert [i.args for i in items] == [{"x": 2}]
-    assert json.loads(inventory.cursor) == {"v": 1, "a": "0"}
+    assert (c := inventory.cursor)
+    assert json.loads(c) == {"v": 1, "a": "0"}
 
     async with items[0].context:
         pass
 
-    assert json.loads(inventory.cursor) == {"v": 1, "a": "1"}
+    assert (c := inventory.cursor)
+    assert json.loads(c) == {"v": 1, "a": "1"}
