@@ -25,7 +25,7 @@ class JoinInventory(IteratorInventory):
     class Options:
         root: ComponentDefinition
         join: ComponentDefinition
-        max_concurrency: t.Optional[int] = None
+        root_concurrency: t.Optional[int] = None
         batch_size: int = 10
         flatten: bool = False
         alias: t.Optional[str] = None
@@ -40,8 +40,8 @@ class JoinInventory(IteratorInventory):
         self.options = options
         self.__services = services
         self.concurrency_sem = None
-        if options.max_concurrency:
-            self.concurrency_sem = asyncio.BoundedSemaphore(options.max_concurrency)
+        if options.root_concurrency:
+            self.concurrency_sem = asyncio.BoundedSemaphore(options.root_concurrency)
 
         self.root_name = self.options.root.name
         self.join_name = self.options.join.name
@@ -106,7 +106,9 @@ class JoinInventory(IteratorInventory):
                     )
                 )
                 group.create_task(
-                    self.process_item(item, schedule_future=fut, cursors=root_cursors)
+                    self.process_item(
+                        item, schedule_future=fut, cursors=root_cursors, subinv=subinv
+                    )
                 )
             await group.wait_all()
 
@@ -125,12 +127,18 @@ class JoinInventory(IteratorInventory):
                 )
 
     async def process_item(
-        self, item: Item, *, schedule_future: asyncio.Future[None], cursors: RootCursors
+        self,
+        item: Item,
+        *,
+        schedule_future: asyncio.Future[None],
+        cursors: RootCursors,
+        subinv: Inventory,
     ) -> None:
         try:
             with cursors.process(item):
                 async with item:
                     await schedule_future
+                    await subinv.join()
         finally:
             self.release_concurrency()
 

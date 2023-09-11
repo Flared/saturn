@@ -174,9 +174,14 @@ class CursorsState:
                     self.after = item.cursor
                     break
 
+    def has_pendings(self) -> bool:
+        return bool(self._pendings)
+
 
 class Inventory(abc.ABC, OptionsSchema):
     name: str
+    _cursors: t.Optional[CursorsState] = None
+    _is_done_event: t.Optional[asyncio.Event] = None
 
     @abc.abstractmethod
     async def next_batch(self, after: t.Optional[Cursor] = None) -> list[Item]:
@@ -207,17 +212,35 @@ class Inventory(abc.ABC, OptionsSchema):
 
     async def run(self, after: t.Optional[Cursor] = None) -> t.AsyncIterator[Item]:
         self._cursors = CursorsState.from_cursor(after)
+        self._is_done_event = asyncio.Event()
         async for item in self.iterate(after=self._cursors.after):
+            item.context.callback(self._check_has_pendings)
             item.context.enter_context(self._cursors.process_item(item))
+            self._is_done_event.clear()
             yield item
 
     @property
-    def cursor(self) -> Cursor:
-        return self._cursors.as_cursor()
+    def cursor(self) -> t.Optional[Cursor]:
+        if self._cursors:
+            return self._cursors.as_cursor()
+        return None
 
     @cached_property
     def logger(self) -> logging.Logger:
         return getLogger(__name__, self)
+
+    async def join(self) -> None:
+        if self._is_done_event:
+            await self._is_done_event.wait()
+
+    def _check_has_pendings(self) -> None:
+        if not self.has_pendings() and self._is_done_event:
+            self._is_done_event.set()
+
+    def has_pendings(self) -> bool:
+        if self._cursors:
+            return self._cursors.has_pendings()
+        return False
 
 
 class IteratorInventory(Inventory):
