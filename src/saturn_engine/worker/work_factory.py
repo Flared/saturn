@@ -11,7 +11,6 @@ from saturn_engine.worker.resources.provider import ResourcesProvider
 
 from .executors.executable import ExecutableQueue
 from .inventories import Inventory
-from .inventories import SubInventory
 from .job import Job
 from .services import Services
 from .topics import Topic
@@ -77,20 +76,6 @@ def build_inventory_job(
     inventory: Inventory, *, queue_item: QueueItemWithState, services: Services
 ) -> Job:
     return Job(inventory=inventory, queue_item=queue_item, services=services)
-
-
-def build_sub_inventory(
-    inventory_item: ComponentDefinition, *, services: Services
-) -> SubInventory:
-    klass: t.Optional[t.Type[SubInventory]] = extra_inspect.import_name(
-        inventory_item.type
-    )
-    if klass is None:
-        raise ValueError(f"Unknown inventory type: {inventory_item.type}")
-    if not issubclass(klass, SubInventory):
-        raise ValueError(f"{klass} must be a SubInventory")
-    options = {"name": inventory_item.name} | inventory_item.options
-    return klass.from_options(options, services=services)
 
 
 def build_resources_provider(
