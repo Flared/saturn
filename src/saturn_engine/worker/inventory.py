@@ -12,6 +12,7 @@ from contextlib import AsyncExitStack
 from contextlib import suppress
 from datetime import timedelta
 from functools import cached_property
+from itertools import islice
 
 import asyncstdlib as alib
 
@@ -101,12 +102,16 @@ class PendingItem(t.NamedTuple):
 class CursorsState:
     after: t.Optional[Cursor] = None
     partials: set[Cursor] = dataclasses.field(default_factory=set)
+    max_partials: t.Optional[int] = None
+
     _pendings: dict[int, PendingItem] = dataclasses.field(
         default_factory=dict, init=False, repr=False
     )
 
     @classmethod
-    def from_cursor(cls, raw: t.Optional[Cursor], /) -> "CursorsState":
+    def from_cursor(
+        cls, raw: t.Optional[Cursor], /, *, max_partials: t.Optional[int] = None
+    ) -> "CursorsState":
         state = None
         if raw:
             # Try parsing cursor format that might be in the old unstructured
@@ -122,13 +127,16 @@ class CursorsState:
                     state = data
             if state is None:
                 state = {"a": raw}
-        return cls.from_dict(state or {})
+        return cls.from_dict(state or {}, max_partials=max_partials)
 
     @classmethod
-    def from_dict(cls, state: dict) -> "CursorsState":
+    def from_dict(
+        cls, state: dict, /, *, max_partials: t.Optional[int] = None
+    ) -> "CursorsState":
         return cls(
             after=state.get("a"),
             partials=set(state.get("p") or set()),
+            max_partials=max_partials,
         )
 
     def as_dict(self) -> dict:
@@ -136,24 +144,38 @@ class CursorsState:
         if self.after is not None:
             data["a"] = self.after
 
-        partials = self.partials | {
-            p.item.cursor
-            for p in self._pendings.values()
-            if not p.is_pending and p.item.cursor is not None
-        }
-        if partials:
-            data["p"] = list(sorted(partials))
+        if self.max_partials != 0:
+            partials_cursors = (
+                p.item.cursor
+                for p in self._pendings.values()
+                if not p.is_pending and p.item.cursor is not None
+            )
+            if self.max_partials:
+                partials = set(islice(partials_cursors, self.max_partials))
+                partials = (
+                    set(islice(self.partials, self.max_partials - len(partials)))
+                    | partials
+                )
+            else:
+                partials = self.partials | set(partials_cursors)
+
+            if partials:
+                data["p"] = list(sorted(partials))
 
         return data
 
     def as_cursor(self) -> Cursor:
         return Cursor(json.dumps(self.as_dict()))
 
-    @contextlib.contextmanager
-    def process_item(self, item: Item) -> t.Iterator[None]:
+    @contextlib.asynccontextmanager
+    async def process_item(self, item: Item) -> t.AsyncIterator[bool]:
         self._pendings[id(item)] = PendingItem(True, item)
         try:
-            yield
+            if item.cursor and item.cursor in self.partials:
+                self.partials.remove(item.cursor)
+                yield False
+            else:
+                yield True
         finally:
             self._pendings[id(item)] = PendingItem(False, item)
 
@@ -183,6 +205,8 @@ class Inventory(abc.ABC, OptionsSchema):
     _cursors: t.Optional[CursorsState] = None
     _is_done_event: t.Optional[asyncio.Event] = None
 
+    max_partials: t.Optional[int] = 100
+
     @abc.abstractmethod
     async def next_batch(self, after: t.Optional[Cursor] = None) -> list[Item]:
         """Returns a batch of item with id greater than `after`."""
@@ -211,12 +235,17 @@ class Inventory(abc.ABC, OptionsSchema):
             after = item.cursor
 
     async def run(self, after: t.Optional[Cursor] = None) -> t.AsyncIterator[Item]:
-        self._cursors = CursorsState.from_cursor(after)
         self._is_done_event = asyncio.Event()
+        self._cursors = CursorsState.from_cursor(after, max_partials=self.max_partials)
         async for item in self.iterate(after=self._cursors.after):
             item.context.callback(self._check_has_pendings)
-            item.context.enter_context(self._cursors.process_item(item))
             self._is_done_event.clear()
+            if not await item.context.enter_async_context(
+                self._cursors.process_item(item)
+            ):
+                # Items has already been processed, skipping.
+                async with item:
+                    continue
             yield item
 
     @property
