@@ -156,12 +156,7 @@ def does_error_match(
 ) -> bool:
     exc_type = exception.exception_type
     exc_type_re = exception_filter.exception_type
-    type_matched = (
-        exc_type_re is None or exc_type_re.match(exception.exception_type) is not None
-    )
-    if not type_matched and exc_type_re and "." in exc_type:
-        exc_type = exc_type.rsplit(".", 1)[-1]
-        type_matched = exc_type_re.match(exc_type) is not None
+    type_matched = exc_type_re is None or match_exception_name(exc_type_re, exc_type)
 
     return (
         (
@@ -177,6 +172,27 @@ def does_error_match(
             exception_filter.lineno == 0 or exception.lineno == exception_filter.lineno
         )
     )
+
+
+def get_exception_name(exc_value: Exception) -> str:
+    if isinstance(exc_value, RemoteException):
+        return ".".join(
+            [
+                exc_value.remote_traceback.exc_module,
+                exc_value.remote_traceback.exc_type,
+            ]
+        )
+
+    exc_type = exc_value.__class__
+    return f"{exc_type.__module__}.{exc_type.__name__}"
+
+
+def match_exception_name(pattern: re.Pattern, exc_name: str) -> bool:
+    type_matched = pattern.match(exc_name) is not None
+    if not type_matched and "." in exc_name:
+        exc_name = exc_name.rsplit(".", 1)[-1]
+        type_matched = pattern.match(exc_name) is not None
+    return type_matched
 
 
 def get_exception_details(
