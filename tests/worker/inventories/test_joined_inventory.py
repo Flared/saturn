@@ -344,3 +344,85 @@ async def test_concurrent_join_inventories(
             "v": 1,
             "a": '{"v": 1, "a": "2"}',
         }
+
+
+async def test_nested_join_inventory(
+    event_loop: TimeForwardLoop,
+) -> None:
+    inventory = JoinInventory.from_options(
+        {
+            "root": {
+                "name": "A",
+                "type": "StaticInventory",
+                "options": {"items": [{"a": 0}, {"a": 1}, {"a": 2}]},
+            },
+            "join": {
+                "name": "B",
+                "type": "saturn_engine.worker.inventories.joined.JoinInventory",
+                "options": {
+                    "root": {
+                        "name": "C",
+                        "type": "StaticInventory",
+                        "options": {"items": [{"c": 0}, {"c": 1}]},
+                    },
+                    "join": {
+                        "name": "D",
+                        "type": "StaticInventory",
+                        "options": {"items": [{"d": 0}, {"d": 1}]},
+                    },
+                    "root_concurrency": 2,
+                    "flatten": True,
+                },
+            },
+            "root_concurrency": 2,
+            "flatten": True,
+        },
+        services=None,
+    )
+
+    async with alib.scoped_iter(inventory.run()) as run, TasksGroup() as group:
+        # Process two subinventory, each with 4 items, stop at the 3rd because of
+        # root_concurrency.
+        items = []
+        while True:
+            async with event_loop.until_idle():
+                task = group.create_task(alib.anext(run))
+            if task.done():
+                items.append(task.result())
+            else:
+                break
+
+        assert len(items) == 8
+        by_job = defaultdict(list)
+        for item in items:
+            by_job[item.args["a"]].append(item)
+        assert by_job.keys() == {0, 1}
+
+        # Complete processing the 2nd job, leaving space for the 3rd one.
+        for item in by_job[1]:
+            async with item:
+                pass
+
+        await event_loop.wait_idle()
+        items.append(await task)
+        while True:
+            async with event_loop.until_idle():
+                task = group.create_task(alib.anext(run))
+            if task.done():
+                items.append(task.result())
+            else:
+                break
+
+        assert len(items) == 12
+
+        # Complete all items, the inventory should be completed.
+        for item in items:
+            async with item:
+                pass
+
+        with pytest.raises(StopAsyncIteration):
+            await task
+
+        assert item.args["a"] == 2
+        assert (c := inventory.cursor)
+        assert json.loads(c) == {"v": 1, "a": '{"v": 1, "a": "2"}'}
