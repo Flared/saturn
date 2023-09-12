@@ -39,21 +39,32 @@ class FanIn(IteratorInventory):
             aiters: list[t.AsyncIterator[tuple[str, Item]]] = []
             for k, inventory in self.inputs.items():
                 to_tuple: t.Callable = lambda m, k=k: (k, m)
-                i_iter = inventory.iterate(after=cursors.get(k))
+                i_iter = inventory.run(after=cursors.get(k))
                 j_iter = alib.map(to_tuple, i_iter)
                 k_iter = alib.scoped_iter(j_iter)
                 aiters.append(await ctx.enter_async_context(k_iter))
 
             scheduler = self.make_scheduler(aiters)
             async for name, message in scheduler:
-                cursors[name] = message.cursor
                 message.tags.setdefault("inventory.name", name)
-                yield dataclasses.replace(message, cursor=Cursor(json.dumps(cursors)))
+                yield message
 
     def make_scheduler(
         self, aiters: list[t.AsyncIterator[T]]
     ) -> iterators.Scheduler[T]:
         return iterators.Scheduler(aiters)
+
+    @property
+    def cursor(self) -> t.Optional[Cursor]:
+        return Cursor(
+            json.dumps(
+                {
+                    name: c
+                    for name, inv in self.inputs.items()
+                    if (c := inv.cursor) is not None
+                }
+            )
+        )
 
 
 @dataclasses.dataclass

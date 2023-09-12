@@ -31,17 +31,28 @@ async def test_fanin_inventory() -> None:
         },
         services=None,
     )
-    messages = await alib.list(inventory.iterate())
+    messages = await alib.list(inventory.run())
     assert {m.args["n"] for m in messages} == set(range(6))
     m = messages[-1]
-    assert m.cursor
-    assert json.loads(m.cursor) == {"a": "3", "b": "1"}
+    assert m.cursor == "3"
+    assert (c := inventory.cursor)
+    assert json.loads(c) == {}
+
+    for m in messages:
+        async with m:
+            pass
+
+    assert (c := inventory.cursor)
+    assert json.loads(c) == {
+        "a": '{"v": 1, "a": "3"}',
+        "b": '{"v": 1, "a": "1"}',
+    }
 
     messages = await alib.list(inventory.iterate(after=Cursor('{"a": "3", "b": "0"}')))
     assert messages == [
         Item(
             id=MessageId("1"),
-            cursor='{"a": "3", "b": "1"}',
+            cursor="1",
             args={"n": 5},
             tags={"inventory.name": "b"},
         )

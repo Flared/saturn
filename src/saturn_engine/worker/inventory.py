@@ -164,8 +164,9 @@ class CursorsState:
 
         return data
 
-    def as_cursor(self) -> Cursor:
-        return Cursor(json.dumps(self.as_dict()))
+    def as_cursor(self) -> t.Optional[Cursor]:
+        d = self.as_dict()
+        return Cursor(json.dumps(d)) if d != {"v": 1} else None
 
     @contextlib.asynccontextmanager
     async def process_item(self, item: Item) -> t.AsyncIterator[bool]:
