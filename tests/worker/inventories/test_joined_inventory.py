@@ -12,10 +12,18 @@ from saturn_engine.core import Cursor
 from saturn_engine.utils.asyncutils import TasksGroup
 from saturn_engine.utils.inspect import get_import_name
 from saturn_engine.worker.inventories.joined import JoinInventory
+from saturn_engine.worker.inventory import BlockingInventory
 from saturn_engine.worker.inventory import Inventory
 from saturn_engine.worker.inventory import Item
 from saturn_engine.worker.inventory import IteratorInventory
 from tests.utils import TimeForwardLoop
+
+
+class FakeBlockingInventory(BlockingInventory):
+    def next_batch_blocking(self, after: t.Optional[Cursor] = None) -> list[Item]:
+        if after:
+            return []
+        return [Item(id="1", args={}, cursor="1")]
 
 
 class FakeSubInventory(IteratorInventory):
@@ -426,3 +434,27 @@ async def test_nested_join_inventory(
         assert item.args["a"] == 2
         assert (c := inventory.cursor)
         assert json.loads(c) == {"v": 1, "a": '{"v": 1, "a": "2"}'}
+
+
+@pytest.mark.asyncio
+async def test_join_inventory_blocking() -> None:
+    inventory = JoinInventory.from_options(
+        {
+            "flatten": True,
+            "root": {
+                "name": "a",
+                "type": get_import_name(FakeBlockingInventory),
+            },
+            "join": {
+                "name": "b",
+                "type": "StaticInventory",
+                "options": {"items": [{"c": "A"}]},
+            },
+            "root_concurrency": 10,
+        },
+        services=None,
+    )
+    batch = await alib.list(iterate_with_context(inventory))
+    assert [(json.loads(i.id), i.args) for i in batch] == [
+        ({"a": "1", "b": "0"}, {"c": "A"})
+    ]
