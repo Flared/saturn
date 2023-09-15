@@ -14,6 +14,11 @@ from . import Item
 from .multi import MultiItems
 
 
+class CurrentInventory(t.NamedTuple):
+    name: str
+    inventory: Inventory
+
+
 class ChainedInventory(IteratorInventory):
     @dataclasses.dataclass
     class Options:
@@ -33,6 +38,7 @@ class ChainedInventory(IteratorInventory):
         )
         self.options = options
         self.__services = services
+        self.__current: t.Optional[CurrentInventory] = None
 
     async def iterate(self, after: t.Optional[Cursor] = None) -> AsyncIterator[Item]:
         cursors = json.loads(after) if after else {}
@@ -48,6 +54,7 @@ class ChainedInventory(IteratorInventory):
                     break
 
         for name, inventory in self.inventories[start_inventory:]:
+            self.__current = CurrentInventory(name, inventory)
             async for item in inventory.iterate(cursors.get(name, None)):
                 yield MultiItems.from_one(item, name=name).as_item(
                     flatten=self.options.flatten,
@@ -60,3 +67,12 @@ class ChainedInventory(IteratorInventory):
         from saturn_engine.worker.work_factory import build_inventory
 
         return build_inventory(inventory, services=self.__services)
+
+    @property
+    def cursor(self) -> t.Optional[Cursor]:
+        if self.__current is None:
+            return None
+
+        return Cursor(
+            json.dumps({self.__current.name: self.__current.inventory.cursor})
+        )
