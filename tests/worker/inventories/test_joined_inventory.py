@@ -459,6 +459,7 @@ async def test_join_inventory_blocking() -> None:
         ({"a": "1", "b": "0"}, {"c": "A"})
     ]
 
+
 @pytest.mark.asyncio
 async def test_join_inventory_on_nothing() -> None:
     inventory = JoinInventory.from_options(
