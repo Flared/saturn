@@ -248,6 +248,8 @@ class Inventory(abc.ABC, OptionsSchema):
                 async with item:
                     continue
             yield item
+        else:
+            self._check_has_pendings()
 
     @property
     def cursor(self) -> t.Optional[Cursor]:

@@ -458,3 +458,25 @@ async def test_join_inventory_blocking() -> None:
     assert [(json.loads(i.id), i.args) for i in batch] == [
         ({"a": "1", "b": "0"}, {"c": "A"})
     ]
+
+@pytest.mark.asyncio
+async def test_join_inventory_on_nothing() -> None:
+    inventory = JoinInventory.from_options(
+        {
+            "flatten": True,
+            "root": {
+                "name": "a",
+                "type": "StaticInventory",
+                "options": {"items": [{"c": "A"}]},
+            },
+            "join": {
+                "name": "b",
+                "type": "StaticInventory",
+                "options": {"items": []},
+            },
+            "root_concurrency": 1,
+        },
+        services=None,
+    )
+    batch = await alib.list(iterate_with_context(inventory))
+    assert batch == []
