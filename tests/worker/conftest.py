@@ -430,26 +430,27 @@ async def fake_http_client_service(
 
 
 class InMemoryCursorsFetcher(CursorsStatesFetcher):
-    def __init__(self, *, job_state: JobStateService) -> None:
-        self.job_state = job_state
+    def __init__(self) -> None:
+        self.states: dict[JobId, dict[Cursor, dict]] = {}
 
     async def fetch(
         self, job_name: JobId, *, cursors: list[Cursor]
     ) -> dict[Cursor, dict]:
         return {
             c: s
-            for c, s in self.job_state._store._current_state.jobs[
-                job_name
-            ].cursors_states.items()
+            for c, s in self.states[job_name].items()
             if c in cursors
         }
+
+    def set_states(self, states: dict[JobId, dict[Cursor, dict]]) -> None:
+        self.states = states
 
 
 @pytest.fixture
 async def inmemory_cursors_fetcher(
     services_manager: ServicesManager,
-) -> None:
+) -> InMemoryCursorsFetcher:
+    fetcher = InMemoryCursorsFetcher()
     job_state_service = services_manager.services.cast_service(JobStateService)
-    job_state_service._cursors_fetcher = InMemoryCursorsFetcher(
-        job_state=job_state_service
-    )
+    job_state_service._cursors_fetcher = fetcher
+    return fetcher

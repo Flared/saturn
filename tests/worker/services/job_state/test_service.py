@@ -25,6 +25,7 @@ from saturn_engine.worker.services.manager import ServicesManager
 from tests.conftest import FreezeTime
 from tests.utils import EqualAnyOrder
 from tests.utils import HttpClientMock
+from tests.worker.conftest import InMemoryCursorsFetcher
 
 
 @pytest.fixture
@@ -195,7 +196,7 @@ async def test_job_state_set_message_cursor_state(
     services_manager: ServicesManager,
     fake_queue_item: QueueItemWithState,
     executable_queue_maker: t.Callable[..., ExecutableQueue],
-    inmemory_cursors_fetcher: None,
+    inmemory_cursors_fetcher: InMemoryCursorsFetcher,
     mocker: MockerFixture,
 ) -> None:
     job_state_service = services_manager.services.cast_service(JobStateService)
@@ -203,9 +204,7 @@ async def test_job_state_set_message_cursor_state(
     job_state_service.set_job_cursor_state(
         JobId("test-job"), cursor=Cursor("1"), cursor_state={"x": 1}
     )
-    job_state_service.set_job_cursor_state(
-        JobId("test-job"), cursor=Cursor("2"), cursor_state={"x": 2}
-    )
+    inmemory_cursors_fetcher.set_states({JobId("test-job"): {Cursor("2"): {"x": 2}}})
     fake_queue_item.config["job"] = {
         "buffer_flush_after": 7,
         "buffer_size": 2,
@@ -276,7 +275,7 @@ async def test_job_state_set_message_cursor_state(
     # Rerun the inventory, expect new states to be loaded
     inventory = FakeInventory(
         options=FakeInventory.Options(
-            data=[5, 4, 3, 2, (1, {"job_state": {"state_cursor": "a"}})]
+            data=[6, 5, 4, 3, 2, (1, {"job_state": {"state_cursor": "a"}})]
         )
     )
     job = Job(
