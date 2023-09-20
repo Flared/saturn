@@ -436,11 +436,7 @@ class InMemoryCursorsFetcher(CursorsStatesFetcher):
     async def fetch(
         self, job_name: JobId, *, cursors: list[Cursor]
     ) -> dict[Cursor, dict]:
-        return {
-            c: s
-            for c, s in self.states[job_name].items()
-            if c in cursors
-        }
+        return {c: s for c, s in self.states[job_name].items() if c in cursors}
 
     def set_states(self, states: dict[JobId, dict[Cursor, dict]]) -> None:
         self.states = states

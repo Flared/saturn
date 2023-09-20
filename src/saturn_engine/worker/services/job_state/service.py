@@ -161,7 +161,12 @@ class JobStateService(Service[Services, Options]):
     async def fetch_cursors_states(
         self, job_name: JobId, *, cursors: list[Cursor]
     ) -> dict[Cursor, dict]:
-        return await self._cursors_fetcher.fetch(job_name, cursors=cursors)
+        # First check in local write cache before loading remote values.
+        states = self._store.get_local_cursors_states(job_name, cursors=cursors)
+        cursors = list(set(cursors) - states.keys())
+        if cursors:
+            states |= await self._cursors_fetcher.fetch(job_name, cursors=cursors)
+        return states
 
     def _maybe_flush(self) -> None:
         if self.options.auto_flush:

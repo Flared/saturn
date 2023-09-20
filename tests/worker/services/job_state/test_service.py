@@ -202,6 +202,10 @@ async def test_job_state_set_message_cursor_state(
     job_state_service = services_manager.services.cast_service(JobStateService)
     fetch_cursors = mocker.spy(job_state_service, "fetch_cursors_states")
     job_state_service.set_job_cursor_state(
+        JobId("test-job"), cursor=Cursor("0"), cursor_state={"x": 0}
+    )
+    job_state_service._store.flush().__enter__()
+    job_state_service.set_job_cursor_state(
         JobId("test-job"), cursor=Cursor("1"), cursor_state={"x": 1}
     )
     inmemory_cursors_fetcher.set_states({JobId("test-job"): {Cursor("2"): {"x": 2}}})
@@ -251,7 +255,7 @@ async def test_job_state_set_message_cursor_state(
     msgs = [i.message.message for i in xmsgs]
     assert [i.id for i in msgs] == ["0", "1", "2", "3", "4"]
     assert [i.metadata.get("job_state", {}).get("cursor_state") for i in msgs] == [
-        None,
+        {"x": 0},
         {"x": 1},
         {"x": 2},
         None,
@@ -270,12 +274,12 @@ async def test_job_state_set_message_cursor_state(
     assert job_state.cursor == '{"v": 1, "a": "4"}'
     assert job_state.completion
 
-    assert results == [None, "1", "2", None, None]
+    assert results == ["0", "1", "2", None, None]
 
     # Rerun the inventory, expect new states to be loaded
     inventory = FakeInventory(
         options=FakeInventory.Options(
-            data=[6, 5, 4, 3, 2, (1, {"job_state": {"state_cursor": "a"}})]
+            data=[5, 4, 3, 2, (1, {"job_state": {"state_cursor": "a"}})]
         )
     )
     job = Job(

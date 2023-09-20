@@ -52,6 +52,14 @@ class JobsStates(api.JobsStates):
     def is_empty(self) -> bool:
         return not self.jobs
 
+    def get_cursors_states(
+        self, job_name: JobId, cursors: list[Cursor]
+    ) -> dict[Cursor, dict]:
+        if job_name in self.jobs:
+            states = self.jobs[job_name].cursors_states
+            return {c: states[c] for c in states.keys() & cursors}
+        return {}
+
 
 class JobsStatesSyncStore:
     def __init__(self) -> None:
@@ -88,14 +96,24 @@ class JobsStatesSyncStore:
         If an error happen inside the context, the state is restored and
         merged with any change that occured during the flush.
         """
-        flushing_state = self._current_state
+        self._flushing_state = self._current_state
         self._current_state = JobsStates()
 
         try:
-            yield flushing_state
+            yield self._flushing_state
         except BaseException:
-            self._current_state = flushing_state.merge(self._current_state)
+            self._current_state = self._flushing_state.merge(self._current_state)
+            self._flushing_state = None
             raise
 
     def job_state(self, job_name: JobId) -> JobState:
         return self._current_state.jobs[job_name]
+
+    def get_local_cursors_states(
+        self, job_name: JobId, *, cursors: list[Cursor]
+    ) -> dict[Cursor, dict]:
+        states = self._current_state.get_cursors_states(job_name, cursors=cursors)
+        cursors = list(set(cursors) - states.keys())
+        if cursors and self._flushing_state:
+            states |= self._flushing_state.get_cursors_states(job_name, cursors=cursors)
+        return states
