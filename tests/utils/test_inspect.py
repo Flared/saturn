@@ -43,3 +43,13 @@ def test_dataclass_from_params() -> None:
     assert dataclass.find_by_type(Foo) == "z"
     assert dataclass.find_by_type(Bar) == "x"
     assert dataclass.find_by_type(float) is None
+
+
+def test_dataclass_from_params_310() -> None:
+    spy = Mock()
+
+    def func(x: int | None = None) -> None:
+        spy(x=x)
+
+    dataclass = dataclass_from_params(func)
+    assert dataclass.find_by_type(int) == "x"

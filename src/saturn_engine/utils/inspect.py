@@ -8,6 +8,8 @@ import sys
 import threading
 from collections.abc import Iterable
 
+import typing_inspect
+
 R = t.TypeVar("R")
 
 
@@ -149,15 +151,10 @@ def signature(func: t.Callable) -> inspect.Signature:
 
 
 def unwrap_optional(typ: t.Any) -> t.Optional[t.Type]:
-    origin = t.get_origin(typ)
-    if origin is t.Union:
-        target_args = [
-            arg
-            for arg in t.get_args(typ)
-            if not (not t.get_args(arg) and isinstance(None, arg))
-        ]
-        if len(target_args) == 1:
-            return target_args[0]
+    if typing_inspect.is_optional_type(typ):
+        args = typing_inspect.get_args(typ)
+        if args:
+            return args[0]
     return None
 
 
