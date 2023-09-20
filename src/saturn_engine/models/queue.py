@@ -13,6 +13,7 @@ from sqlalchemy.sql.sqltypes import DateTime
 from saturn_engine.core import Cursor
 from saturn_engine.core.api import QueueItemState
 from saturn_engine.core.api import QueueItemWithState
+from saturn_engine.core.types import JobId
 from saturn_engine.worker_manager.config.static_definitions import StaticDefinitions
 
 from .base import Base
@@ -52,12 +53,12 @@ class Queue(Base):
                     static_definitions.job_definitions[
                         self.job.job_definition_name
                     ].template,
-                    name=self.name,
+                    name=JobId(self.name),
                 ).with_state(state)
             else:
                 self._queue_item = dataclasses.replace(
                     static_definitions.jobs[self.job.name],
-                    name=self.name,
+                    name=JobId(self.name),
                 ).with_state(state)
         else:
             raise NotImplementedError("Only support Job queue")
