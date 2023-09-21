@@ -62,7 +62,7 @@ class ARQExecutor(Executor):
         try:
             job = await (await self.redis_queue).enqueue_job(
                 EXECUTE_FUNC_NAME,
-                message.message,
+                message.message.as_remote(),
                 _expires=options.queue_timeout,
                 _queue_name=options.queue_name,
             )
