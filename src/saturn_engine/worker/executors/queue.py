@@ -1,3 +1,5 @@
+import typing as t
+
 import asyncio
 import contextlib
 import datetime
@@ -99,6 +101,9 @@ class ExecutorQueue:
                                     # Transfer the message context to the results
                                     # processing scope.
                                     context=processable._context.pop_all(),
+                                    context_error=error
+                                    if error and not error.handled
+                                    else None,
                                 )
                             )
                     if error:
@@ -110,6 +115,7 @@ class ExecutorQueue:
         xmsg: ExecutableMessage,
         results: PipelineResults,
         context: contextlib.AsyncExitStack,
+        context_error: t.Optional[HandledError],
     ) -> None:
         @self.services.s.hooks.results_processed.emit
         async def scope(msg: ResultsProcessed) -> None:
@@ -129,6 +135,8 @@ class ExecutorQueue:
                         results=results,
                     )
                 )
+                if context_error:
+                    context_error.reraise()
 
     async def submit(self, processable: ExecutableMessage) -> None:
         # Get the lock to ensure we don't acquire resource if the submit queue
