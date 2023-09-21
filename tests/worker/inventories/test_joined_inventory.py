@@ -78,6 +78,7 @@ async def test_join_inventory() -> None:
                 },
                 "batch_size": 10,
                 "root_concurrency": 1,
+                "flatten": False,
             },
             services=None,
         )
@@ -175,6 +176,7 @@ async def test_join_inventory_alias() -> None:
     inventory = JoinInventory.from_options(
         {
             "alias": "veggie_fruit",
+            "flatten": False,
             "root": {
                 "name": "fruits",
                 "type": "StaticInventory",

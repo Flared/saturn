@@ -1,12 +1,14 @@
 import contextlib
 import json
+from unittest.mock import Mock
 
 import asyncstdlib as alib
 
 from saturn_engine.utils.asyncutils import TasksGroup
 from saturn_engine.worker.executors.bootstrap import RemoteException
 from saturn_engine.worker.inventories.loop import LoopInventory
-from saturn_engine.worker.inventories.loop import StopLoopInventory
+from saturn_engine.worker.inventories.loop import StopLoopEvent
+from saturn_engine.worker.services.hooks import PipelineEventsEmitted
 from tests.utils import TimeForwardLoop
 
 
@@ -14,33 +16,10 @@ async def test_loop_inventory() -> None:
     inventory = LoopInventory(options=LoopInventory.Options(max_iterations=20))
 
     async for i, item in alib.enumerate(inventory.run()):
-        with contextlib.suppress(ValueError, StopLoopInventory):
-            async with item:
-                if item.args["iteration"] == 5:
-                    raise ValueError("test")
-                if item.args["iteration"] == 10:
-                    raise StopLoopInventory()
-            assert item.args["iteration"] == i
-
-    assert (c := inventory.cursor)
-    assert json.loads(c) == {"v": 1, "a": "10"}
-
-
-async def test_loop_inventory_with_remove_exc() -> None:
-    inventory = LoopInventory(options=LoopInventory.Options(max_iterations=20))
-
-    async for i, item in alib.enumerate(inventory.run()):
-        with contextlib.suppress(ValueError, RemoteException):
-            async with item:
-                if item.args["iteration"] == 1:
-                    raise ValueError("test")
-                try:
-                    if item.args["iteration"] == 5:
-                        raise ValueError("test")
-                    if item.args["iteration"] == 10:
-                        raise StopLoopInventory()
-                except Exception as e:
-                    raise RemoteException.from_exception(e) from None
+        async with item:
+            if item.args["iteration"] == 10:
+                for cb in item.config["hooks"]["pipeline_events_emitted"]:
+                    await cb(PipelineEventsEmitted(Mock(), [StopLoopEvent()]))
             assert item.args["iteration"] == i
 
     assert (c := inventory.cursor)

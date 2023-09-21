@@ -15,6 +15,7 @@ from saturn_engine.core.job_state import CursorState
 from saturn_engine.core.job_state import CursorStateUpdated
 from saturn_engine.core.pipeline import PipelineOutput
 from saturn_engine.core.pipeline import PipelineResult
+from saturn_engine.worker.inventories.loop import StopLoopEvent
 
 from .resources import BackpressureApiKey
 from .resources import TestApiKey
@@ -105,3 +106,12 @@ def increment_state(
     if not state:
         state = IncrementedState(x=0)
     yield CursorStateUpdated({"x": state.x + 1})
+
+
+def join_and_loop(
+    iteration: int,
+    x: int,
+) -> t.Iterator[PipelineResult]:
+    yield TopicMessage({"iteration": iteration, "x": x})
+    if iteration == x:
+        yield StopLoopEvent()
