@@ -618,7 +618,7 @@ async def test_custom_hooks(
             config={
                 "hooks": {
                     "message_submitted": [hook_options.message_submitted[0] + "_msg"],
-                    "message_executed": [hook_options.message_executed[0] + "_msg"],
+                    "message_executed": [mock_message_executed_handler_msg],
                 }
             },
         ),

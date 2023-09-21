@@ -71,9 +71,15 @@ class HooksLists(t.Generic[T]):
 
 
 @functools.cache
-def _load_handler(handler: str) -> t.Optional[t.Callable]:
+def _load_handler(handler: object) -> t.Optional[t.Callable]:
     try:
-        return import_name(handler)
+        if isinstance(handler, str):
+            handler = import_name(handler)
+        if callable(handler):
+            return handler
+        else:
+            raise ValueError(f"handler is not callable: {handler}")
+
     except Exception:
         logging.getLogger(__name__).exception(
             "Failed to load hook handler: %s", handler
