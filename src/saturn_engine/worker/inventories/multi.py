@@ -18,6 +18,7 @@ class MultiItems(t.NamedTuple):
     args: dict[str, dict[str, t.Any]]
     tags: dict[str, str]
     metadata: dict[str, t.Any]
+    config: dict[str, t.Any]
 
     @classmethod
     def from_one(cls, item: Item, *, name: str) -> "MultiItems":
@@ -27,6 +28,7 @@ class MultiItems(t.NamedTuple):
             args={name: item.args},
             tags=item.tags,
             metadata=item.metadata,
+            config=item.config,
         )
 
     def with_item(self, item: Item, *, name: str) -> "MultiItems":
@@ -36,6 +38,7 @@ class MultiItems(t.NamedTuple):
             args=self.args | {name: item.args},
             tags=self.tags | item.tags,
             metadata=self.metadata | item.metadata,
+            config=self.config | item.config,
         )
 
     def as_item(
@@ -57,6 +60,7 @@ class MultiItems(t.NamedTuple):
             args=args,
             metadata=self.metadata,
             tags=self.tags,
+            config=self.config,
             context=context or AsyncExitStack(),
         )
 

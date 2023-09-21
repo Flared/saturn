@@ -34,6 +34,7 @@ class Item:
     cursor: t.Optional[Cursor] = MISSING  # type: ignore[assignment]
     tags: dict[str, str] = dataclasses.field(default_factory=dict)
     metadata: dict[str, t.Any] = dataclasses.field(default_factory=dict)
+    config: dict[str, t.Any] = dataclasses.field(default_factory=dict)
     context: AsyncExitStack = dataclasses.field(
         default_factory=AsyncExitStack, compare=False
     )
@@ -44,6 +45,7 @@ class Item:
             args=self.args,
             tags=self.tags,
             metadata=self.metadata | {"job": {"cursor": self.cursor}},
+            config=self.config,
         )
 
     # Hack to allow building object with `str` instead of new types `MessageId`
@@ -58,6 +60,7 @@ class Item:
             cursor: t.Optional[str] = None,
             tags: dict[str, str] = None,  # type: ignore[assignment]
             metadata: dict[str, t.Any] = None,  # type: ignore[assignment]
+            config: dict[str, t.Any] = None,  # type: ignore[assignment]
             context: AsyncExitStack = None,  # type: ignore[assignment]
         ) -> None:
             ...

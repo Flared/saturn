@@ -25,9 +25,9 @@ class JoinInventory(IteratorInventory):
     class Options:
         root: ComponentDefinition
         join: ComponentDefinition
-        root_concurrency: t.Optional[int] = None
+        root_concurrency: int = 1
         batch_size: int = 10
-        flatten: bool = False
+        flatten: bool = True
         alias: t.Optional[str] = None
 
     def __init__(self, options: Options, services: Services, **kwargs: object) -> None:
@@ -39,9 +39,7 @@ class JoinInventory(IteratorInventory):
         )
         self.options = options
         self.__services = services
-        self.concurrency_sem = None
-        if options.root_concurrency:
-            self.concurrency_sem = asyncio.BoundedSemaphore(options.root_concurrency)
+        self.concurrency_sem = asyncio.BoundedSemaphore(options.root_concurrency)
 
         self.root_name = self.options.root.name
         self.join_name = self.options.join.name
@@ -70,14 +68,6 @@ class JoinInventory(IteratorInventory):
         async for item in self.iterate(after=after):
             yield item
 
-    async def acquire_concurrency(self) -> None:
-        if self.concurrency_sem:
-            await self.concurrency_sem.acquire()
-
-    def release_concurrency(self) -> None:
-        if self.concurrency_sem:
-            self.concurrency_sem.release()
-
     async def join_inventories(self) -> None:
         async with (
             TasksGroup(name=f"join-subinventory({self.root_name})") as group,
@@ -88,7 +78,7 @@ class JoinInventory(IteratorInventory):
 
             async for item in self.root.run(after=self._multi_cursors.after):
                 name = f"join-inventory.join({self.options.join.name},{item.id})"
-                await self.acquire_concurrency()
+                await self.concurrency_sem.acquire()
 
                 subdef = dataclasses.replace(
                     self.options.join,
@@ -140,7 +130,7 @@ class JoinInventory(IteratorInventory):
                     await schedule_future
                     await subinv.join()
         finally:
-            self.release_concurrency()
+            self.concurrency_sem.release()
 
     @property
     def cursor(self) -> Cursor:
