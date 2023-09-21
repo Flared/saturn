@@ -57,3 +57,8 @@ class PipelineMessage:
 
         pipeline_args = fromdict(args, pipeline_args_def)
         return pipeline_args.call(kwargs=args)
+
+    def as_remote(self) -> "PipelineMessage":
+        return dataclasses.replace(
+            self, message=dataclasses.replace(self.message, config={})
+        )

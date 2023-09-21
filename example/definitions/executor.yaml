@@ -7,7 +7,6 @@ spec:
   type: ProcessExecutor
   options:
     max_workers: 1
-    pool_type: thread
 ---
 apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnExecutor

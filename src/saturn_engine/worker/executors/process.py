@@ -71,7 +71,7 @@ class ProcessExecutor(Executor):
 
     async def process_message(self, message: ExecutableMessage) -> PipelineResults:
         loop = asyncio.get_running_loop()
-        execute = partial(self.remote_execute, message=message.message)
+        execute = partial(self.remote_execute, message=message.message.as_remote())
         return await loop.run_in_executor(self.pool_executor, execute)
 
     @property
