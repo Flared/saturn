@@ -4,6 +4,7 @@ from typing import cast
 
 import asyncio
 from functools import partial
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -308,12 +309,10 @@ async def test_executor_error_handler_unhandled(
     xmsg = fake_executable_maker_with_output(
         output=output_topics,
     )
-    exc_infos = []
 
-    async def collect_exit(*args: t.Any) -> None:
-        exc_infos.append(args)
-
-    xmsg._executing_context.push_async_exit(collect_exit)
+    mock = AsyncMock()
+    xmsg._executing_context.push_async_exit(mock.executing)
+    xmsg._context.push_async_exit(mock.context)
 
     # Execute our failing message
     async with event_loop.until_idle():
@@ -323,8 +322,10 @@ async def test_executor_error_handler_unhandled(
     assert output_queue.qsize() == 1
 
     # The exception raised to the hooks and contexts is the original one.
-    assert len(exc_infos) == 1
-    e = exc_infos[0][1]
+    mock.executing.__aexit__.assert_awaited_once()
+    mock.context.__aexit__.assert_awaited_once()
+    e = mock.executing.__aexit__.call_args[0][2]
+    assert e is mock.context.__aexit__.call_args[0][2]
     assert repr(e) == "Exception('TEST_EXCEPTION')"
     assert repr(e.__cause__) == "ValueError('CAUSE')"
     assert repr(e.__cause__.__context__) == "ValueError('CAUSE_CONTEXT')"
