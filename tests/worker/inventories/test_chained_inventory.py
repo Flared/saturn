@@ -1,3 +1,5 @@
+import typing as t
+
 import json
 
 import asyncstdlib as alib
@@ -5,6 +7,17 @@ import pytest
 
 from saturn_engine.core import Cursor
 from saturn_engine.worker.inventories.chained import ChainedInventory
+from saturn_engine.worker.inventory import Inventory
+from saturn_engine.worker.inventory import Item
+
+
+async def iterate_with_cursor(
+    inventory: Inventory, after: t.Optional[Cursor] = None
+) -> t.AsyncIterator[tuple[Item, t.Optional[Cursor]]]:
+    async for item in inventory.run(after=after):
+        async with item:
+            pass
+        yield item, inventory.cursor
 
 
 @pytest.mark.asyncio
@@ -32,24 +45,24 @@ async def test_chained_inventory() -> None:
         },
         services=None,
     )
-    batch = await alib.list(inventory.iterate())
-    assert [(json.loads(i.id), json.loads(i.cursor or ""), i.args) for i in batch] == [
-        ({"a": "0"}, {"a": "0"}, {"a": {"a": 1}}),
-        ({"a": "1"}, {"a": "1"}, {"a": {"a": 2}}),
-        ({"a": "2"}, {"a": "2"}, {"a": {"a": 3}}),
-        ({"b": "0"}, {"b": "0"}, {"b": {"b": "1"}}),
-        ({"b": "1"}, {"b": "1"}, {"b": {"b": "2"}}),
-        ({"b": "2"}, {"b": "2"}, {"b": {"b": "3"}}),
-        ({"c": "0"}, {"c": "0"}, {"c": {"c": "1"}}),
-        ({"c": "1"}, {"c": "1"}, {"c": {"c": "2"}}),
-        ({"c": "2"}, {"c": "2"}, {"c": {"c": "3"}}),
+    batch = await alib.list(iterate_with_cursor(inventory))
+    assert [(json.loads(i.id), json.loads(c or ""), i.args) for i, c in batch] == [
+        ({"a": "0"}, {"a": '{"v": 1, "a": "0"}'}, {"a": {"a": 1}}),
+        ({"a": "1"}, {"a": '{"v": 1, "a": "1"}'}, {"a": {"a": 2}}),
+        ({"a": "2"}, {"a": '{"v": 1, "a": "2"}'}, {"a": {"a": 3}}),
+        ({"b": "0"}, {"b": '{"v": 1, "a": "0"}'}, {"b": {"b": "1"}}),
+        ({"b": "1"}, {"b": '{"v": 1, "a": "1"}'}, {"b": {"b": "2"}}),
+        ({"b": "2"}, {"b": '{"v": 1, "a": "2"}'}, {"b": {"b": "3"}}),
+        ({"c": "0"}, {"c": '{"v": 1, "a": "0"}'}, {"c": {"c": "1"}}),
+        ({"c": "1"}, {"c": '{"v": 1, "a": "1"}'}, {"c": {"c": "2"}}),
+        ({"c": "2"}, {"c": '{"v": 1, "a": "2"}'}, {"c": {"c": "3"}}),
     ]
 
-    batch = await alib.list(inventory.iterate(after=Cursor('{"b": "1"}')))
-    assert [(json.loads(i.id), json.loads(i.cursor or ""), i.args) for i in batch] == [
-        ({"b": "2"}, {"b": "2"}, {"b": {"b": "3"}}),
-        ({"c": "0"}, {"c": "0"}, {"c": {"c": "1"}}),
-        ({"c": "1"}, {"c": "1"}, {"c": {"c": "2"}}),
-        ({"c": "2"}, {"c": "2"}, {"c": {"c": "3"}}),
+    batch = await alib.list(iterate_with_cursor(inventory, after=Cursor('{"b": "1"}')))
+    assert [(json.loads(i.id), json.loads(c or ""), i.args) for i, c in batch] == [
+        ({"b": "2"}, {"b": '{"v": 1, "a": "2"}'}, {"b": {"b": "3"}}),
+        ({"c": "0"}, {"c": '{"v": 1, "a": "0"}'}, {"c": {"c": "1"}}),
+        ({"c": "1"}, {"c": '{"v": 1, "a": "1"}'}, {"c": {"c": "2"}}),
+        ({"c": "2"}, {"c": '{"v": 1, "a": "2"}'}, {"c": {"c": "3"}}),
     ]
     assert not await alib.list(inventory.iterate(after=Cursor('{"c": "2"}')))
