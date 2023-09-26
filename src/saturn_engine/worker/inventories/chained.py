@@ -55,7 +55,7 @@ class ChainedInventory(IteratorInventory):
 
         for name, inventory in self.inventories[start_inventory:]:
             self.__current = CurrentInventory(name, inventory)
-            async for item in inventory.iterate(cursors.get(name, None)):
+            async for item in inventory.run(cursors.get(name, None)):
                 yield MultiItems.from_one(item, name=name).as_item(
                     flatten=self.options.flatten,
                     alias=self.options.alias,
