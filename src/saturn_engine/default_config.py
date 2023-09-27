@@ -41,7 +41,7 @@ class config(SaturnConfig):
         database_pool_recycle: int = -1
         database_pool_pre_ping: bool = False
         static_definitions_directories: list[str] = os.environ.get(
-            "SATURN_STATIC_DEFINITIONS_DIRS", "/opt/saturn/definitions"
+            "SATURN_STATIC_DEFINITIONS_DIRS", os.getcwd()
         ).split(":")
         static_definitions_jobs_selector: t.Optional[str] = os.environ.get(
             "SATURN_STATIC_DEFINITIONS_JOBS_SELECTOR"

@@ -6,4 +6,5 @@ trace.db
 *.egg-info
 /.python-version
 /docs/_build
+/docs/references/generated/
 /example/definitions/tests.yaml

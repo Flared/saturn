@@ -1,0 +1,47 @@
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnTopic
+metadata:
+  name: hello-world-topic
+spec:
+  type: StaticTopic
+  options:
+    messages:
+    - {"args": {"word": "hello"}}
+    - {"args": {"word": "world"}}
+    - {"args": {"word": "!"}}
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnTopic
+metadata:
+  name: stdout
+spec:
+  type: FileTopic
+  options:
+    path: "-"
+    mode: "w"
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnJobDefinition
+metadata:
+  name: hello-world-definition
+spec:
+  minimalInterval: "@weekly"
+  template:
+    input:
+      topic: hello-world-topic
+
+    output:
+      default:
+        - topic: stdout
+
+    pipeline:
+      name: pipelines.capitalize
+---
+apiVersion: saturn.flared.io/v1alpha1
+kind: SaturnExecutor
+metadata:
+  name: default
+spec:
+  type: ProcessExecutor
+  options:
+    max_workers: 1

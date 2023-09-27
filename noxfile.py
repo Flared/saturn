@@ -13,6 +13,7 @@ nox.options.reuse_existing_virtualenvs = True
 python_all_versions = ["3.10", "3.11"]
 python_tool_version = "3.11"
 pyfiles_locations = "example", "src", "tests", "noxfile.py", "mypy_stubs"
+docs_locations = ("docs",)
 # These are package that are imported in the tests or this noxfile. Not all
 # package required to run lint and tests.
 tests_packages = [
@@ -98,6 +99,7 @@ def format(session: Session) -> None:
         "black",
         "isort",
         "autoflake8",
+        "rstfmt",
     )
     session.run("black", *args)
     session.run("isort", *args)
@@ -122,6 +124,27 @@ def safety(session: Session) -> None:
 def docs(session: Session) -> None:
     """Build sphinx docs."""
     session.posargs
-    session.install(".", "sphinx")
+    session.install(
+        ".[arq,statsd,sentry,tracer]",
+        "sphinx",
+        "sphinx-autobuild",
+        "sphinx-tabs",
+        "furo",
+    )
     session.cd("docs")
     session.run("make", "html")
+
+
+@nox_session(python=python_tool_version)
+def watch_docs(session: Session) -> None:
+    """Build sphinx docs with autoreload."""
+    session.posargs
+    session.install(
+        ".[arq,statsd,sentry,tracer]",
+        "sphinx",
+        "sphinx-autobuild",
+        "sphinx-tabs",
+        "furo",
+    )
+    session.cd("docs")
+    session.run("make", "livehtml")
