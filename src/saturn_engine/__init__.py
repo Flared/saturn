@@ -1,3 +1,7 @@
+"""
+Test
+"""
+
 # Snippet from https://cjolowicz.github.io/posts/hypermodern-python-06-ci-cd/
 try:
     from importlib.metadata import PackageNotFoundError  # type: ignore

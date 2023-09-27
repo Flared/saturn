@@ -88,6 +88,10 @@ freezegun = "*"
 types-freezegun = "*"
 autoflake8 = "*"
 
+[tool.poetry.group.docs.dependencies]
+rstfmt = {version = "^0.0.14", optional = true}
+restructuredtext-lint = {version = "^1.4.0", optional = true}
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 addopts = '''
@@ -138,3 +142,6 @@ module = [
   "aioredis.*",
 ]
 ignore_missing_imports = true
+
+[tool.doc8]
+max_line_length = 88

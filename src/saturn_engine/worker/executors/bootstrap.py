@@ -42,7 +42,7 @@ class PipelineBootstrap:
         except ValidationError:
             self.logger.error(
                 "Failed to deserialize message",
-                extra={"data": {"message_args": message.args}},
+                extra={"data": {"message_args": message.message.args}},
             )
             raise
 
