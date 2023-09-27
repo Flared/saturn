@@ -4,6 +4,8 @@ from collections.abc import Generator
 from collections.abc import Iterable
 from collections.abc import Iterator
 
+from pydantic import ValidationError
+
 from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResults
 from saturn_engine.core import ResourceUsed
@@ -35,7 +37,14 @@ class PipelineBootstrap:
             return self.pipeline_hook.emit(self.run_pipeline)(message)
 
     def run_pipeline(self, message: PipelineMessage) -> PipelineResults:
-        execute_result = message.execute()
+        try:
+            execute_result = message.execute()
+        except ValidationError:
+            self.logger.error(
+                "Failed to deserialize message",
+                extra={"data": {"message_args": message.args}},
+            )
+            raise
 
         # Ensure result is an iterator.
         results: Iterator
