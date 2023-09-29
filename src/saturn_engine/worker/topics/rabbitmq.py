@@ -69,6 +69,7 @@ class RabbitMQTopic(Topic):
         prefetch_count: t.Optional[int] = None
         serializer: RabbitMQSerializer = RabbitMQSerializer.JSON
         log_above_size: t.Optional[int] = None
+        max_publish_concurrency: int = 8
 
     class TopicServices:
         rabbitmq: RabbitMQService
@@ -80,7 +81,9 @@ class RabbitMQTopic(Topic):
         self.exit_stack = contextlib.AsyncExitStack()
         self.is_closed = False
         self._queue: t.Optional[aio_pika.abc.AbstractQueue] = None
-        self._publish_lock = SharedLock(max_reservations=8)
+        self._publish_lock = SharedLock(
+            max_reservations=options.max_publish_concurrency
+        )
 
     async def run(self) -> AsyncGenerator[t.AsyncContextManager[TopicMessage], None]:
         if self.is_closed:
