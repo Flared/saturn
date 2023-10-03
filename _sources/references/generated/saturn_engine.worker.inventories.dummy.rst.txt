@@ -1,0 +1,29 @@
+saturn\_engine.worker.inventories.dummy
+=======================================
+
+.. automodule:: saturn_engine.worker.inventories.dummy
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      DummyInventory
+   
+   
+
+   
+   
+   
+
+
+

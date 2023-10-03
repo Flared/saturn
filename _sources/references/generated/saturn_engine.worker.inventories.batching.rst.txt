@@ -1,0 +1,29 @@
+saturn\_engine.worker.inventories.batching
+==========================================
+
+.. automodule:: saturn_engine.worker.inventories.batching
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      BatchingInventory
+   
+   
+
+   
+   
+   
+
+
+

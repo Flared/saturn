@@ -1,0 +1,29 @@
+saturn\_engine.worker.pipeline\_message
+=======================================
+
+.. automodule:: saturn_engine.worker.pipeline_message
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      PipelineMessage
+   
+   
+
+   
+   
+   
+
+
+

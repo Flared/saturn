@@ -1,0 +1,40 @@
+saturn\_engine.worker.services.hooks
+====================================
+
+.. automodule:: saturn_engine.worker.services.hooks
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      listfield
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Hooks
+      HooksLists
+      ItemsBatch
+      MessagePublished
+      PipelineEventsEmitted
+      ResultsProcessed
+   
+   
+
+   
+   
+   
+
+
+

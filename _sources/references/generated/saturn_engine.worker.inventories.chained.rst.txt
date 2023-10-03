@@ -1,0 +1,30 @@
+saturn\_engine.worker.inventories.chained
+=========================================
+
+.. automodule:: saturn_engine.worker.inventories.chained
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ChainedInventory
+      CurrentInventory
+   
+   
+
+   
+   
+   
+
+
+

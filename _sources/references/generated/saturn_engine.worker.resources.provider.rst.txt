@@ -1,0 +1,34 @@
+saturn\_engine.worker.resources.provider
+========================================
+
+.. automodule:: saturn_engine.worker.resources.provider
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      PeriodicSyncOptions
+      PeriodicSyncProvider
+      ProvidedResource
+      ProvidedResourceRateLimit
+      ResourcesProvider
+      StaticResourcesProvider
+   
+   
+
+   
+   
+   
+
+
+

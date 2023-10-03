@@ -1,0 +1,30 @@
+saturn\_engine.worker.executors.manager
+=======================================
+
+.. automodule:: saturn_engine.worker.executors.manager
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ExecutorWorker
+      ExecutorsManager
+   
+   
+
+   
+   
+   
+
+
+

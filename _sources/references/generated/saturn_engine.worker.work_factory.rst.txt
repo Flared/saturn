@@ -1,0 +1,34 @@
+saturn\_engine.worker.work\_factory
+===================================
+
+.. automodule:: saturn_engine.worker.work_factory
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      build
+      build_inventory
+      build_inventory_job
+      build_item
+      build_resources_provider
+      build_topic
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

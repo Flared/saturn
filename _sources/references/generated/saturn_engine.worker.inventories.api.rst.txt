@@ -1,0 +1,23 @@
+saturn\_engine.worker.inventories.api
+=====================================
+
+.. automodule:: saturn_engine.worker.inventories.api
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

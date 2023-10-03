@@ -1,0 +1,29 @@
+saturn\_engine.worker.services.manager
+======================================
+
+.. automodule:: saturn_engine.worker.services.manager
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ServicesManager
+   
+   
+
+   
+   
+   
+
+
+

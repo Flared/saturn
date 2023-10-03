@@ -1,0 +1,29 @@
+saturn\_engine.worker.inventories.joined
+========================================
+
+.. automodule:: saturn_engine.worker.inventories.joined
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      JoinInventory
+   
+   
+
+   
+   
+   
+
+
+

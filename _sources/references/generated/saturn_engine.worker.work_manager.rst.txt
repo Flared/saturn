@@ -1,0 +1,31 @@
+saturn\_engine.worker.work\_manager
+===================================
+
+.. automodule:: saturn_engine.worker.work_manager
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ItemsSync
+      WorkManager
+      WorkSync
+   
+   
+
+   
+   
+   
+
+
+

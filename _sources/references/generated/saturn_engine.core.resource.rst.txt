@@ -1,0 +1,29 @@
+saturn\_engine.core.resource
+============================
+
+.. automodule:: saturn_engine.core.resource
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Resource
+   
+   
+
+   
+   
+   
+
+
+

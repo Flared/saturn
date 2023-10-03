@@ -1,0 +1,39 @@
+saturn\_engine.worker.services.loggers.console\_logging
+=======================================================
+
+.. automodule:: saturn_engine.worker.services.loggers.console_logging
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      merge_contextvars
+      setup
+      setup_logging
+      setup_structlog
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ConsoleLogging
+      ExtraFormatter
+   
+   
+
+   
+   
+   
+
+
+

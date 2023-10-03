@@ -1,0 +1,38 @@
+saturn\_engine.worker.services.tracing.tracer
+=============================================
+
+.. automodule:: saturn_engine.worker.services.tracing.tracer
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      executable_message_attributes
+      on_executor_initialized
+      pipeline_message_attributes
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      PipelineTracer
+      Tracer
+   
+   
+
+   
+   
+   
+
+
+

@@ -1,0 +1,43 @@
+saturn\_engine.worker.services.extras.sentry
+============================================
+
+.. automodule:: saturn_engine.worker.services.extras.sentry
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      event_from_remote_exception
+      exceptions_from_traceback
+      get_hub
+      queue_data
+      serialize_frame
+      set_event_tags_from_queue
+      set_event_tags_from_xmsg
+      single_exception_from_remote_error_tuple
+      walk_traceback_chain
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Sentry
+   
+   
+
+   
+   
+   
+
+
+

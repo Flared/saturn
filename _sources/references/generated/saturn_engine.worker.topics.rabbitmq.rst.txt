@@ -1,0 +1,30 @@
+saturn\_engine.worker.topics.rabbitmq
+=====================================
+
+.. automodule:: saturn_engine.worker.topics.rabbitmq
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      RabbitMQSerializer
+      RabbitMQTopic
+   
+   
+
+   
+   
+   
+
+
+

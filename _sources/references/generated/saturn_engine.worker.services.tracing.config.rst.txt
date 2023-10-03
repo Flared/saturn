@@ -1,0 +1,29 @@
+saturn\_engine.worker.services.tracing.config
+=============================================
+
+.. automodule:: saturn_engine.worker.services.tracing.config
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      TracerConfig
+   
+   
+
+   
+   
+   
+
+
+

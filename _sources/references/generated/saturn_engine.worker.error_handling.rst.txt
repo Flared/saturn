@@ -1,0 +1,52 @@
+saturn\_engine.worker.error\_handling
+=====================================
+
+.. automodule:: saturn_engine.worker.error_handling
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      does_error_match
+      get_exception_details
+      get_exception_name
+      is_handled
+      is_output_error_handler
+      match_exception_name
+      parse_warning_filter
+      process_pipeline_exception
+      republish
+      republish_handlers
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ErrorHandlerMeta
+      ExceptionDetails
+      ExceptionFilter
+   
+   
+
+   
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      HandledError
+   
+   
+
+
+

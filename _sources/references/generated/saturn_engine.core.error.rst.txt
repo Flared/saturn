@@ -1,0 +1,29 @@
+saturn\_engine.core.error
+=========================
+
+.. automodule:: saturn_engine.core.error
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ErrorMessageArgs
+   
+   
+
+   
+   
+   
+
+
+

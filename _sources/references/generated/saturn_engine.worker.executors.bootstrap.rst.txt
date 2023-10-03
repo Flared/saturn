@@ -1,0 +1,41 @@
+saturn\_engine.worker.executors.bootstrap
+=========================================
+
+.. automodule:: saturn_engine.worker.executors.bootstrap
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      wrap_remote_exception
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      PipelineBootstrap
+   
+   
+
+   
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      RemoteException
+   
+   
+
+
+

@@ -1,0 +1,29 @@
+saturn\_engine.worker.topics.file
+=================================
+
+.. automodule:: saturn_engine.worker.topics.file
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      FileTopic
+   
+   
+
+   
+   
+   
+
+
+

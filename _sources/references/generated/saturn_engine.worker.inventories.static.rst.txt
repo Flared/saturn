@@ -1,0 +1,29 @@
+saturn\_engine.worker.inventories.static
+========================================
+
+.. automodule:: saturn_engine.worker.inventories.static
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      StaticInventory
+   
+   
+
+   
+   
+   
+
+
+

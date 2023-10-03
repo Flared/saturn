@@ -1,0 +1,40 @@
+saturn\_engine.worker.services.loggers.logger
+=============================================
+
+.. automodule:: saturn_engine.worker.services.loggers.logger
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      executable_message_data
+      on_executor_initialized
+      pipeline_message_data
+      topic_message_data
+      trace_data
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Logger
+      PipelineLogger
+   
+   
+
+   
+   
+   
+
+
+

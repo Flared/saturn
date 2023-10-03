@@ -1,0 +1,29 @@
+saturn\_engine.worker.services.rabbitmq
+=======================================
+
+.. automodule:: saturn_engine.worker.services.rabbitmq
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      RabbitMQService
+   
+   
+
+   
+   
+   
+
+
+

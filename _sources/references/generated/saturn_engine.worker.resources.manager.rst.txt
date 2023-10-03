@@ -1,0 +1,41 @@
+saturn\_engine.worker.resources.manager
+=======================================
+
+.. automodule:: saturn_engine.worker.resources.manager
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ExclusiveResources
+      ResourceContext
+      ResourceData
+      ResourceKey
+      ResourceRateLimit
+      ResourcesContext
+      ResourcesManager
+   
+   
+
+   
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      ResourceUnavailable
+   
+   
+
+
+

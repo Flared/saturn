@@ -1,0 +1,29 @@
+saturn\_engine.worker.inventories.topic
+=======================================
+
+.. automodule:: saturn_engine.worker.inventories.topic
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      TopicAdapter
+   
+   
+
+   
+   
+   
+
+
+

@@ -1,0 +1,36 @@
+saturn\_engine.worker.inventories.loop
+======================================
+
+.. automodule:: saturn_engine.worker.inventories.loop
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      open_range
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      LoopInventory
+      StopLoopEvent
+   
+   
+
+   
+   
+   
+
+
+
