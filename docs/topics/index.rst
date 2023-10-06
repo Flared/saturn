@@ -9,6 +9,5 @@ explaining *how to do things* than with helping you understand *how it works*.
 
 .. toctree::
    :maxdepth: 1
-   :hidden:
 
    concurrency
