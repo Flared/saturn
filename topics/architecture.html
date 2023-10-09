@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="How-to guides" href="../how_to/index.html" /><link rel="prev" title="3. Pipelines" href="03-pipeline.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Concurrency" href="concurrency.html" /><link rel="prev" title="Key topics" href="index.html" />
 
     <!-- Generated with Sphinx 7.0.1 and Furo 2023.09.10 -->
-        <title>4. Topics - Saturn documentation</title>
+        <title>General Architecture - Saturn documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=369552022d0b975c8e74270ce6eabe0fb7978f24" />
     <link rel="stylesheet" type="text/css" href="../_static/tabs.css" />
@@ -135,7 +135,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -156,20 +156,20 @@
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul class="current">
-<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Getting Started</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Getting Started</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="01-install.html">1. Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="02-quickstart.html">2. Quickstart</a></li>
-<li class="toctree-l2"><a class="reference internal" href="03-pipeline.html">3. Pipelines</a></li>
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">4. Topics</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tutorial/index.html">Getting Started</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Getting Started</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial/01-install.html">1. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial/02-quickstart.html">2. Quickstart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial/03-pipeline.html">3. Pipelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial/04-topic.html">4. Topics</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../how_to/index.html">How-to guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of How-to guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../how_to/sub-jobs.html">Run Sub Jobs</a></li>
 </ul>
 </li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../topics/index.html">Key topics</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Key topics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../topics/architecture.html">General Architecture</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../topics/concurrency.html">Concurrency</a></li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Key topics</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Key topics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">General Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concurrency.html">Concurrency</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../references/index.html">References</a><input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><div class="visually-hidden">Toggle navigation of References</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -306,105 +306,50 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main">
-          <p>:: _job:</p>
-<section id="topics">
-<h1><span class="section-number">4. </span>Topics<a class="headerlink" href="#topics" title="Permalink to this heading">#</a></h1>
-<p>Now that we have our <a class="reference internal" href="03-pipeline.html#first-pipeline"><span class="std std-ref">first pipeline</span></a>, we can use it within a job
-to process a set of data.</p>
-<p>A job is made of three main compoent:</p>
-<p><strong>Input</strong></p>
-<blockquote>
-<div><p>A job input will yields multiple message to be processed by a pipeline. This can be a
-streaming topic or a batch of object.</p>
-</div></blockquote>
-<p><strong>Pipeline</strong></p>
-<blockquote>
-<div><p>A pipeline is a function that does the actual processing, receiving inputs and
-creating new messages that can be forwarded to outputs.</p>
-</div></blockquote>
-<p><strong>Outputs</strong></p>
-<blockquote>
-<div><p>Outputs are topics that can publish new message. It is common for a job output to
-also be the input of another jobs.</p>
-</div></blockquote>
-<p>All Saturn components are defined through YAML topology files.</p>
-<section id="input-topic">
-<h2><span class="section-number">4.1. </span>Input Topic<a class="headerlink" href="#input-topic" title="Permalink to this heading">#</a></h2>
-<p>A job input and outputs are references to Topics or Inventories defined as component, so
-let’s start with this:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">saturn.flared.io/v1alpha1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SaturnTopic</span>
-<span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">input-topic</span>
-<span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">StaticTopic</span>
-<span class="w">  </span><span class="nt">options</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">messages</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;id&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;0&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;args&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;word&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;hello&quot;</span><span class="p p-Indicator">}}</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;id&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;args&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;word&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;world&quot;</span><span class="p p-Indicator">}}</span>
-</pre></div>
-</div>
-<p>This first component define a topic that yield items defined in the YAML. It can be seen
-as a static list of message to process.</p>
-<p>The first two line allow to define the kind of component we are defining:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">saturn.flared.io/v1alpha1</span>
-<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SaturnTopic</span>
-</pre></div>
-</div>
-<p>Here the most important part is <cite>SaturnTopic</cite> that identify this YAML object as a Topic.</p>
-<p>We then set some metadata:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">metadata</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">input-topic</span>
-</pre></div>
-</div>
-<p><code class="docutils literal notranslate"><span class="pre">name</span></code> is the only required metadata. It is going to be used by other component to
-refer to this Topic.</p>
-<p>Finally the spec, define component instance itself:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">StaticTopic</span>
-</pre></div>
-</div>
-<p>The <code class="docutils literal notranslate"><span class="pre">type</span></code> attribute define the class used to create this Topic. Saturn comes with a
-few builtins topic type that are useful for most basic scenario.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">options</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">messages</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;id&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;0&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;args&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;word&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;hello&quot;</span><span class="p p-Indicator">}}</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;id&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;1&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;args&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="s">&quot;word&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;world&quot;</span><span class="p p-Indicator">}}</span>
-</pre></div>
-</div>
-<p>Each topic have <code class="docutils literal notranslate"><span class="pre">options</span></code> that is used to configure a specific instance. Here we
-define the message we want to yield from this topic.</p>
-</section>
-</section>
+          <section id="general-architecture">
+<span id="architecture"></span><h1>General Architecture<a class="headerlink" href="#general-architecture" title="Permalink to this heading">#</a></h1>
+<div class="mermaid">
+            sequenceDiagram
+   participant Alice
+   participant Bob
+   Alice-&gt;John: Hello John, how are you?
+   loop Healthcheck
+       John-&gt;John: Fight against hypochondria
+   end
+   Note right of John: Rational thoughts &lt;br/&gt;prevail...
+   John--&gt;Alice: Great!
+   John-&gt;Bob: How about you?
+   Bob--&gt;John: Jolly good!
+        </div></section>
 
         </article>
       </div>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="../how_to/index.html">
+          <a class="next-page" href="concurrency.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">How-to guides</div>
+                <div class="title">Concurrency</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="03-pipeline.html">
+          <a class="prev-page" href="index.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title"><span class="section-number">3. </span>Pipelines</div>
+                <div class="title">Key topics</div>
                 
               </div>
             </a>
@@ -426,27 +371,8 @@ define the message we want to yield from this topic.</p>
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">4. Topics</a><ul>
-<li><a class="reference internal" href="#input-topic">4.1. Input Topic</a></li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>

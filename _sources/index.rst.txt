@@ -26,6 +26,44 @@ targets pipelines high-throughput and efficient scheduling.
    topics/index
    references/index
 
+TODO
+----
+
+ * Topics
+
+   * Architecture
+
+     * Inventory
+     * Topics
+     * Executors
+     * Services
+
+   * Error Handling
+   * Backpressure
+   * Job states
+
+ * References
+
+   * All Builtings Topics
+   * All Builtings Inventory
+   * All Builtings Services
+
+ * Guides
+
+   * Create an Inventory or a Topic
+   * Create a Service
+   * Debug backpressure
+   * Common Patterns
+
+     * Subjobs
+     * Loop until condition is met
+
+   * Developer Guide
+
+     * Setup local environment
+     * Run tests and linting
+     * Release
+
 This documentation have been inspired and adapted from project like `Divio
 <https://documentation.divio.com/>`_ or `Django CMS
 <https://docs.django-cms.org/en/latest>`_.

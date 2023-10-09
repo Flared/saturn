@@ -135,7 +135,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -168,6 +168,7 @@
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="topics/index.html">Key topics</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Key topics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="topics/architecture.html">General Architecture</a></li>
 <li class="toctree-l2"><a class="reference internal" href="topics/concurrency.html">Concurrency</a></li>
 </ul>
 </li>
@@ -305,7 +306,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
@@ -323,7 +324,56 @@ targets pipelines high-throughput and efficient scheduling.</p>
 </div>
 <div class="toctree-wrapper compound">
 </div>
+<section id="todo">
+<h2>TODO<a class="headerlink" href="#todo" title="Permalink to this heading">#</a></h2>
+<blockquote>
+<div><ul class="simple">
+<li><p>Topics</p>
+<ul>
+<li><p>Architecture</p>
+<ul>
+<li><p>Inventory</p></li>
+<li><p>Topics</p></li>
+<li><p>Executors</p></li>
+<li><p>Services</p></li>
+</ul>
+</li>
+<li><p>Error Handling</p></li>
+<li><p>Backpressure</p></li>
+<li><p>Job states</p></li>
+</ul>
+</li>
+<li><p>References</p>
+<ul>
+<li><p>All Builtings Topics</p></li>
+<li><p>All Builtings Inventory</p></li>
+<li><p>All Builtings Services</p></li>
+</ul>
+</li>
+<li><p>Guides</p>
+<ul>
+<li><p>Create an Inventory or a Topic</p></li>
+<li><p>Create a Service</p></li>
+<li><p>Debug backpressure</p></li>
+<li><p>Common Patterns</p>
+<ul>
+<li><p>Subjobs</p></li>
+<li><p>Loop until condition is met</p></li>
+</ul>
+</li>
+<li><p>Developer Guide</p>
+<ul>
+<li><p>Setup local environment</p></li>
+<li><p>Run tests and linting</p></li>
+<li><p>Release</p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div></blockquote>
 <p>This documentation have been inspired and adapted from project like <a class="reference external" href="https://documentation.divio.com/">Divio</a> or <a class="reference external" href="https://docs.django-cms.org/en/latest">Django CMS</a>.</p>
+</section>
 </section>
 
         </article>
@@ -359,8 +409,27 @@ targets pipelines high-throughput and efficient scheduling.</p>
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Saturn</a><ul>
+<li><a class="reference internal" href="#todo">TODO</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>
@@ -369,5 +438,6 @@ targets pipelines high-throughput and efficient scheduling.</p>
     <script src="_static/doctools.js"></script>
     <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/scripts/furo.js"></script>
+    <script src="https://unpkg.com/mermaid@10.5.0/dist/mermaid.min.js"></script>
     </body>
 </html>
