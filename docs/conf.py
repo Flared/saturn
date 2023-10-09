@@ -18,6 +18,7 @@ extensions = [
     'sphinx_tabs.tabs',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
+    'sphinxcontrib.mermaid',
 ]
 
 intersphinx_mapping = {
@@ -36,3 +37,6 @@ master_doc = 'index'
 
 html_theme = 'furo'
 html_static_path = ['_static']
+html_js_files = ["https://unpkg.com/mermaid@10.5.0/dist/mermaid.min.js"]
+
+mermaid_version = "10.5.0"
