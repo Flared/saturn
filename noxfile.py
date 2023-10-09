@@ -124,27 +124,17 @@ def safety(session: Session) -> None:
 def docs(session: Session) -> None:
     """Build sphinx docs."""
     session.posargs
-    session.install(
-        ".[arq,statsd,sentry,tracer]",
-        "sphinx",
-        "sphinx-autobuild",
-        "sphinx-tabs",
-        "furo",
-    )
+    session.install(".[arq,statsd,sentry,tracer]")
     session.cd("docs")
-    session.run("make", "html")
+    session._session.install("-r", "requirements.txt")
+    session.run("make", "html", external=True)
 
 
 @nox_session(python=python_tool_version)
 def watch_docs(session: Session) -> None:
     """Build sphinx docs with autoreload."""
     session.posargs
-    session.install(
-        ".[arq,statsd,sentry,tracer]",
-        "sphinx",
-        "sphinx-autobuild",
-        "sphinx-tabs",
-        "furo",
-    )
+    session.install(".[arq,statsd,sentry,tracer]")
     session.cd("docs")
-    session.run("make", "livehtml")
+    session._session.install("-r", "requirements.txt")
+    session.run("make", "livehtml", external=True)
