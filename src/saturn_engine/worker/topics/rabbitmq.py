@@ -19,6 +19,7 @@ from saturn_engine.core import TopicMessage
 from saturn_engine.utils.asyncutils import SharedLock
 from saturn_engine.utils.asyncutils import cached_property
 from saturn_engine.utils.log import getLogger
+from saturn_engine.utils.lru import LRUDefaultDict
 from saturn_engine.utils.options import asdict
 from saturn_engine.utils.options import fromdict
 from saturn_engine.worker.services import Services
@@ -70,6 +71,7 @@ class RabbitMQTopic(Topic):
         serializer: RabbitMQSerializer = RabbitMQSerializer.JSON
         log_above_size: t.Optional[int] = None
         max_publish_concurrency: int = 8
+        max_retry: int | None = None
 
     class TopicServices:
         rabbitmq: RabbitMQService
@@ -83,6 +85,9 @@ class RabbitMQTopic(Topic):
         self._queue: t.Optional[aio_pika.abc.AbstractQueue] = None
         self._publish_lock = SharedLock(
             max_reservations=options.max_publish_concurrency
+        )
+        self.attempt_by_message: LRUDefaultDict[str, int] = LRUDefaultDict(
+            cache_len=1024, default_factory=lambda: 0
         )
 
     async def run(self) -> AsyncGenerator[t.AsyncContextManager[TopicMessage], None]:
@@ -189,8 +194,21 @@ class RabbitMQTopic(Topic):
     async def message_context(
         self, message: aio_pika.abc.AbstractIncomingMessage
     ) -> AsyncIterator[TopicMessage]:
-        async with message.process():
-            yield self._deserialize(message)
+        requeue: bool = False
+        if message.message_id and self.options.max_retry:
+            requeue = (
+                self.attempt_by_message.get(message.message_id, 0)
+                < self.options.max_retry
+            )
+        async with message.process(requeue=requeue):
+            try:
+                yield self._deserialize(message)
+            except Exception:
+                if message.message_id and self.options.max_retry:
+                    self.attempt_by_message[message.message_id] += 1
+                raise
+            if message.message_id:
+                self.attempt_by_message.pop(message.message_id, None)
 
     @cached_property
     async def channel(self) -> aio_pika.abc.AbstractChannel:

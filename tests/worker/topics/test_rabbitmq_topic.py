@@ -212,3 +212,43 @@ async def test_rabbitmq_topic_expiring_message(
         assert await unwrap(await alib.anext(topic_iter)) == message
 
     await topic.close()
+
+
+@pytest.mark.asyncio
+async def test_retry(
+    rabbitmq_topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]]
+) -> None:
+    topic = await rabbitmq_topic_maker(
+        RabbitMQTopic, serializer=RabbitMQSerializer.PICKLE, max_retry=1
+    )
+
+    messages = [
+        TopicMessage(id=MessageId("0"), args={"n": b"1", "time": utcnow()}),
+    ]
+
+    for message in messages:
+        await topic.publish(message, wait=True)
+
+    async with alib.scoped_iter(topic.run()) as topic_iter:
+        # we try 2 time to execute the first message.
+        # Max_retry is at 1, so we will give up after two attemps.
+        context = await alib.anext(topic_iter)
+        with pytest.raises(ValueError):
+            async with context as message:
+                raise ValueError("Exception")
+
+        context = await alib.anext(topic_iter)
+        with pytest.raises(ValueError):
+            async with context as message:
+                raise ValueError("Exception")
+
+        await topic.publish(
+            TopicMessage(id=MessageId("1"), args={"n": b"1", "time": utcnow()}),
+            wait=True,
+        )
+
+        context = await alib.anext(topic_iter)
+        async with context as message:
+            assert message.id == "1"
+
+    await topic.close()
