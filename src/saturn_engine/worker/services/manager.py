@@ -14,25 +14,44 @@ from . import ServicesNamespace
 from . import TService
 
 
+class MissingServiceError(Exception):
+    pass
+
+
 class ServicesManager:
     def __init__(self, config: Config) -> None:
-        self.strict = config.c.services_manager.strict_services
         config = config.register_interface(Hooks.name, Hooks.Options())
         self.services: Services = ServicesNamespace(
             config=config,
             hooks=Hooks.from_options(config.r.get("hooks", {})),
             resources_manager=ResourcesManager(),
-            strict=self.strict,
         )
         self.loaded_services: list[Service] = []
         self.is_opened = False
 
         # Load optional services based on config.
+        defered_services = []
         for service_cls_path in chain(
-            BASE_SERVICES, config.c.services_manager.services
+            config.c.services_manager.base_services, config.c.services_manager.services
         ):
             service_cls = extra_inspect.import_name(service_cls_path)
-            self._load_service(service_cls)
+            try:
+                self._load_service(service_cls)
+            except MissingServiceError:
+                defered_services.append(service_cls)
+
+        defered_again = []
+        # Try to load services as long as we are making progress..
+        while defered_services:
+            for service_cls in defered_services:
+                try:
+                    self._load_service(service_cls)
+                except MissingServiceError:
+                    defered_again.append(service_cls)
+
+            if defered_again == defered_services:
+                raise ValueError(f"Can't load services: {defered_services}")
+            defered_services = defered_again
 
     async def open(self) -> None:
         if self.is_opened:
@@ -62,11 +81,15 @@ class ServicesManager:
                 ) from e
 
         try:
-            service = service_cls(
-                self.services.cast(service_cls.Services or BaseServices)
-            )
+            services = self.services.cast(service_cls.Services or BaseServices)
+        except Exception as e:
+            raise MissingServiceError() from e
+
+        try:
+            service = service_cls(services)
         except Exception as e:
             raise ValueError(f"Failed to load service '{service_cls.name}'") from e
+
         self.loaded_services.append(service)
         self.services[service_cls.name] = service
         return service
@@ -82,11 +105,3 @@ class ServicesManager:
 
     def has_loaded(self, service_cls: Type[TService]) -> bool:
         return service_cls.name in self.services
-
-
-BASE_SERVICES: list[str] = [
-    "saturn_engine.worker.services.http_client.HttpClient",
-    "saturn_engine.worker.services.api_client.ApiClient",
-    "saturn_engine.worker.services.tasks_runner.TasksRunnerService",
-    "saturn_engine.worker.services.job_state.service.JobStateService",
-]

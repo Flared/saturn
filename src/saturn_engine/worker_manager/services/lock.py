@@ -7,10 +7,10 @@ from saturn_engine.core.api import LockInput
 from saturn_engine.core.api import LockResponse
 from saturn_engine.core.api import ResourceItem
 from saturn_engine.core.api import ResourcesProviderItem
-from saturn_engine.database import AnySyncSession
 from saturn_engine.models.queue import Queue
 from saturn_engine.stores import jobs_store
 from saturn_engine.stores import queues_store
+from saturn_engine.utils.sqlalchemy import AnySyncSession
 from saturn_engine.worker_manager.config.static_definitions import StaticDefinitions
 
 

@@ -1,6 +1,7 @@
 __pycache__/
 test.db
 trace.db
+standalone.db
 /.venv-tools
 /dist
 *.egg-info

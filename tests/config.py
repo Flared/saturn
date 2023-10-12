@@ -7,7 +7,6 @@ class config(SaturnConfig):
     env = Env.TEST
 
     class services_manager(ServicesManagerConfig):
-        strict_services = False
         services: list[str] = [
             "saturn_engine.worker.services.tracing.Tracer",
             "saturn_engine.worker.services.metrics.Metrics",

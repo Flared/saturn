@@ -37,11 +37,10 @@ class RedisConfig:
 
 @dataclasses.dataclass
 class ServicesManagerConfig:
-    # Services to load
+    # Base services (override at your own risk...)
+    base_services: list[str]
+    # Extra services to load
     services: list[str]
-    # Check services type dependancies match loaded services. `False` value is
-    # needed to load fake services.
-    strict_services: bool
 
 
 @dataclasses.dataclass
@@ -50,6 +49,9 @@ class SaturnConfig:
     # Worker Manager URL used by clients and workers.
     worker_id: str
     worker_manager_url: str
+    # If true, a Saturn Worker will tweak the config to run without a
+    # Worker Manager
+    standalone: bool
     # If set, select jobs matching the selector regex.
     selector: t.Optional[str]
     services_manager: ServicesManagerConfig

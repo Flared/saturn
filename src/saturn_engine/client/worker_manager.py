@@ -1,5 +1,6 @@
 from typing import Optional
 
+import abc
 import socket
 
 import aiohttp
@@ -15,7 +16,23 @@ from saturn_engine.utils.options import asdict
 from saturn_engine.utils.options import fromdict
 
 
-class WorkerManagerClient:
+class AbstractWorkerManagerClient(abc.ABC):
+    @abc.abstractmethod
+    async def lock(self) -> LockResponse:
+        pass
+
+    @abc.abstractmethod
+    async def sync(self, sync: JobsStatesSyncInput) -> JobsStatesSyncResponse:
+        pass
+
+    @abc.abstractmethod
+    async def fetch_cursors_states(
+        self, cursors: FetchCursorsStatesInput
+    ) -> FetchCursorsStatesResponse:
+        pass
+
+
+class WorkerManagerClient(AbstractWorkerManagerClient):
     def __init__(
         self,
         http_client: aiohttp.ClientSession,

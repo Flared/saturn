@@ -104,9 +104,8 @@ class PeriodicSyncProvider(ResourcesProvider[TPeriodicSyncOptions]):
 
     async def _open(self) -> None:
         await super()._open()
-        self._sync_task = self.services.cast_service(
-            TasksRunnerService
-        ).runner.create_task(
+        tasks_runner = self.services.cast_service(TasksRunnerService)
+        self._sync_task = tasks_runner.create_task(
             self.poller(), name=f"provider-sync({self.definition.name})"
         )
 
