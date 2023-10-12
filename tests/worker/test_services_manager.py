@@ -88,7 +88,7 @@ async def test_services_manager(config: Config) -> None:
     assert services.s.fake.state == "closed"
 
 
-def test_services_manager_check_options(config: Config) -> None:
+async def test_services_manager_check_options(config: Config) -> None:
     # Loading a services expecting config requires config.
     config = config.load_object(
         {
@@ -130,7 +130,7 @@ def test_services_manager_check_options(config: Config) -> None:
         ServicesManager(config)
 
 
-def test_services_manager_check_services(config: Config) -> None:
+async def test_services_manager_check_services(config: Config) -> None:
     # Loading a services expecting other services require these service to be loaded.
     config = config.load_object(
         {
@@ -138,14 +138,12 @@ def test_services_manager_check_services(config: Config) -> None:
                 "services": [
                     get_import_name(FakeServiceWithServices),
                 ],
-                # Enable strict mode to validate it works.
-                "strict_services": True,
             },
         }
     )
     with pytest.raises(
         ValueError,
-        match="Failed to load service 'fake_with_services'",
+        match="Can't load services",
     ):
         ServicesManager(config)
 
@@ -159,11 +157,7 @@ def test_services_manager_check_services(config: Config) -> None:
             },
         }
     )
-    with pytest.raises(
-        ValueError,
-        match="Failed to load service 'fake_with_services'",
-    ):
-        ServicesManager(config)
+    ServicesManager(config)
 
     config = config.load_object(
         {
@@ -179,6 +173,6 @@ def test_services_manager_check_services(config: Config) -> None:
     ServicesManager(config)
 
 
-def test_default_services(config: Config) -> None:
+async def test_default_services(config: Config) -> None:
     ServicesManager(config)
     assert True

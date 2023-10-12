@@ -4,6 +4,7 @@ import asyncio
 import logging
 import signal
 
+from saturn_engine.config import Config
 from saturn_engine.config import default_config_with_env
 
 from .broker import Broker
@@ -21,8 +22,40 @@ def unset_term_handler() -> None:
         loop.remove_signal_handler(getattr(signal, signame))
 
 
+def standalone_config(config: Config) -> Config:
+    base_services = config.c.services_manager.base_services.copy()
+    services = config.c.services_manager.services.copy()
+
+    try:
+        base_services.remove("saturn_engine.worker.services.api_client.ApiClient")
+        services.remove("saturn_engine.worker.services.databases.Databases")
+    except ValueError:
+        pass
+    base_services = [
+        "saturn_engine.worker.services.databases.Databases",
+        "saturn_engine.worker.services.api_client.StandaloneApiClient",
+    ] + base_services
+
+    engines = config.r.get("databases", {}).get("sync_engines", {}).copy()
+    engines.setdefault("default", "sqlite:///standalone.db")
+    config = config.load_object(
+        {
+            "services_manager": {
+                "base_services": base_services,
+                "services": services,
+            },
+            "databases": {"sync_engines": engines, "engines": {}},
+        }
+    )
+
+    return config
+
+
 async def async_main() -> None:
     config = default_config_with_env()
+    if config.c.standalone:
+        config = standalone_config(config)
+
     broker = Broker(config)
 
     def stop() -> None:

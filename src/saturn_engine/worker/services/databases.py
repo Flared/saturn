@@ -1,5 +1,7 @@
 import typing as t
 
+import dataclasses
+
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -13,9 +15,10 @@ from . import BaseServices
 from . import Service
 
 
+@dataclasses.dataclass
 class Options:
-    engines: dict
-    sync_engines: dict
+    engines: dict = dataclasses.field(default_factory=dict)
+    sync_engines: dict = dataclasses.field(default_factory=dict)
 
 
 class Databases(Service[BaseServices, Options]):

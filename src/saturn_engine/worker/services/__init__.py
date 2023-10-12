@@ -69,9 +69,8 @@ MinimalService = Service[BaseServices, None]
 
 
 class ServicesNamespace(Namespace, Generic[T]):
-    def __init__(self, *args: Any, strict: bool, **kwargs: Any):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self.strict = strict
         self.s: T = cast(T, self)
 
     def cast(self, interface: Type[U]) -> "ServicesNamespace[U]":
@@ -90,13 +89,6 @@ class ServicesNamespace(Namespace, Generic[T]):
         service = self.get(name)
         if not service:
             raise ValueError(f"Namespace missing '{typ_import_name}' service")
-
-        if self.strict and service_cls is not service.__class__:
-            dependency_name = extra_inspect.get_import_name(service.__class__)
-            raise ValueError(
-                f"Service '{name}' expected to be '{typ_import_name}', "
-                f"got '{dependency_name}'"
-            )
 
         return cast(TService, service)
 

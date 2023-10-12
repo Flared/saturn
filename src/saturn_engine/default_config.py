@@ -18,15 +18,22 @@ class config(SaturnConfig):
     worker_manager_url = os.environ.get(
         "SATURN_WORKER_MANAGER_URL", "http://127.0.0.1:5000"
     )
+    standalone = os.environ.get("SATURN_STANDALONE") == "1"
 
     class services_manager(ServicesManagerConfig):
+        base_services = [
+            "saturn_engine.worker.services.tasks_runner.TasksRunnerService",
+            "saturn_engine.worker.services.http_client.HttpClient",
+            "saturn_engine.worker.services.api_client.ApiClient",
+            "saturn_engine.worker.services.job_state.service.JobStateService",
+        ]
+
         services = [
             "saturn_engine.worker.services.tracing.Tracer",
             "saturn_engine.worker.services.metrics.Metrics",
             "saturn_engine.worker.services.loggers.Logger",
             "saturn_engine.worker.services.rabbitmq.RabbitMQService",
         ]
-        strict_services = True
 
     class rabbitmq(RabbitMQConfig):
         url = os.environ.get("SATURN_AMQP_URL", "amqp://127.0.0.1/")
