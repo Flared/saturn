@@ -30,6 +30,7 @@ def executable_message_data(
 ) -> dict[str, t.Any]:
     labels = xmsg.queue.definition.labels.copy()
     return pipeline_message_data(xmsg.message, verbose=verbose) | {
+        "executor": {"name": xmsg.queue.definition.executor},
         "job": {"name": xmsg.queue.name},
         "input": xmsg.queue.definition.input.name,
         "labels": labels,

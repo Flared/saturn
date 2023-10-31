@@ -160,6 +160,7 @@ async def test_broker_dummy(
 
     # Test metrics
     pipeline_params = {
+        "saturn.executor.name": "e1",
         "saturn.job.name": "j1",
         "pipeline": "tests.worker.test_broker.pipeline",
         "saturn.job.labels.owner": "team-saturn",
