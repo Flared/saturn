@@ -15,6 +15,7 @@ from . import MinimalService
 
 def executable_params(xmsg: ExecutableMessage) -> dict:
     return {
+        "saturn.executor.name": xmsg.queue.definition.executor,
         "saturn.job.name": xmsg.queue.definition.name,
         "pipeline": xmsg.message.info.name,
     } | {f"saturn.job.labels.{k}": v for k, v in xmsg.queue.definition.labels.items()}

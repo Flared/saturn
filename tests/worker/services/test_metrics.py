@@ -17,10 +17,12 @@ async def test_message_metrics(
 ) -> None:
     data = Mock()
     data.queue.definition.name = "test-job"
+    data.queue.definition.executor = "exec"
     data.queue.definition.labels = {"k": "v"}
     data.message.info.name = "test.fake.pipeline"
     pipeline_params = {
         "pipeline": data.message.info.name,
+        "saturn.executor.name": "exec",
         "saturn.job.name": "test-job",
         "saturn.job.labels.k": "v",
     }
@@ -54,10 +56,12 @@ async def test_metrics_message_executed(
 ) -> None:
     data = Mock()
     data.queue.definition.name = "test-job"
+    data.queue.definition.executor = "exec"
     data.queue.definition.labels = {"k": "v"}
     data.message.info.name = "test.fake.pipeline"
     pipeline_params = {
         "pipeline": data.message.info.name,
+        "saturn.executor.name": "exec",
         "saturn.job.name": "test-job",
         "saturn.job.labels.k": "v",
     }
@@ -128,10 +132,12 @@ async def test_metrics_message_execute_failed(
 ) -> None:
     data = Mock()
     data.queue.definition.name = "test-job"
+    data.queue.definition.executor = "exec"
     data.queue.definition.labels = {"k": "v"}
     data.message.info.name = "test.fake.pipeline"
     pipeline_params = {
         "pipeline": data.message.info.name,
+        "saturn.executor.name": "exec",
         "saturn.job.name": "test-job",
         "saturn.job.labels.k": "v",
     }
@@ -176,6 +182,7 @@ async def test_metrics_message_published(
     services_manager: ServicesManager, metrics_capture: MetricsCapture
 ) -> None:
     data = Mock()
+    data.xmsg.queue.definition.executor = "exec"
     data.xmsg.queue.definition.name = "test-job"
     data.xmsg.queue.definition.labels = {"k": "v"}
     data.xmsg.message.info.name = "test.fake.pipeline"
@@ -183,6 +190,7 @@ async def test_metrics_message_published(
     params = {
         "pipeline": "test.fake.pipeline",
         "topic": "test.fake.topic",
+        "saturn.executor.name": "exec",
         "saturn.job.name": "test-job",
         "saturn.job.labels.k": "v",
     }
@@ -213,6 +221,7 @@ async def test_metrics_message_publish_failed(
     services_manager: ServicesManager, metrics_capture: MetricsCapture
 ) -> None:
     data = Mock()
+    data.xmsg.queue.definition.executor = "exec"
     data.xmsg.queue.definition.name = "test-job"
     data.xmsg.queue.definition.labels = {"k": "v"}
     data.xmsg.message.info.name = "test.fake.pipeline"
@@ -220,6 +229,7 @@ async def test_metrics_message_publish_failed(
     params = {
         "pipeline": "test.fake.pipeline",
         "topic": "test.fake.topic",
+        "saturn.executor.name": "exec",
         "saturn.job.name": "test-job",
         "saturn.job.labels.k": "v",
     }
