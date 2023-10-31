@@ -16,7 +16,8 @@ class LRUDefaultDict(OrderedDict[K, V]):
         *args: list[t.Any],
         **kwargs: dict[str, t.Any]
     ):
-        assert cache_len > 0
+        if cache_len <= 0:
+            raise ValueError("cache_len must be greater than 0")
         self.cache_len = cache_len
         self.default_factory = default_factory
 
