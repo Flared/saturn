@@ -13,7 +13,9 @@ saturn\_engine.worker.executors.arq.worker
 
    .. autosummary::
    
+      remote_bootstrap
       remote_execute
+      remote_initializer
       remote_job_healthcheck
       shutdown
       startup
@@ -29,6 +31,7 @@ saturn\_engine.worker.executors.arq.worker
       Context
       WorkerOptions
       WorkerSettings
+      WorkerType
    
    
 
