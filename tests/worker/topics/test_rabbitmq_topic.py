@@ -252,3 +252,47 @@ async def test_retry(
             assert message.id == "1"
 
     await topic.close()
+
+
+@pytest.mark.asyncio
+async def test_dead_letter_exchanges(
+    rabbitmq_topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]]
+) -> None:
+    topic = await rabbitmq_topic_maker(
+        RabbitMQTopic,
+        serializer=RabbitMQSerializer.PICKLE,
+        arguments={
+            "x-dead-letter-exchange": "",
+            "x-dead-letter-routing-key": "dlx_queue",
+        },
+    )
+    dlx_topic = await rabbitmq_topic_maker(
+        RabbitMQTopic,
+        serializer=RabbitMQSerializer.PICKLE,
+        queue_name="dlx_queue",
+    )
+
+    await dlx_topic.ensure_queue()
+
+    messages = [
+        TopicMessage(id=MessageId("0"), args={"n": b"1", "time": utcnow()}),
+    ]
+
+    for message in messages:
+        await topic.publish(message, wait=True)
+
+    # We make the message fail
+    async with alib.scoped_iter(topic.run()) as topic_iter:
+        context = await alib.anext(topic_iter)
+        with pytest.raises(ValueError):
+            async with context as message:
+                raise ValueError("Exception")
+
+    # We iter the dlx_topic, ensure the failed message
+    async with alib.scoped_iter(dlx_topic.run()) as dlx_topic_iter:
+        context = await alib.anext(dlx_topic_iter)
+        async with context as message:
+            assert message.id == "0"
+
+    await topic.close()
+    await dlx_topic.close()
