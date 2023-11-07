@@ -17,6 +17,7 @@ saturn\_engine.worker.topics.rabbitmq
 
    .. autosummary::
    
+      Exchange
       RabbitMQSerializer
       RabbitMQTopic
    
