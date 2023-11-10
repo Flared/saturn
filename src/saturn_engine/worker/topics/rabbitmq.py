@@ -154,7 +154,7 @@ class RabbitMQTopic(Topic):
                 body = self._serialize(message)
                 try:
                     await self.ensure_queue()  # Ensure the queue is created.
-                    exchange = self.exchange
+                    exchange = await self.exchange
                     await exchange.publish(
                         aio_pika.Message(
                             body=body,
