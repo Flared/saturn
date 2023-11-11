@@ -79,7 +79,7 @@ class RabbitMQTopic(Topic):
         max_length: t.Optional[int] = None
         max_length_bytes: t.Optional[int] = None
         overflow: t.Optional[str] = "reject-publish"
-        prefetch_count: t.Optional[int] = None
+        prefetch_count: t.Optional[int] = 1
         serializer: RabbitMQSerializer = RabbitMQSerializer.JSON
         log_above_size: t.Optional[int] = None
         max_publish_concurrency: int = 8
