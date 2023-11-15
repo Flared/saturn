@@ -61,11 +61,18 @@ class PipelineOutput:
 @dataclasses.dataclass
 class ResourceUsed:
     type: str
-    release_at: float
+    release_at: t.Optional[float] = None
+    state: t.Optional[dict[str, object]] = None
 
     @classmethod
-    def from_resource(cls, resource: Resource, release_at: float) -> "ResourceUsed":
-        return cls(type=resource._typename(), release_at=release_at)
+    def from_resource(
+        cls,
+        resource: Resource,
+        *,
+        release_at: t.Optional[float] = None,
+        state: t.Optional[dict[str, object]] = None
+    ) -> "ResourceUsed":
+        return cls(type=resource._typename(), release_at=release_at, state=state)
 
 
 class PipelineEvent:

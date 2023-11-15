@@ -1,4 +1,4 @@
-from typing import Optional
+import typing as t
 
 import asyncio
 import contextlib
@@ -31,13 +31,14 @@ class ResourceRateLimit:
         return parse_many(";".join(self.rate_limits))
 
 
-@dataclasses.dataclass(eq=False, frozen=True)
+@dataclasses.dataclass(eq=False)
 class ResourceData:
     name: str
     type: str
     data: dict[str, object]
     default_delay: float = 0
-    rate_limit: Optional[ResourceRateLimit] = None
+    rate_limit: t.Optional[ResourceRateLimit] = None
+    state: t.Optional[dict[str, object]] = None
 
     @property
     def key(self) -> ResourceKey:
@@ -50,10 +51,10 @@ class ResourceUnavailable(Exception):
 
 class ResourceContext:
     def __init__(self, resource: ResourceData, manager: "ExclusiveResources") -> None:
-        self.resource: Optional[ResourceData] = resource
+        self.resource: t.Optional[ResourceData] = resource
         self.manager = manager
-        self.rate_limiter: Optional[RateLimiter] = manager.limiters.get(resource.name)
-        self.release_at: Optional[float] = None
+        self.rate_limiter: t.Optional[RateLimiter] = manager.limiters.get(resource.name)
+        self.release_at: t.Optional[float] = None
 
     async def release(self) -> None:
         # Add the resource back to the manager.
@@ -72,6 +73,10 @@ class ResourceContext:
 
     def release_later(self, when: float) -> None:
         self.release_at = when
+
+    def update_state(self, state: dict[str, object]) -> None:
+        if self.resource:
+            self.resource.state = state
 
     async def _delayed_release(self, resource: ResourceData) -> None:
         if self.release_at:
@@ -189,7 +194,7 @@ class ExclusiveResources:
             self.used.discard(resource)
             self.limiters.pop(resource.name, None)
 
-    def try_acquire(self) -> Optional[ResourceData]:
+    def try_acquire(self) -> t.Optional[ResourceData]:
         if self.availables:
             resource = self.availables.pop()
             self.used.add(resource)

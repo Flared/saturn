@@ -67,7 +67,7 @@ class ExecutableMessage:
             resources_context
         )
         resources_data = {
-            k: ({"name": r.resource.name} | r.resource.data)
+            k: ({"name": r.resource.name, "state": r.resource.state} | r.resource.data)
             for k, r in self.resources.items()
             if r.resource
         }
@@ -79,7 +79,12 @@ class ExecutableMessage:
             return
 
         for resource_used in resources_used:
-            self.resources[resource_used.type].release_later(resource_used.release_at)
+            if resource_used.release_at is not None:
+                self.resources[resource_used.type].release_later(
+                    resource_used.release_at
+                )
+            if resource_used.state is not None:
+                self.resources[resource_used.type].update_state(resource_used.state)
 
     @cached_property
     def config(self) -> LazyConfig:

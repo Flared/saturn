@@ -1,3 +1,5 @@
+import typing as t
+
 import dataclasses
 from collections.abc import Collection
 
@@ -10,6 +12,7 @@ from saturn_engine.worker.resources.provider import ProvidedResource
 @dataclasses.dataclass
 class TestApiKey(Resource):
     key: str
+    state: t.Optional[dict[str, int]] = None
 
 
 @dataclasses.dataclass

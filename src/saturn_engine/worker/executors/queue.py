@@ -106,6 +106,9 @@ class ExecutorQueue:
                                     else None,
                                 )
                             )
+
+                            processable.update_resources_used(results.resources)
+
                     if error:
                         error.reraise()
 
@@ -119,8 +122,6 @@ class ExecutorQueue:
     ) -> None:
         @self.services.s.hooks.results_processed.emit
         async def scope(msg: ResultsProcessed) -> None:
-            msg.xmsg.update_resources_used(msg.results.resources)
-
             await self.consume_output(processable=xmsg, output=msg.results.outputs)
 
             await self.services.s.hooks.pipeline_events_emitted.emit(
