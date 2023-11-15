@@ -22,7 +22,7 @@ You can also work from the shell with:
 
 ```console
 $ # Install the project locally.
-$ poetry install
+$ poetry install --all-extras
 $ poetry shell
 $ # Run the utilities.
 $ py.test tests -xsvv

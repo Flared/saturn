@@ -176,11 +176,11 @@ spec:
 apiVersion: saturn.flared.io/v1alpha1
 kind: SaturnResource
 metadata:
-  name: example-api-key-1
+  name: example-api-key
 spec:
   type: example.resources.TestApiKey
   data:
-    key: example-api-key-1
+    key: example-api-key
   default_delay: 1
   rate_limit:
     strategy: moving-window

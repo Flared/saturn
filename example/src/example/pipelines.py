@@ -15,6 +15,7 @@ from saturn_engine.core.job_state import CursorState
 from saturn_engine.core.job_state import CursorStateUpdated
 from saturn_engine.core.pipeline import PipelineOutput
 from saturn_engine.core.pipeline import PipelineResult
+from saturn_engine.core.pipeline import ResourceUsed
 from saturn_engine.worker.inventories.loop import StopLoopEvent
 
 from .resources import BackpressureApiKey
@@ -53,6 +54,13 @@ def echo(api_key: TestApiKey, **kwargs: t.Any) -> TopicMessage:
     trace_pipeline("echo", {"api_key": api_key.key} | kwargs)
     logging.info("api_key: %s, data: %s", api_key.key, kwargs)
     return TopicMessage(args=kwargs)
+
+
+def use_resource(api_key: TestApiKey, **kwargs: t.Any) -> t.Iterator[PipelineResult]:
+    calls = (api_key.state or {}).get("calls", 0)
+    logging.info("calls: %s", calls)
+    calls += 1
+    yield ResourceUsed.from_resource(api_key, state={"calls": calls})
 
 
 def echo_with_error(api_key: TestApiKey, **kwargs: t.Any) -> TopicMessage:
