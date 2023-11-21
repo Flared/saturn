@@ -32,10 +32,11 @@ def run_saturn_inventory(
     async def run_inventory() -> None:
         count = 0
         async for item in inventory.iterate(after=after):
-            items.append(asdict(item.as_topic_message()))
-            count = count + 1
-            if limit and count >= limit:
-                break
+            async with item:
+                items.append(asdict(item.as_topic_message()))
+                count = count + 1
+                if limit and count >= limit:
+                    break
 
     asyncio.run(run_inventory())
 

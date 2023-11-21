@@ -1,4 +1,3 @@
-from typing import AsyncContextManager
 from typing import Optional
 
 import asyncio
@@ -33,17 +32,15 @@ def run_saturn_topic(
         count = 0
         skipped = 0
         async for message in topic.run():
-            if skip is not None and skipped < skip:
-                skipped += 1
-                continue
+            async with message:
+                if skip is not None and skipped < skip:
+                    skipped += 1
+                    continue
 
-            if isinstance(message, AsyncContextManager):
-                message = await message.__aenter__()
-
-            messages.append(asdict(message))
-            count = count + 1
-            if limit and count >= limit:
-                break
+                messages.append(asdict(message))
+                count = count + 1
+                if limit and count >= limit:
+                    break
 
     asyncio.run(run_topic())
 
