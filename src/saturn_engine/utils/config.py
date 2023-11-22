@@ -11,6 +11,8 @@ from collections.abc import Iterable
 from collections.abc import Mapping
 from enum import Enum
 
+import typing_inspect
+
 from . import CINamespace
 from .inspect import eval_class_annotations
 from .inspect import import_name
@@ -55,7 +57,7 @@ class Config(Generic[T]):
         """Load an object from a path stored in an environment variable."""
         return self.load_object(os.environ.get(envvar))
 
-    def register_interface(self: TConfig, namespace: str, interface: Type) -> TConfig:
+    def register_interface(self: TConfig, namespace: str, interface: Any) -> TConfig:
         """Add an interface to the config under namespace.
 
         Interfaces are used to validate config keys and values.
@@ -251,6 +253,9 @@ def check_type(obj: Any, typ: Any, scope: Any) -> bool:
 
     if typ is float:
         return isinstance(obj, (float, int))
+
+    if typing_inspect.is_typevar(typ):
+        return True
 
     if not isinstance(obj, typ):
         return False
