@@ -17,6 +17,7 @@ from . import TService
 class ServicesManager:
     def __init__(self, config: Config) -> None:
         self.strict = config.c.services_manager.strict_services
+        config = config.register_interface(Hooks.name, Hooks.Options())
         self.services: Services = ServicesNamespace(
             config=config,
             hooks=Hooks.from_options(config.r.get("hooks", {})),
