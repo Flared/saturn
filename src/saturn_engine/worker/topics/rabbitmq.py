@@ -114,6 +114,9 @@ class RabbitMQTopic(Topic):
             )
         self.queue_arguments.setdefault("x-overflow", self.options.overflow)
 
+    async def open(self) -> None:
+        await self.ensure_queue()
+
     async def run(self) -> AsyncGenerator[t.AsyncContextManager[TopicMessage], None]:
         if self.is_closed:
             raise TopicClosedError()
