@@ -52,3 +52,6 @@ class Job(Topic):
                 self.state_service.set_job_cursor(
                     self.queue_item.name, cursor=self.inventory.cursor
                 )
+
+    async def open(self) -> None:
+        await self.inventory.open()

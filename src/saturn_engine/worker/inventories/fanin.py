@@ -32,6 +32,10 @@ class FanIn(IteratorInventory):
             for input_def in options.inputs
         }
 
+    async def open(self) -> None:
+        for inventory in self.inputs.values():
+            await inventory.open()
+
     async def iterate(self, after: t.Optional[Cursor] = None) -> t.AsyncIterator[Item]:
         cursors = json.loads(after) if after else {}
 

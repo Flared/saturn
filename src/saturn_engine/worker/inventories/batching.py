@@ -28,6 +28,9 @@ class BatchingInventory(IteratorInventory):
 
         self.inventory = build_inventory(options.inventory, services=services)
 
+    async def open(self) -> None:
+        await self.inventory.open()
+
     async def _next_batch(self) -> list[Item]:
         batch: list[Item] = await alib.list(
             alib.islice(self._run_iter, self.batch_size)

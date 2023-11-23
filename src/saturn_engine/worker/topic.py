@@ -28,6 +28,9 @@ class Topic(OptionsSchema):
     async def publish(self, message: TopicMessage, wait: bool) -> bool:
         raise NotImplementedError()
 
+    async def open(self) -> None:
+        pass
+
     async def close(self) -> None:
         pass
 

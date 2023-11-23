@@ -13,6 +13,7 @@ from asyncstdlib import nullcontext
 from saturn_engine.core import ResourceUsed
 from saturn_engine.core import TopicMessage
 from saturn_engine.core.api import QueueItem
+from saturn_engine.utils import flatten
 from saturn_engine.utils import iterators
 from saturn_engine.utils.config import LazyConfig
 from saturn_engine.utils.log import getLogger
@@ -138,6 +139,8 @@ class ExecutableQueue:
         max_concurrency: t.Optional[int] = None
 
     async def run(self) -> AsyncGenerator[ExecutableMessage, None]:
+        await self.open()
+
         try:
             async for context, message in self._make_iterator():
                 with message_context(message):
@@ -174,6 +177,11 @@ class ExecutableQueue:
         for topics in self.output.values():
             for topic in topics:
                 await topic.close()
+
+    async def open(self) -> None:
+        await self.topic.open()
+        for output in flatten(self.output.values()):
+            await output.open()
 
     async def wait_for_done(self) -> None:
         if self.pending_messages_count:
