@@ -46,6 +46,9 @@ class BatchingTopic(Topic):
         self.batch: list[TopicOutput] = []
         self.start_time: datetime = datetime.utcnow()
 
+    async def open(self) -> None:
+        await self.topic.open()
+
     @property
     def _is_done(self) -> bool:
         return self.force_done and self.queue.empty()

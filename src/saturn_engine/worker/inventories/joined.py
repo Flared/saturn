@@ -64,6 +64,9 @@ class JoinInventory(IteratorInventory):
             async for item in self.scheduler.run():
                 yield item
 
+    async def open(self) -> None:
+        await self.root.open()
+
     async def run(self, after: t.Optional[Cursor] = None) -> t.AsyncIterator[Item]:
         async for item in self.iterate(after=after):
             yield item
@@ -85,6 +88,8 @@ class JoinInventory(IteratorInventory):
                     options=self.options.join.options | {"parent_item": item},
                 )
                 subinv = self.build_inventory(subdef)
+                await subinv.open()
+
                 subcursors = self._multi_cursors.process_sub(subinv, parent=item)
 
                 fut = self.scheduler.add(

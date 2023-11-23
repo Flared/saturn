@@ -21,6 +21,9 @@ class TopicAdapter(IteratorInventory):
 
         self.topic = build_topic(options.topic, services=services)
 
+    async def open(self) -> None:
+        await self.topic.open()
+
     async def iterate(self, after: t.Optional[Cursor] = None) -> t.AsyncIterator[Item]:
         async for message_ctx in self.topic.run():
             try:

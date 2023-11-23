@@ -40,11 +40,15 @@ class ChainedInventory(IteratorInventory):
         self.__services = services
         self.__current: t.Optional[CurrentInventory] = None
 
+        inventories = self.options.inventories
+        self.inventories = [(i.name, self.build_inventory(i)) for i in inventories]
+
+    async def open(self) -> None:
+        for _, inventory in self.inventories:
+            await inventory.open()
+
     async def iterate(self, after: t.Optional[Cursor] = None) -> AsyncIterator[Item]:
         cursors = json.loads(after) if after else {}
-        inventories = self.options.inventories
-
-        self.inventories = [(i.name, self.build_inventory(i)) for i in inventories]
 
         start_inventory = 0
         if cursors:

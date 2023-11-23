@@ -277,6 +277,9 @@ class Inventory(abc.ABC, OptionsSchema):
             return self._cursors.has_pendings()
         return False
 
+    async def open(self) -> None:
+        pass
+
 
 class IteratorInventory(Inventory):
     def __init__(self, *, batch_size: t.Optional[int] = None, **kwargs: object) -> None:
