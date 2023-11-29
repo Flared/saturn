@@ -82,7 +82,7 @@ class RabbitMQTopic(Topic):
         prefetch_count: t.Optional[int] = 1
         serializer: RabbitMQSerializer = RabbitMQSerializer.JSON
         log_above_size: t.Optional[int] = None
-        max_publish_concurrency: int = 8
+        max_publish_concurrency: int = 0
         max_retry: int | None = None
         arguments: dict[str, t.Any] = dataclasses.field(default_factory=dict)
         exchange: Exchange | None = None
