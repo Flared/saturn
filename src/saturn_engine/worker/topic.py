@@ -4,6 +4,7 @@ from typing import Optional
 
 import abc
 import asyncio
+import contextlib
 from collections.abc import AsyncGenerator
 from datetime import timedelta
 
@@ -46,6 +47,7 @@ class BlockingTopic(Topic, abc.ABC):
         self.logger = getLogger(__name__, self)
         self.semaphore = asyncio.Semaphore(max_concurrency)
         self.sleep_time: timedelta = sleep_time or timedelta(seconds=0)
+        self.event = asyncio.Event()
 
     async def run(self) -> AsyncGenerator[TopicOutput, None]:
         while True:
@@ -66,7 +68,18 @@ class BlockingTopic(Topic, abc.ABC):
                 yield message
 
             if len(messages) == 0:
-                await asyncio.sleep(self.sleep_time.total_seconds())
+                await self.wait()
+
+    async def wait(self) -> None:
+        with contextlib.suppress(asyncio.TimeoutError):
+            await asyncio.wait_for(
+                self.event.wait(),
+                timeout=self.sleep_time.total_seconds(),
+            )
+        self.event.clear()
+
+    def wake(self) -> None:
+        self.event.set()
 
     async def publish(self, message: TopicMessage, wait: bool) -> bool:
         if not wait and self.semaphore.locked():
