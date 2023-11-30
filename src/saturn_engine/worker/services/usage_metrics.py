@@ -11,6 +11,7 @@ from opentelemetry.metrics import get_meter
 
 from saturn_engine.core import PipelineResults
 from saturn_engine.worker.executors.executable import ExecutableMessage
+from saturn_engine.worker.services.hooks import ResultsProcessed
 
 from . import MinimalService
 
@@ -118,6 +119,9 @@ class StagesState:
     executing: StageState[SubmittingMessage, ExecutingMessage] = dataclasses.field(
         default_factory=StageState
     )
+    processing_results: StageState[
+        ExecutableMessage, ExecutableMessage
+    ] = dataclasses.field(default_factory=StageState)
 
 
 class UsageMetrics(MinimalService):
@@ -145,7 +149,13 @@ class UsageMetrics(MinimalService):
         self, options: CallbackOptions
     ) -> t.Iterable[Observation]:
         now = time.perf_counter_ns()
-        for stage_name in ("polling", "scheduling", "submitting", "executing"):
+        for stage_name in (
+            "polling",
+            "scheduling",
+            "submitting",
+            "executing",
+            "processing_results",
+        ):
             stage: StageState = getattr(self.stages_state, stage_name)
             for pipeline in stage.collect(now=now):
                 yield Observation(
@@ -174,3 +184,13 @@ class UsageMetrics(MinimalService):
             yield
         finally:
             self.stages_state.executing.pop(xmsg)
+
+    async def on_results_processed(
+        self,
+        results: ResultsProcessed,
+    ) -> AsyncGenerator[None, None]:
+        self.stages_state.processing_results.push(results.xmsg)
+        try:
+            yield
+        finally:
+            self.stages_state.processing_results.pop(results.xmsg)
