@@ -2,6 +2,7 @@ import typing as t
 
 import asyncio
 import dataclasses
+import pickle  # noqa: S403
 
 import aioredis.errors
 from arq import create_pool
@@ -9,6 +10,7 @@ from arq.connections import ArqRedis
 from arq.connections import RedisSettings
 from arq.jobs import Job
 from arq.jobs import JobStatus
+from opentelemetry.metrics import get_meter
 
 from saturn_engine.core import PipelineResults
 from saturn_engine.utils.asyncutils import TasksGroup
@@ -46,14 +48,45 @@ class ARQExecutor(Executor):
         self.options = options
         self.config = LazyConfig([{ARQ_EXECUTOR_NAMESPACE: self.options}])
 
+        meter = get_meter("saturn.metrics")
+        self.execute_bytes = meter.create_counter(
+            name="saturn.executor.arq.execute",
+            unit="By",
+            description="""
+            Total bytes sent to the executor
+            """,
+        )
+
+        self.results_bytes = meter.create_counter(
+            name="saturn.executor.arq.results",
+            unit="By",
+            description="""
+            Total bytes received from the executor
+            """,
+        )
+
         if services.s.hooks.executor_initialized:
             self.logger.warning(
                 "ARQExecutor does not support executor_initialized hooks"
             )
 
+    def serialize(self, obj: dict[str, t.Any]) -> bytes:
+        data = pickle.dumps(obj)
+        self.execute_bytes.add(len(data), {"executor": self.name})
+        return data
+
+    def deserialize(self, data: bytes) -> dict[str, t.Any]:
+        self.results_bytes.add(len(data), {"executor": self.name})
+        obj = pickle.loads(data)  # noqa: S301
+        return obj
+
     @cached_property
     async def redis_queue(self) -> ArqRedis:
-        return await create_pool(RedisSettings.from_dsn(self.options.redis_url))
+        return await create_pool(
+            RedisSettings.from_dsn(self.options.redis_url),
+            job_serializer=self.serialize,
+            job_deserializer=self.deserialize,
+        )
 
     async def process_message(self, message: ExecutableMessage) -> PipelineResults:
         config = self.config.load_object(message.config)

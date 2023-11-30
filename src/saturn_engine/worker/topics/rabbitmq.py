@@ -14,6 +14,7 @@ from datetime import timedelta
 import aio_pika
 import aio_pika.abc
 import aio_pika.exceptions
+from opentelemetry.metrics import get_meter
 
 from saturn_engine.core import TopicMessage
 from saturn_engine.utils.asyncutils import SharedLock
@@ -104,6 +105,7 @@ class RabbitMQTopic(Topic):
         self.attempt_by_message: LRUDefaultDict[str, int] = LRUDefaultDict(
             cache_len=1024, default_factory=lambda: 0
         )
+
         self.queue_arguments: dict[str, t.Any] = self.options.arguments
 
         if self.options.max_length:
@@ -113,6 +115,22 @@ class RabbitMQTopic(Topic):
                 "x-max-length-bytes", self.options.max_length_bytes
             )
         self.queue_arguments.setdefault("x-overflow", self.options.overflow)
+
+        meter = get_meter("saturn.metrics")
+        self.publish_bytes_counter = meter.create_counter(
+            name="saturn.topics.rabbitmq.publish",
+            unit="By",
+            description="""
+            Total bytes sent on this topic.
+            """,
+        )
+        self.received_bytes_counter = meter.create_counter(
+            name="saturn.topics.rabbitmq.received",
+            unit="By",
+            description="""
+            Total bytes received on this topic.
+            """,
+        )
 
     async def open(self) -> None:
         await self.ensure_queue()
@@ -131,6 +149,9 @@ class RabbitMQTopic(Topic):
                     async for message in queue_iter:
                         attempt = 0
                         yield self.message_context(message)
+                        self.received_bytes_counter.add(
+                            message.body_size, {"topic": self.name}
+                        )
             except Exception:
                 self.logger.exception("Failed to consume")
                 await self.backoff_sleep(attempt)
@@ -167,6 +188,7 @@ class RabbitMQTopic(Topic):
                         ),
                         routing_key=self.options.routing_key or self.options.queue_name,
                     )
+                    self.publish_bytes_counter.add(len(body), {"topic": self.name})
                     return True
                 except aio_pika.exceptions.DeliveryError as e:
                     # Only handle Nack
