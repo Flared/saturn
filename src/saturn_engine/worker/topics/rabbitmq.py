@@ -88,6 +88,7 @@ class RabbitMQTopic(Topic):
         arguments: dict[str, t.Any] = dataclasses.field(default_factory=dict)
         exchange: Exchange | None = None
         routing_key: str | None = None
+        bind_arguments: dict[str, t.Any] | None = None
 
     class TopicServices:
         rabbitmq: RabbitMQService
@@ -313,13 +314,15 @@ class RabbitMQTopic(Topic):
             arguments=self.queue_arguments,
         )
         await self.ensure_exchange()
+        exchange_name = ""
         if self.options.exchange:
-            await queue.bind(
-                self.options.exchange.name,
-                routing_key=self.options.routing_key or self.options.queue_name,
-            )
-        elif self.options.routing_key:
-            await queue.bind("", routing_key=self.options.routing_key)
+            exchange_name = self.options.exchange.name
+
+        await queue.bind(
+            exchange_name,
+            routing_key=self.options.routing_key or self.options.queue_name,
+            arguments=self.options.bind_arguments,
+        )
 
         return queue
 
