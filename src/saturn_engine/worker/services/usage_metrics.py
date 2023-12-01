@@ -142,6 +142,7 @@ class UsageMetrics(MinimalService):
         self.services.hooks.message_scheduled.register(self.on_message_scheduled)
         self.services.hooks.message_submitted.register(self.on_message_submitted)
         self.services.hooks.message_executed.register(self.on_message_executed)
+        self.services.hooks.results_processed.register(self.on_results_processed)
 
         self.stages_state = StagesState()
 
