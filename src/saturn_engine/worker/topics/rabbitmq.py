@@ -314,15 +314,12 @@ class RabbitMQTopic(Topic):
             arguments=self.queue_arguments,
         )
         await self.ensure_exchange()
-        exchange_name = ""
         if self.options.exchange:
-            exchange_name = self.options.exchange.name
-
-        await queue.bind(
-            exchange_name,
-            routing_key=self.options.routing_key or self.options.queue_name,
-            arguments=self.options.bind_arguments,
-        )
+            await queue.bind(
+                self.options.exchange.name,
+                routing_key=self.options.routing_key or self.options.queue_name,
+                arguments=self.options.bind_arguments,
+            )
 
         return queue
 
