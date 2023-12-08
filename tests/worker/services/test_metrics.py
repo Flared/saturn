@@ -6,9 +6,21 @@ import pytest
 from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResults
 from saturn_engine.core import ResourceUsed
+from saturn_engine.worker.services.hooks import MessagePublished
 from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.services.metrics import Metrics
 from tests.utils.metrics import MetricsCapture
+
+
+@pytest.fixture
+def fake_published_message() -> Mock:
+    data = Mock()
+    data.xmsg.queue.definition.executor = "exec"
+    data.xmsg.queue.definition.name = "test-job"
+    data.xmsg.queue.definition.labels = {"k": "v"}
+    data.xmsg.message.info.name = "test.fake.pipeline"
+    data.topic.name = "test.fake.topic"
+    return data
 
 
 @pytest.mark.asyncio
@@ -179,14 +191,10 @@ async def test_metrics_message_execute_failed(
 
 @pytest.mark.asyncio
 async def test_metrics_message_published(
-    services_manager: ServicesManager, metrics_capture: MetricsCapture
+    services_manager: ServicesManager,
+    metrics_capture: MetricsCapture,
+    fake_published_message: MessagePublished,
 ) -> None:
-    data = Mock()
-    data.xmsg.queue.definition.executor = "exec"
-    data.xmsg.queue.definition.name = "test-job"
-    data.xmsg.queue.definition.labels = {"k": "v"}
-    data.xmsg.message.info.name = "test.fake.pipeline"
-    data.topic.name = "test.fake.topic"
     params = {
         "pipeline": "test.fake.pipeline",
         "topic": "test.fake.topic",
@@ -196,7 +204,7 @@ async def test_metrics_message_published(
     }
     metric = services_manager.services.cast_service(Metrics)
 
-    hook_generator = metric.on_message_published(data)
+    hook_generator = metric.on_message_published(fake_published_message)
     await hook_generator.asend(None)
     with pytest.raises(StopAsyncIteration):
         await hook_generator.asend(None)
@@ -218,14 +226,10 @@ async def test_metrics_message_published(
 
 @pytest.mark.asyncio
 async def test_metrics_message_publish_failed(
-    services_manager: ServicesManager, metrics_capture: MetricsCapture
+    services_manager: ServicesManager,
+    metrics_capture: MetricsCapture,
+    fake_published_message: MessagePublished,
 ) -> None:
-    data = Mock()
-    data.xmsg.queue.definition.executor = "exec"
-    data.xmsg.queue.definition.name = "test-job"
-    data.xmsg.queue.definition.labels = {"k": "v"}
-    data.xmsg.message.info.name = "test.fake.pipeline"
-    data.topic.name = "test.fake.topic"
     params = {
         "pipeline": "test.fake.pipeline",
         "topic": "test.fake.topic",
@@ -235,7 +239,7 @@ async def test_metrics_message_publish_failed(
     }
     metric = services_manager.services.cast_service(Metrics)
 
-    hook_generator = metric.on_message_published(data)
+    hook_generator = metric.on_message_published(fake_published_message)
     await hook_generator.asend(None)
     with pytest.raises(StopAsyncIteration):
         await hook_generator.athrow(Exception())
@@ -257,14 +261,20 @@ async def test_metrics_message_publish_failed(
 
 @pytest.mark.asyncio
 async def test_metrics_topic_blocked(
-    services_manager: ServicesManager, metrics_capture: MetricsCapture
+    services_manager: ServicesManager,
+    metrics_capture: MetricsCapture,
+    fake_published_message: MessagePublished,
 ) -> None:
-    data = Mock()
-    data.name = "test.fake.topic"
-    params = {"topic": data.name}
+    params = {
+        "pipeline": "test.fake.pipeline",
+        "topic": "test.fake.topic",
+        "saturn.executor.name": "exec",
+        "saturn.job.name": "test-job",
+        "saturn.job.labels.k": "v",
+    }
     metric = services_manager.services.cast_service(Metrics)
 
-    hook_generator = metric.on_output_blocked(data)
+    hook_generator = metric.on_output_blocked(fake_published_message)
     await hook_generator.asend(None)
     with pytest.raises(StopAsyncIteration):
         metrics_capture.assert_metric_expected(

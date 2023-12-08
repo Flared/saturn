@@ -11,7 +11,6 @@ from contextlib import asynccontextmanager
 from saturn_engine.core import PipelineResults
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.services.hooks import MessagePublished
-from saturn_engine.worker.topic import Topic
 
 from .. import Service
 from .. import TOptions
@@ -80,8 +79,8 @@ class BaseMetricsService(
         except Exception:
             await self.incr("message.published.failed", params=params)
 
-    async def on_output_blocked(self, topic: Topic) -> None:
-        params = {"topic": topic.name}
+    async def on_output_blocked(self, event: MessagePublished) -> None:
+        params = {"pipeline": event.xmsg.message.info.name, "topic": event.topic.name}
         await self.incr("topic.blocked", params=params)
 
     @asynccontextmanager
