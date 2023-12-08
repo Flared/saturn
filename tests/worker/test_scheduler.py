@@ -72,8 +72,6 @@ async def test_scheduler(
         assert messages == {sentinel.schedulable1: 5, sentinel.schedulable3: 5}
 
 
-# TODO: Reenable once we don't cause fatal error in scheduler.
-@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_scheduler_iter_errors(scheduler: Scheduler) -> None:
     schedulable1 = make_schedulable(
