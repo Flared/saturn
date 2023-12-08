@@ -111,16 +111,17 @@ class Scheduler(t.Generic[T]):
             exception = task.exception()
             if exception is None:
                 yield task.result()
-            elif isinstance(exception, StopAsyncIteration):
-                self.remove(item)
             elif isinstance(exception, asyncio.CancelledError):
                 pass
+            elif isinstance(exception, Exception):
+                self.remove(item)
+                if not isinstance(exception, StopAsyncIteration):
+                    self.logger.error(
+                        "Exception raised from schedulable item",
+                        extra={"data": {"queue_name": item.name}},
+                        exc_info=exception,
+                    )
             elif exception:
-                self.logger.error(
-                    "Exception raised from schedulable item",
-                    extra={"data": {"queue_name": item.name}},
-                    exc_info=exception,
-                )
                 raise ValueError("Fatal error in schedulable") from exception
         except BaseException:
             # This is an unexpected error, likely a closed generator or
