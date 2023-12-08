@@ -8,7 +8,6 @@ from saturn_engine.utils.telemetry import get_timer
 from saturn_engine.worker.error_handling import HandledError
 from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.services.hooks import MessagePublished
-from saturn_engine.worker.topic import Topic
 
 from . import MinimalService
 
@@ -118,8 +117,10 @@ class Metrics(MinimalService):
         except Exception:
             self.publish_counter.add(1, params | {"state": "failed"})
 
-    async def on_output_blocked(self, topic: Topic) -> AsyncGenerator[None, None]:
-        params = {"topic": topic.name}
+    async def on_output_blocked(
+        self, event: MessagePublished
+    ) -> AsyncGenerator[None, None]:
+        params = executable_params(event.xmsg) | {"topic": event.topic.name}
         try:
             self.blocked_counter.add(1, params)
             yield

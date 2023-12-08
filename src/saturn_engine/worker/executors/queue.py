@@ -18,7 +18,6 @@ from saturn_engine.worker.services import Services
 from saturn_engine.worker.services.hooks import MessagePublished
 from saturn_engine.worker.services.hooks import PipelineEventsEmitted
 from saturn_engine.worker.services.hooks import ResultsProcessed
-from saturn_engine.worker.topic import Topic
 
 from . import Executor
 from .executable import ExecutableMessage
@@ -203,7 +202,7 @@ class ExecutorQueue:
                 for topic in topics:
 
                     @self.services.s.hooks.message_published.emit
-                    async def scope(_: MessagePublished) -> None:
+                    async def scope(message_published: MessagePublished) -> None:
                         if topic is None:
                             return
                         with contextlib.suppress(Exception):
@@ -211,11 +210,11 @@ class ExecutorQueue:
                                 return
 
                         @self.services.s.hooks.output_blocked.emit
-                        async def scope(topic: Topic) -> None:
+                        async def scope(_: MessagePublished) -> None:
                             processable.park()
                             await topic.publish(item.message, wait=True)
 
-                        await scope(topic)
+                        await scope(message_published)
 
                     try:
                         await scope(

@@ -121,7 +121,7 @@ class Hooks(OptionsSchema):
     message_executed: AsyncContextHook["ExecutableMessage", "PipelineResults"]
     message_published: AsyncContextHook["MessagePublished", None]
     results_processed: AsyncContextHook["ResultsProcessed", None]
-    output_blocked: AsyncContextHook["Topic", None]
+    output_blocked: AsyncContextHook["MessagePublished", None]
     pipeline_events_emitted: AsyncEventHook[PipelineEventsEmitted]
 
     work_queue_built: AsyncContextHook["QueueItemWithState", "ExecutableQueue"]
