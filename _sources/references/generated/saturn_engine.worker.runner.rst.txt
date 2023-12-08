@@ -16,6 +16,7 @@ saturn\_engine.worker.runner
       async_main
       main
       set_term_handler
+      standalone_config
       unset_term_handler
    
    

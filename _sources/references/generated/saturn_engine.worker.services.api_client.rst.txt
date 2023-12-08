@@ -19,6 +19,8 @@ saturn\_engine.worker.services.api\_client
    
       ApiClient
       Services
+      StandaloneApiClient
+      StandaloneServices
    
    
 

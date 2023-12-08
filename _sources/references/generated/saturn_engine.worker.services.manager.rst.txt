@@ -23,6 +23,12 @@ saturn\_engine.worker.services.manager
 
    
    
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      MissingServiceError
+   
    
 
 

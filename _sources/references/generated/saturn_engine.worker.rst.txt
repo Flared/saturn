@@ -42,4 +42,5 @@
    saturn_engine.worker.topics
    saturn_engine.worker.work_factory
    saturn_engine.worker.work_manager
+   saturn_engine.worker.worker_manager
 
