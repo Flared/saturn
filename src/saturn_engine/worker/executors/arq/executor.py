@@ -82,11 +82,19 @@ class ARQExecutor(Executor):
 
     @cached_property
     async def redis_queue(self) -> ArqRedis:
-        return await create_pool(
+        redis_queue = await create_pool(
             RedisSettings.from_dsn(self.options.redis_url),
             job_serializer=self.serialize,
             job_deserializer=self.deserialize,
         )
+        await self.init_redis(redis_queue)
+        return redis_queue
+
+    async def init_redis(self, redis_queue: ArqRedis) -> None:
+        # Clear the executor pending queue, where there might be old work from
+        # previous worker instance.
+        # WARNING: Assume the worker own the executor.
+        await redis_queue.delete(self.options.queue_name)
 
     async def process_message(self, message: ExecutableMessage) -> PipelineResults:
         config = self.config.load_object(message.config)
