@@ -2,6 +2,7 @@ import typing as t
 
 import asyncio
 import enum
+import logging
 import multiprocessing
 from concurrent import futures
 
@@ -9,17 +10,20 @@ import arq.worker
 from arq.connections import ArqRedis
 
 from saturn_engine.core import PipelineResults
+from saturn_engine.core.pipeline import CancellationToken
 from saturn_engine.utils.asyncutils import TasksGroup
 from saturn_engine.utils.hooks import EventHook
 from saturn_engine.worker.pipeline_message import PipelineMessage
 from saturn_engine.worker.services import tracing
 from saturn_engine.worker.services.loggers import logger
+from saturn_engine.worker.services.loggers.logger import pipeline_message_data
 
 from ..bootstrap import PipelineBootstrap
 from ..bootstrap import wrap_remote_exception
 from . import EXECUTE_FUNC_NAME
+from . import executor_healthcheck_key
 from . import healthcheck_interval
-from . import healthcheck_key
+from . import worker_healthcheck_key
 
 
 class WorkerType(enum.Enum):
@@ -74,6 +78,9 @@ def remote_bootstrap(message: PipelineMessage) -> PipelineResults:
 async def remote_execute(ctx: Context, message: PipelineMessage) -> PipelineResults:
     executor = ctx["executor"]
     with wrap_remote_exception():
+        cancellation_token = CancellationToken()
+        message.set_meta_arg(meta_type=CancellationToken, value=cancellation_token)
+
         loop = asyncio.get_running_loop()
         tasks = TasksGroup(name=f"saturn.arq.remote({message.id})")
 
@@ -81,24 +88,35 @@ async def remote_execute(ctx: Context, message: PipelineMessage) -> PipelineResu
             return await loop.run_in_executor(executor, remote_bootstrap, message)
 
         executor_task = tasks.create_task(execute_message())
-        tasks.create_task(remote_job_healthcheck(ctx))
+        healthcheck_task = tasks.create_task(remote_job_healthcheck(ctx))
         async with tasks:
             while not (done := await tasks.wait(remove=False)):
                 pass
             if executor_task in done:
                 tasks.remove(executor_task)
                 return executor_task.result()
-            raise RuntimeError("Healthcheck should not finish")
+            if healthcheck_task in done:
+                cancellation_token._cancel()
+                logging.getLogger(__name__).error(
+                    "Worker died", extra={"data": pipeline_message_data(message)}
+                )
+                raise RuntimeError("Job Cancelled")
+            raise RuntimeError("Unreachable")
 
 
 async def remote_job_healthcheck(ctx: Context) -> None:
+    hc_ex = int((healthcheck_interval * 2) * 1000)
+    redis = ctx["redis"]
+    job_id = ctx["job_id"]
     while True:
-        await ctx["redis"].psetex(
-            healthcheck_key(ctx["job_id"]),
-            int((healthcheck_interval * 2) * 1000),
+        await redis.psetex(
+            executor_healthcheck_key(job_id),
+            hc_ex,
             b"healthy",
         )
         await asyncio.sleep(healthcheck_interval)
+        if not await redis.get(worker_healthcheck_key(job_id)):
+            break
 
 
 def remote_initializer(
