@@ -9,3 +9,4 @@ standalone.db
 /docs/_build
 /docs/references/generated/
 /example/definitions/tests.yaml
+/example/my-example
