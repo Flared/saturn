@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
-<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="3. Pipelines" href="03-pipeline.html" /><link rel="prev" title="1. Installation" href="01-install.html" />
+<link rel="index" title="Index" href="../genindex.html" /><link rel="search" title="Search" href="../search.html" /><link rel="next" title="Key topics" href="../topics/index.html" /><link rel="prev" title="Run Sub Jobs" href="sub-jobs.html" />
 
     <!-- Generated with Sphinx 7.0.1 and Furo 2023.09.10 -->
-        <title>2. Quickstart - Saturn documentation</title>
+        <title>Gracefully cancel job - Saturn documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?digest=369552022d0b975c8e74270ce6eabe0fb7978f24" />
     <link rel="stylesheet" type="text/css" href="../_static/tabs.css" />
@@ -135,7 +135,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -156,16 +156,16 @@
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <ul class="current">
-<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">Getting Started</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Getting Started</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="01-install.html">1. Installation</a></li>
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">2. Quickstart</a></li>
-<li class="toctree-l2"><a class="reference internal" href="03-pipeline.html">3. Pipelines</a></li>
-<li class="toctree-l2"><a class="reference internal" href="04-topic.html">4. Topics</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tutorial/index.html">Getting Started</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of Getting Started</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial/01-install.html">1. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial/02-quickstart.html">2. Quickstart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial/03-pipeline.html">3. Pipelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorial/04-topic.html">4. Topics</a></li>
 </ul>
 </li>
-<li class="toctree-l1 has-children"><a class="reference internal" href="../how_to/index.html">How-to guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of How-to guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="../how_to/sub-jobs.html">Run Sub Jobs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../how_to/cancelled-job.html">Gracefully cancel job</a></li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">How-to guides</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of How-to guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="sub-jobs.html">Run Sub Jobs</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Gracefully cancel job</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../topics/index.html">Key topics</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Key topics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -308,128 +308,29 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main">
-          <p>:: _quickstart:</p>
-<section id="quickstart">
-<h1><span class="section-number">2. </span>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this heading">#</a></h1>
-<section id="create-topology">
-<h2><span class="section-number">2.1. </span>Create Topology<a class="headerlink" href="#create-topology" title="Permalink to this heading">#</a></h2>
-<p>Saturn main input is the topology file defining all the components: Executor, topics,
-inventories, resources and jobs. Let’s start by creating a new file <code class="docutils literal notranslate"><span class="pre">topology.yaml</span></code>:</p>
+          <section id="gracefully-cancel-job">
+<span id="cancelled-job"></span><h1>Gracefully cancel job<a class="headerlink" href="#gracefully-cancel-job" title="Permalink to this heading">#</a></h1>
+<p>When a Saturn Worker die or timeout, it will stop listening for an executor result. In these cases, it might be better to let the executor gracefully stop its job. This can be achieved by looking at a <cite>CancellationToken</cite> passed to the pipeline. Note that this feature is only supported with ARQ executors.</p>
 <div class="literal-block-wrapper docutils container" id="id1">
-<div class="code-block-caption"><span class="caption-text">topology.yaml</span><a class="headerlink" href="#id1" title="Permalink to this code">#</a></div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">apiVersion</span><span class="p">:</span> <span class="n">saturn</span><span class="o">.</span><span class="n">flared</span><span class="o">.</span><span class="n">io</span><span class="o">/</span><span class="n">v1alpha1</span>
-<span class="n">kind</span><span class="p">:</span> <span class="n">SaturnTopic</span>
-<span class="n">metadata</span><span class="p">:</span>
-  <span class="n">name</span><span class="p">:</span> <span class="n">hello</span><span class="o">-</span><span class="n">world</span><span class="o">-</span><span class="n">topic</span>
-<span class="n">spec</span><span class="p">:</span>
-  <span class="nb">type</span><span class="p">:</span> <span class="n">StaticTopic</span>
-  <span class="n">options</span><span class="p">:</span>
-    <span class="n">messages</span><span class="p">:</span>
-    <span class="o">-</span> <span class="p">{</span><span class="s2">&quot;args&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;word&quot;</span><span class="p">:</span> <span class="s2">&quot;hello&quot;</span><span class="p">}}</span>
-    <span class="o">-</span> <span class="p">{</span><span class="s2">&quot;args&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;word&quot;</span><span class="p">:</span> <span class="s2">&quot;world&quot;</span><span class="p">}}</span>
-    <span class="o">-</span> <span class="p">{</span><span class="s2">&quot;args&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;word&quot;</span><span class="p">:</span> <span class="s2">&quot;!&quot;</span><span class="p">}}</span>
-<span class="o">---</span>
-<span class="n">apiVersion</span><span class="p">:</span> <span class="n">saturn</span><span class="o">.</span><span class="n">flared</span><span class="o">.</span><span class="n">io</span><span class="o">/</span><span class="n">v1alpha1</span>
-<span class="n">kind</span><span class="p">:</span> <span class="n">SaturnTopic</span>
-<span class="n">metadata</span><span class="p">:</span>
-  <span class="n">name</span><span class="p">:</span> <span class="n">stdout</span>
-<span class="n">spec</span><span class="p">:</span>
-  <span class="nb">type</span><span class="p">:</span> <span class="n">FileTopic</span>
-  <span class="n">options</span><span class="p">:</span>
-    <span class="n">path</span><span class="p">:</span> <span class="s2">&quot;-&quot;</span>
-    <span class="n">mode</span><span class="p">:</span> <span class="s2">&quot;w&quot;</span>
-<span class="o">---</span>
-<span class="n">apiVersion</span><span class="p">:</span> <span class="n">saturn</span><span class="o">.</span><span class="n">flared</span><span class="o">.</span><span class="n">io</span><span class="o">/</span><span class="n">v1alpha1</span>
-<span class="n">kind</span><span class="p">:</span> <span class="n">SaturnJobDefinition</span>
-<span class="n">metadata</span><span class="p">:</span>
-  <span class="n">name</span><span class="p">:</span> <span class="n">hello</span><span class="o">-</span><span class="n">world</span><span class="o">-</span><span class="n">definition</span>
-<span class="n">spec</span><span class="p">:</span>
-  <span class="n">minimalInterval</span><span class="p">:</span> <span class="s2">&quot;@weekly&quot;</span>
-  <span class="n">template</span><span class="p">:</span>
-    <span class="nb">input</span><span class="p">:</span>
-      <span class="n">topic</span><span class="p">:</span> <span class="n">hello</span><span class="o">-</span><span class="n">world</span><span class="o">-</span><span class="n">topic</span>
+<div class="code-block-caption"><span class="caption-text">cancel.py</span><a class="headerlink" href="#id1" title="Permalink to this code">#</a></div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">saturn_engine.core.pipeline</span> <span class="kn">import</span> <span class="n">CancellationToken</span>
 
-    <span class="n">output</span><span class="p">:</span>
-      <span class="n">default</span><span class="p">:</span>
-        <span class="o">-</span> <span class="n">topic</span><span class="p">:</span> <span class="n">stdout</span>
+<span class="k">def</span> <span class="nf">progress_work</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
 
-    <span class="n">pipeline</span><span class="p">:</span>
-      <span class="n">name</span><span class="p">:</span> <span class="n">pipelines</span><span class="o">.</span><span class="n">capitalize</span>
-<span class="o">---</span>
-<span class="n">apiVersion</span><span class="p">:</span> <span class="n">saturn</span><span class="o">.</span><span class="n">flared</span><span class="o">.</span><span class="n">io</span><span class="o">/</span><span class="n">v1alpha1</span>
-<span class="n">kind</span><span class="p">:</span> <span class="n">SaturnExecutor</span>
-<span class="n">metadata</span><span class="p">:</span>
-  <span class="n">name</span><span class="p">:</span> <span class="n">default</span>
-<span class="n">spec</span><span class="p">:</span>
-  <span class="nb">type</span><span class="p">:</span> <span class="n">ProcessExecutor</span>
-  <span class="n">options</span><span class="p">:</span>
-    <span class="n">max_workers</span><span class="p">:</span> <span class="mi">1</span>
+<span class="k">def</span> <span class="nf">can_cancel</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="n">CancellationToken</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">while</span> <span class="ow">not</span> <span class="n">token</span><span class="o">.</span><span class="n">is_cancelled</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">progress_work</span><span class="p">(</span><span class="n">message</span><span class="p">):</span>
+            <span class="k">break</span>
 </pre></div>
 </div>
 </div>
-<p>This file defines an input topic that will yield three message with <code class="docutils literal notranslate"><span class="pre">&quot;hello&quot;</span></code>,
-<code class="docutils literal notranslate"><span class="pre">&quot;world&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;!&quot;</span></code>.</p>
-</section>
-<section id="create-pipeline">
-<h2><span class="section-number">2.2. </span>Create Pipeline<a class="headerlink" href="#create-pipeline" title="Permalink to this heading">#</a></h2>
-<p>We will go into detail for each component in the next sections. For now let’s implement
-our pipeline <code class="docutils literal notranslate"><span class="pre">`pipelines.capitalize</span></code>.</p>
-<p>Let’s create a new file <code class="docutils literal notranslate"><span class="pre">pipelines.py</span></code>:</p>
-<div class="literal-block-wrapper docutils container" id="id2">
-<div class="code-block-caption"><span class="caption-text">pipelines.py</span><a class="headerlink" href="#id2" title="Permalink to this code">#</a></div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">saturn_engine.core</span> <span class="kn">import</span> <span class="n">TopicMessage</span>
-
-<span class="k">def</span> <span class="nf">capitalize</span><span class="p">(</span><span class="n">word</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TopicMessage</span><span class="p">:</span>
-    <span class="k">return</span> <span class="n">TopicMessage</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;word&quot;</span><span class="p">:</span> <span class="n">word</span><span class="o">.</span><span class="n">title</span><span class="p">()})</span>
-</pre></div>
-</div>
-</div>
-<p>A Saturn pipeline is a simple function. Here it simply create a new message with a
-capitalized word.</p>
-</section>
-<section id="running-saturn">
-<h2><span class="section-number">2.3. </span>Running Saturn<a class="headerlink" href="#running-saturn" title="Permalink to this heading">#</a></h2>
-<p>Now we are ready to launch our job within Saturn.</p>
-<p>Let’s start the worker manager. This service will load our topology and expose it to any
-Saturn workers that are ready to run jobs. The worker manager also track state so that
-Saturn workers can come and go without losing any progress.</p>
-<p>Run the following command in a terminal:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>saturn_engine.worker_manager.server
-</pre></div>
-</div>
-<p>After a few seconds you should see the web application being ready:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python -m saturn_engine.worker_manager.server
- * Serving Flask app &#39;server&#39;
- * Debug mode: off
- * Running on http://127.0.0.1:5000
-Press CTRL+C to quit
-</pre></div>
-</div>
-<p>The worker manager will be waiting for a Saturn worker to connect to it.</p>
-<p>Let’s start it with the following command in a second terminal:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>saturn_engine.worker.runner
-</pre></div>
-</div>
-<p>You should quickly see the worker start and print some lines in the terminal:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">2023</span><span class="o">-</span><span class="mi">09</span><span class="o">-</span><span class="mi">28</span> <span class="mi">16</span><span class="p">:</span><span class="mi">33</span><span class="p">:</span><span class="mi">30</span><span class="p">,</span><span class="mi">539</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">saturn</span><span class="o">.</span><span class="n">worker</span><span class="o">.</span><span class="n">broker</span><span class="o">.</span><span class="n">Broker</span><span class="p">:</span> <span class="n">Initializing</span> <span class="n">worker</span>
-<span class="mi">2023</span><span class="o">-</span><span class="mi">09</span><span class="o">-</span><span class="mi">28</span> <span class="mi">16</span><span class="p">:</span><span class="mi">33</span><span class="p">:</span><span class="mi">30</span><span class="p">,</span><span class="mi">539</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">saturn</span><span class="o">.</span><span class="n">worker</span><span class="o">.</span><span class="n">broker</span><span class="o">.</span><span class="n">Broker</span><span class="p">:</span> <span class="n">Starting</span> <span class="n">worker</span>
-<span class="mi">2023</span><span class="o">-</span><span class="mi">09</span><span class="o">-</span><span class="mi">28</span> <span class="mi">16</span><span class="p">:</span><span class="mi">33</span><span class="p">:</span><span class="mi">30</span><span class="p">,</span><span class="mi">554</span> <span class="p">[</span><span class="n">INFO</span><span class="p">]</span> <span class="n">saturn</span><span class="o">.</span><span class="n">worker</span><span class="o">.</span><span class="n">broker</span><span class="o">.</span><span class="n">Broker</span><span class="p">:</span> <span class="n">Worker</span> <span class="n">sync</span>
-<span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;9738bd26-88bd-419b-92b9-333a4fbf2391&quot;</span><span class="p">,</span> <span class="s2">&quot;args&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;word&quot;</span><span class="p">:</span> <span class="s2">&quot;Hello&quot;</span><span class="p">}}</span>
-<span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;b56c7845-913b-4d4b-97fa-a7ef8a8f2914&quot;</span><span class="p">,</span> <span class="s2">&quot;args&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;word&quot;</span><span class="p">:</span> <span class="s2">&quot;World&quot;</span><span class="p">}}</span>
-<span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;4c140bbe-a663-4242-b27e-c14d25d5c3b6&quot;</span><span class="p">,</span> <span class="s2">&quot;args&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;word&quot;</span><span class="p">:</span> <span class="s2">&quot;!&quot;</span><span class="p">}}</span>
-</pre></div>
-</div>
-<p>Note how the printed object have capitalized word! They have been printed in the
-terminal since our jobs output is set to an stdout topic writer.</p>
-<p>You have now run your Saturn job, now we should go through each of the component we just
-used and explain them a little more in detail.</p>
-</section>
+<p>This is achieved by adding an argument with type annotation of <cite>CancellationToken</cite>. This object exposes the <cite>is_cancelled</cite> property or the <cite>threading.Event</cite> object with the <cite>event</cite> property.</p>
 </section>
 
         </article>
@@ -437,23 +338,23 @@ used and explain them a little more in detail.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="03-pipeline.html">
+          <a class="next-page" href="../topics/index.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title"><span class="section-number">3. </span>Pipelines</div>
+                <div class="title">Key topics</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="01-install.html">
+          <a class="prev-page" href="sub-jobs.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title"><span class="section-number">1. </span>Installation</div>
+                <div class="title">Run Sub Jobs</div>
                 
               </div>
             </a>
@@ -475,29 +376,8 @@ used and explain them a little more in detail.</p>
         
       </footer>
     </div>
-    <aside class="toc-drawer">
+    <aside class="toc-drawer no-toc">
       
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">2. Quickstart</a><ul>
-<li><a class="reference internal" href="#create-topology">2.1. Create Topology</a></li>
-<li><a class="reference internal" href="#create-pipeline">2.2. Create Pipeline</a></li>
-<li><a class="reference internal" href="#running-saturn">2.3. Running Saturn</a></li>
-</ul>
-</li>
-</ul>
-
-          </div>
-        </div>
-      </div>
       
       
     </aside>

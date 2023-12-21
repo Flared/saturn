@@ -165,6 +165,7 @@
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../how_to/index.html">How-to guides</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of How-to guides</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../how_to/sub-jobs.html">Run Sub Jobs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../how_to/cancelled-job.html">Gracefully cancel job</a></li>
 </ul>
 </li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../../topics/index.html">Key topics</a><input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><div class="visually-hidden">Toggle navigation of Key topics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
@@ -319,7 +320,10 @@
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">healthcheck_key</span></code>(job_id)</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">executor_healthcheck_key</span></code>(job_id)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">worker_healthcheck_key</span></code>(job_id)</p></td>
 <td><p></p></td>
 </tr>
 </tbody>

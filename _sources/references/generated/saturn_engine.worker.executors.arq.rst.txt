@@ -13,7 +13,8 @@ saturn\_engine.worker.executors.arq
 
    .. autosummary::
    
-      healthcheck_key
+      executor_healthcheck_key
+      worker_healthcheck_key
    
    
 
