@@ -24,8 +24,9 @@ from .. import Executor
 from . import EXECUTE_FUNC_NAME
 from . import QUEUE_TIMEOUT
 from . import RESULT_TIMEOUT
+from . import executor_healthcheck_key
 from . import healthcheck_interval
-from . import healthcheck_key
+from . import worker_healthcheck_key
 
 ARQ_EXECUTOR_NAMESPACE: t.Final[str] = "arq_executor"
 
@@ -128,16 +129,23 @@ class ARQExecutor(Executor):
             raise RuntimeError("Unreachable")
 
     async def monitor_job_healthcheck(self, job: Job) -> None:
+        hc_ex = int((healthcheck_interval * 2) * 1000)
         # Wait for the job to not be enqueued.
         while True:
+            await job._redis.psetex(
+                worker_healthcheck_key(job.job_id), hc_ex, b"healthy"
+            )
             await asyncio.sleep(healthcheck_interval)
             if await job.status() is not JobStatus.queued:
                 break
 
         # Monitor the job healthcheck.
         while True:
+            await job._redis.psetex(
+                worker_healthcheck_key(job.job_id), hc_ex, b"healthy"
+            )
             await asyncio.sleep(healthcheck_interval)
-            if not await job._redis.get(healthcheck_key(job.job_id)):
+            if not await job._redis.get(executor_healthcheck_key(job.job_id)):
                 break
 
         # Sleep a little, to avoid any race condition where the healthcheck

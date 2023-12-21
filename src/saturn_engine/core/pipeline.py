@@ -8,6 +8,7 @@ from typing import cast
 
 import dataclasses
 import inspect
+import threading
 
 from saturn_engine.utils import inspect as extra_inspect
 
@@ -15,6 +16,27 @@ from .resource import Resource
 from .topic import TopicMessage
 
 T = TypeVar("T", bound=Hashable)
+
+
+class CancellationToken:
+    __slots__ = ["event"]
+
+    def __init__(self) -> None:
+        self.event = threading.Event()
+
+    @property
+    def is_cancelled(self) -> bool:
+        return self.event.is_set()
+
+    def _cancel(self) -> None:
+        self.event.set()
+
+    def __getstate__(self) -> dict:
+        return {"is_cancelled": self.is_cancelled}
+
+    def __setstate__(self, state: dict) -> None:
+        if state.get("is_cancelled"):
+            self._cancel()
 
 
 @dataclasses.dataclass
