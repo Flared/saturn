@@ -12,3 +12,4 @@ territory as the :doc:`/tutorial/index`, but in more detail.
    :hidden:
 
    sub-jobs
+   cancelled-job
