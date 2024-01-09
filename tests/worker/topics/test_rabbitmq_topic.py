@@ -17,6 +17,7 @@ from saturn_engine.worker.services.manager import ServicesManager
 from saturn_engine.worker.services.rabbitmq import RabbitMQService
 from saturn_engine.worker.topic import TopicClosedError
 from saturn_engine.worker.topics import RabbitMQTopic
+from saturn_engine.worker.topics.rabbitmq import Exchange
 from saturn_engine.worker.topics.rabbitmq import RabbitMQSerializer
 from tests.utils.tcp_proxy import TcpProxy
 from tests.worker.topics.conftest import RabbitMQTopicMaker
@@ -296,3 +297,16 @@ async def test_dead_letter_exchanges(
 
     await topic.close()
     await dlx_topic.close()
+
+
+@pytest.mark.asyncio
+async def test_create_topic_with_exchange(
+    rabbitmq_topic_maker: t.Callable[..., Awaitable[RabbitMQTopic]]
+) -> None:
+    topic = await rabbitmq_topic_maker(
+        RabbitMQTopic,
+        serializer=RabbitMQSerializer.PICKLE,
+        exchange=Exchange(name="test"),
+    )
+
+    await topic.ensure_queue()
