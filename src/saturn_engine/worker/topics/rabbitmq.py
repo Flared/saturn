@@ -280,7 +280,6 @@ class RabbitMQTopic(Topic):
                 type=self.options.exchange.type,
                 durable=self.options.exchange.durable,
                 passive=self.options.exchange.passive,
-                exclusive=self.options.exchange.exclusive,
                 auto_delete=self.options.exchange.auto_delete,
                 arguments=self.options.exchange.arguments,
                 timeout=self.options.exchange.timeout,
