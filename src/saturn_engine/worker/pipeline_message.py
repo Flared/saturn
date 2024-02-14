@@ -47,7 +47,7 @@ class PipelineMessage:
     def execute(self) -> object:
         pipeline = self.info.into_pipeline()
         pipeline_args_def = dataclass_from_params(pipeline)
-        args = self.message.args
+        args = dict(self.message.args)
 
         for meta_name, value in self.meta_args.items():
             meta_type = import_name(meta_name)
