@@ -1,9 +1,11 @@
 import typing as t
 
 import dataclasses
+import pickle  # noqa: S403
 from unittest.mock import Mock
 
 from saturn_engine.core import Resource
+from saturn_engine.core.pipeline import CancellationToken
 from saturn_engine.core.pipeline import PipelineInfo
 from saturn_engine.core.pipeline import ResourceUsed
 from saturn_engine.core.topic import TopicMessage
@@ -104,3 +106,14 @@ def test_pipeline_kwargs_execute() -> None:
         a=1,
         b=2,
     )
+
+
+def test_cancellation_oken_serialization() -> None:
+    token = CancellationToken()
+
+    new_token = pickle.loads(pickle.dumps(token))  # noqa: S301
+    assert not new_token.is_cancelled
+    new_token._cancel()
+
+    new_token = pickle.loads(pickle.dumps(new_token))  # noqa: S301
+    assert new_token.is_cancelled
