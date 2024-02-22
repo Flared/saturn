@@ -35,6 +35,7 @@ class CancellationToken:
         return {"is_cancelled": self.is_cancelled}
 
     def __setstate__(self, state: dict) -> None:
+        self.event = threading.Event()
         if state.get("is_cancelled"):
             self._cancel()
 
