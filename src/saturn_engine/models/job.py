@@ -42,7 +42,7 @@ class Job(Base):
     started_at: Mapped[datetime] = Column(UTCDateTime, nullable=False)  # type: ignore[assignment]  # noqa: B950
     queue_name: Mapped[str] = Column(Text, ForeignKey("queues.name"), nullable=False)
     error = Column(Text, nullable=True)
-    queue: "Queue" = relationship(
+    queue: Mapped["Queue"] = relationship(
         "Queue",
         uselist=False,
         backref=backref("job", uselist=False),

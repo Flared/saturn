@@ -22,7 +22,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.10"
-SQLAlchemy = {extras = ["mypy", "asyncio"], version = "^1.4.29"}
+SQLAlchemy = {extras = ["mypy", "asyncio"], version = ">=1.4.29"}
 aiosqlite = "^0.17.0"
 asyncstdlib = "^3.10.2"
 aio-pika = ">=8.0"
@@ -81,7 +81,7 @@ mypy = "*"
 mypy-typing-asserts = "*"
 pytest = "*"
 nox-poetry = "*"
-pytest-asyncio = "*"
+pytest-asyncio = "0.21.1" # Updating will cause issues with the custom asyncio event loop fixtures
 pytest-icdiff = "*"
 pytest-mock = "*"
 freezegun = "*"
