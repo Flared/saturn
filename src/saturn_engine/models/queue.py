@@ -1,3 +1,4 @@
+from typing import ClassVar
 from typing import Optional
 
 import dataclasses
@@ -31,8 +32,8 @@ class Queue(Base):
     name: Mapped[str] = Column(Text, primary_key=True)
     assigned_at = Column(DateTime(timezone=True))
     assigned_to = Column(Text)
-    job: Optional["Job"]
-    _queue_item: Optional[QueueItemWithState] = None
+    job: ClassVar[Optional["Job"]] = None
+    _queue_item: ClassVar[Optional[QueueItemWithState]] = None
     enabled = Column(Boolean, default=True, nullable=False)
 
     @property
