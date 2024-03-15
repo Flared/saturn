@@ -22,7 +22,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.10"
-SQLAlchemy = {extras = ["mypy", "asyncio"], version = "^1.4.29"}
+SQLAlchemy = {extras = ["mypy", "asyncio"], version = ">=1.4.29"}
 aiosqlite = "^0.17.0"
 asyncstdlib = "^3.10.2"
 aio-pika = ">=8.0"
