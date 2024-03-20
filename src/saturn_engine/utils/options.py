@@ -5,8 +5,8 @@ import json
 from abc import abstractmethod
 from functools import cache
 
-import pydantic
-import pydantic.json
+import pydantic.v1
+import pydantic.v1.json
 
 OptionsSchemaT = t.TypeVar("OptionsSchemaT", bound="OptionsSchema")
 T = t.TypeVar("T")
@@ -28,16 +28,16 @@ class OptionsSchema:
         return cls(*args, options=options, **kwargs)
 
 
-class ModelConfig(pydantic.BaseConfig):
+class ModelConfig(pydantic.v1.BaseConfig):
     arbitrary_types_allowed = True
 
 
 @cache
-def schema_for(klass: t.Type) -> t.Type[pydantic.BaseModel]:
-    if issubclass(klass, pydantic.BaseModel):
+def schema_for(klass: t.Type) -> t.Type[pydantic.v1.BaseModel]:
+    if issubclass(klass, pydantic.v1.BaseModel):
         return klass
     if dataclasses.is_dataclass(klass):
-        return pydantic.dataclasses.create_pydantic_model_from_dataclass(
+        return pydantic.v1.dataclasses.create_pydantic_model_from_dataclass(
             klass,  # type: ignore[arg-type]
             config=ModelConfig,
         )
@@ -45,11 +45,11 @@ def schema_for(klass: t.Type) -> t.Type[pydantic.BaseModel]:
 
 
 def asdict(o: t.Any) -> dict[str, t.Any]:
-    return pydantic.json.pydantic_encoder(o)
+    return pydantic.v1.json.pydantic_encoder(o)
 
 
 def json_serializer(*args: t.Any, **kwargs: t.Any) -> str:
-    return json.dumps(*args, default=pydantic.json.pydantic_encoder, **kwargs)
+    return json.dumps(*args, default=pydantic.v1.json.pydantic_encoder, **kwargs)
 
 
 def fromdict(
