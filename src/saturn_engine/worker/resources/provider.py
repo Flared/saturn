@@ -80,12 +80,14 @@ class ResourcesProvider(abc.ABC, OptionsSchema, t.Generic[TOptions]):
             type=self.definition.resource_type,
             data=item.data,
             default_delay=item.default_delay,
-            rate_limit=ResourceRateLimit(
-                rate_limits=item.rate_limit.rate_limits,
-                strategy=item.rate_limit.strategy,
-            )
-            if item.rate_limit
-            else None,
+            rate_limit=(
+                ResourceRateLimit(
+                    rate_limits=item.rate_limit.rate_limits,
+                    strategy=item.rate_limit.strategy,
+                )
+                if item.rate_limit
+                else None
+            ),
         )
 
         self._managed_resources.add(resource.name)

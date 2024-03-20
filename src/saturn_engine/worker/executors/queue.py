@@ -100,9 +100,9 @@ class ExecutorQueue:
                                     # Transfer the message context to the results
                                     # processing scope.
                                     context=processable._context.pop_all(),
-                                    context_error=error
-                                    if error and not error.handled
-                                    else None,
+                                    context_error=(
+                                        error if error and not error.handled else None
+                                    ),
                                 )
                             )
 

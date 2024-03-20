@@ -261,7 +261,9 @@ class RabbitMQTopic(Topic):
         connection = await self.services.s.rabbitmq.connections.get(
             self.options.connection_name
         )
-        channel: aio_pika.abc.AbstractRobustChannel = await self.exit_stack.enter_async_context(
+        channel: (
+            aio_pika.abc.AbstractRobustChannel
+        ) = await self.exit_stack.enter_async_context(
             connection.channel(on_return_raises=True)  # type: ignore[arg-type]
         )
 
