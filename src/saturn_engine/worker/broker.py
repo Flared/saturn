@@ -13,8 +13,7 @@ from .work_manager import WorkManager
 
 
 class WorkManagerInit(Protocol):
-    def __call__(self, *, services: Services) -> WorkManager:
-        ...
+    def __call__(self, *, services: Services) -> WorkManager: ...
 
 
 class Broker:

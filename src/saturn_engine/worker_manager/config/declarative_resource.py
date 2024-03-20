@@ -32,12 +32,14 @@ class Resource(BaseObject):
             type=self.spec.type,
             data=self.spec.data,
             default_delay=self.spec.default_delay,
-            rate_limit=api.ResourceRateLimitItem(
-                rate_limits=self.spec.rate_limit.rate_limits,
-                strategy=self.spec.rate_limit.strategy,
-            )
-            if self.spec.rate_limit
-            else None,
+            rate_limit=(
+                api.ResourceRateLimitItem(
+                    rate_limits=self.spec.rate_limit.rate_limits,
+                    strategy=self.spec.rate_limit.strategy,
+                )
+                if self.spec.rate_limit
+                else None
+            ),
         )
 
 
