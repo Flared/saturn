@@ -122,15 +122,15 @@ class StagesState:
     executing: StageState[SubmittingMessage, ExecutingMessage] = dataclasses.field(
         default_factory=StageState
     )
-    processing_results: StageState[ExecutableMessage, ProcessingMessage] = (
-        dataclasses.field(default_factory=StageState)
-    )
+    processing_results: StageState[
+        ExecutableMessage, ProcessingMessage
+    ] = dataclasses.field(default_factory=StageState)
     publishing: StageState[ProcessingMessage, PublishingMessage] = dataclasses.field(
         default_factory=StageState
     )
-    waiting_publish: StageState[PublishingMessage, ExecutableMessage] = (
-        dataclasses.field(default_factory=StageState)
-    )
+    waiting_publish: StageState[
+        PublishingMessage, ExecutableMessage
+    ] = dataclasses.field(default_factory=StageState)
 
 
 class UsageMetrics(MinimalService):

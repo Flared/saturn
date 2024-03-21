@@ -44,9 +44,9 @@ def drop_all() -> None:
 
 def engine() -> Engine:
     init()
-    database_connection_creator: Optional[str] = (
-        current_app.saturn.config.database_connection_creator
-    )
+    database_connection_creator: Optional[
+        str
+    ] = current_app.saturn.config.database_connection_creator
     extra_args = {}
     if database_connection_creator:
         extra_args["creator"] = import_name(database_connection_creator)

@@ -62,7 +62,8 @@ class Item:
             metadata: dict[str, t.Any] = None,  # type: ignore[assignment]
             config: dict[str, t.Any] = None,  # type: ignore[assignment]
             context: AsyncExitStack = None,  # type: ignore[assignment]
-        ) -> None: ...
+        ) -> None:
+            ...
 
     def __post_init__(self) -> None:
         if self.cursor is MISSING:
