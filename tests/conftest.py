@@ -81,7 +81,8 @@ def event_loop(
         loop.close()
 
 
-def pipeline() -> None: ...
+def pipeline() -> None:
+    ...
 
 
 @pytest.fixture

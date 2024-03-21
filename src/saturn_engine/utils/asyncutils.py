@@ -183,12 +183,12 @@ class DelayedThrottle(t.Generic[AsyncFNone]):
         self.delay = delay
         self.flush_event = asyncio.Event()
         self.delayed_task: t.Optional[asyncio.Task] = None
-        self.delayed_params: t.Optional[tuple[tuple[t.Any, ...], dict[str, t.Any]]] = (
-            None
-        )
-        self.current_params: t.Optional[tuple[tuple[t.Any, ...], dict[str, t.Any]]] = (
-            None
-        )
+        self.delayed_params: t.Optional[
+            tuple[tuple[t.Any, ...], dict[str, t.Any]]
+        ] = None
+        self.current_params: t.Optional[
+            tuple[tuple[t.Any, ...], dict[str, t.Any]]
+        ] = None
 
         self._call_fut: t.Optional[asyncio.Future] = None
 

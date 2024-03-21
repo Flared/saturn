@@ -4,13 +4,13 @@ import asyncio
 import dataclasses
 import pickle  # noqa: S403
 
-import aioredis.errors
 from arq import create_pool
 from arq.connections import ArqRedis
 from arq.connections import RedisSettings
 from arq.jobs import Job
 from arq.jobs import JobStatus
 from opentelemetry.metrics import get_meter
+from redis.exceptions import RedisError
 
 from saturn_engine.core import PipelineResults
 from saturn_engine.utils.asyncutils import TasksGroup
@@ -108,7 +108,7 @@ class ARQExecutor(Executor):
                 _expires=options.queue_timeout,
                 _queue_name=options.queue_name,
             )
-        except (OSError, aioredis.errors.ConnectionClosedError):
+        except (OSError, RedisError):
             del self.redis_queue
             raise
 
