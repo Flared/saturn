@@ -148,22 +148,6 @@ yarl = ">=1.0,<2.0"
 speedups = ["Brotli", "aiodns", "brotlicffi"]
 
 [[package]]
-name = "aioredis"
-version = "1.3.1"
-description = "asyncio (PEP 3156) Redis support"
-category = "main"
-optional = true
-python-versions = "*"
-files = [
-    {file = "aioredis-1.3.1-py3-none-any.whl", hash = "sha256:b61808d7e97b7cd5a92ed574937a079c9387fdadd22bfbfa7ad2fd319ecc26e3"},
-    {file = "aioredis-1.3.1.tar.gz", hash = "sha256:15f8af30b044c771aee6787e5ec24694c048184c7b9e54c3b60c750a4b93273a"},
-]
-
-[package.dependencies]
-async-timeout = "*"
-hiredis = "*"
-
-[[package]]
 name = "aiormq"
 version = "6.8.0"
 description = "Pure python AMQP asynchronous client library"
@@ -250,23 +234,23 @@ test = ["coverage", "mypy", "pexpect", "ruff", "wheel"]
 
 [[package]]
 name = "arq"
-version = "0.22"
+version = "0.25.0"
 description = "Job queues in python with asyncio and redis"
 category = "main"
 optional = true
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 files = [
-    {file = "arq-0.22-py3-none-any.whl", hash = "sha256:55a0f933636c804b82c366a0e3710e9e5ed26a716251fa6742777d0b039f7f30"},
-    {file = "arq-0.22.tar.gz", hash = "sha256:c7bd98151cc83cec941ce5f660ede4bee888effd9a4692258ec8a9a0aff2f9f9"},
+    {file = "arq-0.25.0-py3-none-any.whl", hash = "sha256:db072d0f39c0bc06b436db67ae1f315c81abc1527563b828955670531815290b"},
+    {file = "arq-0.25.0.tar.gz", hash = "sha256:d176ebadfba920c039dc578814d19b7814d67fa15f82fdccccaedb4330d65dae"},
 ]
 
 [package.dependencies]
-aioredis = ">=1.1.0,<2.0.0"
-click = ">=6.7"
-pydantic = ">=1"
+click = ">=8.0"
+redis = {version = ">=4.2.0", extras = ["hiredis"]}
+typing-extensions = ">=4.1.0"
 
 [package.extras]
-watch = ["watchgod (>=0.4)"]
+watch = ["watchfiles (>=0.16)"]
 
 [[package]]
 name = "async-timeout"
@@ -282,19 +266,19 @@ files = [
 
 [[package]]
 name = "asyncstdlib"
-version = "3.12.1"
+version = "3.12.2"
 description = "The missing async toolbox"
 category = "main"
 optional = false
 python-versions = "~=3.8"
 files = [
-    {file = "asyncstdlib-3.12.1-py3-none-any.whl", hash = "sha256:505229adee430a0ad4643bf75a85486029d0b2a200b1919e9c95ae319063b6a6"},
-    {file = "asyncstdlib-3.12.1.tar.gz", hash = "sha256:d1f0d439cc9f3ada7c4656590ac145ebeb059b74d9ad1818653a1441b9b873a8"},
+    {file = "asyncstdlib-3.12.2-py3-none-any.whl", hash = "sha256:343b4ae330a76a8ed05fc83a03e2756dcaa7bede0cf4c7f0ba4aa7112feddec4"},
+    {file = "asyncstdlib-3.12.2.tar.gz", hash = "sha256:3fea1eef246b68022c5bbaf6661db59f640ef54dd05fa1d0ac987e49b86a5529"},
 ]
 
 [package.extras]
 doc = ["sphinx", "sphinxcontrib-trio"]
-test = ["black", "coverage", "flake8", "flake8-2020", "flake8-bugbear", "mypy", "pytest", "pytest-cov"]
+test = ["black", "coverage", "flake8", "flake8-2020", "flake8-bugbear", "mypy", "pytest", "pytest-cov", "typing-extensions"]
 
 [[package]]
 name = "attrs"
@@ -2218,18 +2202,18 @@ pytest = "*"
 
 [[package]]
 name = "pytest-mock"
-version = "3.12.0"
+version = "3.13.0"
 description = "Thin-wrapper around the mock package for easier use with pytest"
 category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pytest-mock-3.12.0.tar.gz", hash = "sha256:31a40f038c22cad32287bb43932054451ff5583ff094bca6f675df2f8bc1a6e9"},
-    {file = "pytest_mock-3.12.0-py3-none-any.whl", hash = "sha256:0972719a7263072da3a21c7f4773069bcc7486027d7e8e1f81d98a47e701bc4f"},
+    {file = "pytest-mock-3.13.0.tar.gz", hash = "sha256:58c73e7eae1fc05aebe7bd4b3b59eb5beb5c0b644c7e2dd3cc652a749f0056e3"},
+    {file = "pytest_mock-3.13.0-py3-none-any.whl", hash = "sha256:158462fe2124763df267f20c81f098bdccf8928e2649e5e1093955ad1e515f80"},
 ]
 
 [package.dependencies]
-pytest = ">=5.0"
+pytest = ">=6.2.5"
 
 [package.extras]
 dev = ["pre-commit", "pytest-asyncio", "tox"]
@@ -2311,6 +2295,26 @@ files = [
 ]
 
 [[package]]
+name = "redis"
+version = "5.0.3"
+description = "Python client for Redis database and key-value store"
+category = "main"
+optional = true
+python-versions = ">=3.7"
+files = [
+    {file = "redis-5.0.3-py3-none-any.whl", hash = "sha256:5da9b8fe9e1254293756c16c008e8620b3d15fcc6dde6babde9541850e72a32d"},
+    {file = "redis-5.0.3.tar.gz", hash = "sha256:4973bae7444c0fbed64a06b87446f79361cb7e4ec1538c022d696ed7a5015580"},
+]
+
+[package.dependencies]
+async-timeout = {version = ">=4.0.3", markers = "python_full_version < \"3.11.3\""}
+hiredis = {version = ">=1.0.0", optional = true, markers = "extra == \"hiredis\""}
+
+[package.extras]
+hiredis = ["hiredis (>=1.0.0)"]
+ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==20.0.1)", "requests (>=2.26.0)"]
+
+[[package]]
 name = "requests"
 version = "2.31.0"
 description = "Python HTTP for Humans."
@@ -2387,14 +2391,14 @@ d = ["aiohttp (>=3.3.2)"]
 
 [[package]]
 name = "sentry-sdk"
-version = "1.42.0"
+version = "1.43.0"
 description = "Python client for Sentry (https://sentry.io)"
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "sentry-sdk-1.42.0.tar.gz", hash = "sha256:4a8364b8f7edbf47f95f7163e48334c96100d9c098f0ae6606e2e18183c223e6"},
-    {file = "sentry_sdk-1.42.0-py2.py3-none-any.whl", hash = "sha256:a654ee7e497a3f5f6368b36d4f04baeab1fe92b3105f7f6965d6ef0de35a9ba4"},
+    {file = "sentry-sdk-1.43.0.tar.gz", hash = "sha256:41df73af89d22921d8733714fb0fc5586c3461907e06688e6537d01a27e0e0f6"},
+    {file = "sentry_sdk-1.43.0-py2.py3-none-any.whl", hash = "sha256:8d768724839ca18d7b4c7463ef7528c40b7aa2bfbf7fe554d5f9a7c044acfd36"},
 ]
 
 [package.dependencies]
@@ -2408,6 +2412,7 @@ asyncpg = ["asyncpg (>=0.23)"]
 beam = ["apache-beam (>=2.12)"]
 bottle = ["bottle (>=0.12.13)"]
 celery = ["celery (>=3)"]
+celery-redbeat = ["celery-redbeat (>=2)"]
 chalice = ["chalice (>=1.16.0)"]
 clickhouse-driver = ["clickhouse-driver (>=0.2.0)"]
 django = ["django (>=1.8)"]
@@ -3086,4 +3091,4 @@ worker-manager = ["Flask"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "8b79fc0dc63e7bd5554debb5c0b9466ac58fea4860ee0c0caf63273032e5d985"
+content-hash = "ed1e1f48c824bc54dca916298050c547b7970092a7ecd94d654fd6d96908b7db"
