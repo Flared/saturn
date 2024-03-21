@@ -3,10 +3,10 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
-<link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" /><link rel="next" title="saturn_engine.worker.topics" href="saturn_engine.worker.topics.html" /><link rel="prev" title="saturn_engine.worker.services.usage_metrics" href="saturn_engine.worker.services.usage_metrics.html" />
+<link rel="index" title="Index" href="../../genindex.html" /><link rel="search" title="Search" href="../../search.html" /><link rel="next" title="saturn_engine.worker.executors.bootstrap" href="saturn_engine.worker.executors.bootstrap.html" /><link rel="prev" title="saturn_engine.worker.executors.arq" href="saturn_engine.worker.executors.arq.html" />
 
     <!-- Generated with Sphinx 7.0.1 and Furo 2023.09.10 -->
-        <title>saturn_engine.worker.topic - Saturn documentation</title>
+        <title>saturn_engine.worker.executors.arq.worker - Saturn documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?digest=369552022d0b975c8e74270ce6eabe0fb7978f24" />
     <link rel="stylesheet" type="text/css" href="../../_static/tabs.css" />
@@ -188,9 +188,9 @@
 <li class="toctree-l3"><a class="reference internal" href="saturn_engine.worker.broker.html">saturn_engine.worker.broker</a></li>
 <li class="toctree-l3"><a class="reference internal" href="saturn_engine.worker.context.html">saturn_engine.worker.context</a></li>
 <li class="toctree-l3"><a class="reference internal" href="saturn_engine.worker.error_handling.html">saturn_engine.worker.error_handling</a></li>
-<li class="toctree-l3 has-children"><a class="reference internal" href="saturn_engine.worker.executors.html">saturn_engine.worker.executors</a><input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of saturn_engine.worker.executors</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l4 has-children"><a class="reference internal" href="saturn_engine.worker.executors.arq.html">saturn_engine.worker.executors.arq</a><input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of saturn_engine.worker.executors.arq</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
-<li class="toctree-l5"><a class="reference internal" href="saturn_engine.worker.executors.arq.worker.html">saturn_engine.worker.executors.arq.worker</a></li>
+<li class="toctree-l3 current has-children"><a class="reference internal" href="saturn_engine.worker.executors.html">saturn_engine.worker.executors</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><div class="visually-hidden">Toggle navigation of saturn_engine.worker.executors</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l4 current has-children"><a class="reference internal" href="saturn_engine.worker.executors.arq.html">saturn_engine.worker.executors.arq</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><div class="visually-hidden">Toggle navigation of saturn_engine.worker.executors.arq</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
+<li class="toctree-l5 current current-page"><a class="current reference internal" href="#">saturn_engine.worker.executors.arq.worker</a></li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="saturn_engine.worker.executors.bootstrap.html">saturn_engine.worker.executors.bootstrap</a></li>
@@ -258,7 +258,7 @@
 <li class="toctree-l4"><a class="reference internal" href="saturn_engine.worker.services.usage_metrics.html">saturn_engine.worker.services.usage_metrics</a></li>
 </ul>
 </li>
-<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">saturn_engine.worker.topic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="saturn_engine.worker.topic.html">saturn_engine.worker.topic</a></li>
 <li class="toctree-l3 has-children"><a class="reference internal" href="saturn_engine.worker.topics.html">saturn_engine.worker.topics</a><input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" role="switch" type="checkbox"/><label for="toctree-checkbox-16"><div class="visually-hidden">Toggle navigation of saturn_engine.worker.topics</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
 <li class="toctree-l4"><a class="reference internal" href="saturn_engine.worker.topics.batching.html">saturn_engine.worker.topics.batching</a></li>
 <li class="toctree-l4"><a class="reference internal" href="saturn_engine.worker.topics.delayed.html">saturn_engine.worker.topics.delayed</a></li>
@@ -313,26 +313,47 @@
           </label>
         </div>
         <article role="main">
-          <section id="module-saturn_engine.worker.topic">
-<span id="saturn-engine-worker-topic"></span><h1>saturn_engine.worker.topic<a class="headerlink" href="#module-saturn_engine.worker.topic" title="Permalink to this heading">#</a></h1>
-<p class="rubric">Classes</p>
+          <section id="module-saturn_engine.worker.executors.arq.worker">
+<span id="saturn-engine-worker-executors-arq-worker"></span><h1>saturn_engine.worker.executors.arq.worker<a class="headerlink" href="#module-saturn_engine.worker.executors.arq.worker" title="Permalink to this heading">#</a></h1>
+<p class="rubric">Functions</p>
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">BlockingTopic</span></code>([max_concurrency, sleep_time])</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">remote_bootstrap</span></code>(message)</p></td>
 <td><p></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Topic</span></code>(*args, options, **kwargs)</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">remote_execute</span></code>(ctx, message)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">remote_initializer</span></code>(worker_initializer)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">remote_job_healthcheck</span></code>(ctx)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">shutdown</span></code>(ctx)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">startup</span></code>(ctx)</p></td>
 <td><p></p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<p class="rubric">Exceptions</p>
+<p class="rubric">Classes</p>
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">TopicClosedError</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Context</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">WorkerOptions</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">WorkerSettings</span></code>()</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">WorkerType</span></code>(value[, names, module, qualname, ...])</p></td>
 <td><p></p></td>
 </tr>
 </tbody>
@@ -345,23 +366,23 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="saturn_engine.worker.topics.html">
+          <a class="next-page" href="saturn_engine.worker.executors.bootstrap.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">saturn_engine.worker.topics</div>
+                <div class="title">saturn_engine.worker.executors.bootstrap</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="saturn_engine.worker.services.usage_metrics.html">
+          <a class="prev-page" href="saturn_engine.worker.executors.arq.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">saturn_engine.worker.services.usage_metrics</div>
+                <div class="title">saturn_engine.worker.executors.arq</div>
                 
               </div>
             </a>
