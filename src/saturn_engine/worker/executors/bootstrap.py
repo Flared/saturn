@@ -4,7 +4,7 @@ from collections.abc import Generator
 from collections.abc import Iterable
 from collections.abc import Iterator
 
-from pydantic import ValidationError
+from pydantic.v1 import ValidationError
 
 from saturn_engine.core import PipelineOutput
 from saturn_engine.core import PipelineResults

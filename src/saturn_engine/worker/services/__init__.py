@@ -31,8 +31,7 @@ TOptions = TypeVar("TOptions")
 
 class ConfigContainer(t.Protocol):
     @property
-    def config(self) -> t.Union[LazyConfig, BaseConfig]:
-        ...
+    def config(self) -> t.Union[LazyConfig, BaseConfig]: ...
 
 
 T = TypeVar("T")

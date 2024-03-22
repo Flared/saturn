@@ -2,7 +2,7 @@ import os
 from dataclasses import field
 
 import yaml
-from pydantic import dataclasses
+from pydantic.v1 import dataclasses
 
 from saturn_engine.utils.options import fromdict
 

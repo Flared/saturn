@@ -16,45 +16,37 @@ class ResourceB(Resource):
     pass
 
 
-def simple_pipeline() -> None:
-    ...
+def simple_pipeline() -> None: ...
 
 
-def pipeline_with_resources(a: ResourceA, b: "ResourceB") -> None:
-    ...
+def pipeline_with_resources(a: ResourceA, b: "ResourceB") -> None: ...
 
 
 class Namespace:
-    def pipeline(self) -> None:
-        ...
+    def pipeline(self) -> None: ...
 
 
-def deleted_pipeline() -> None:
-    ...
+def deleted_pipeline() -> None: ...
 
 
-def modified_pipeline() -> None:
-    ...
+def modified_pipeline() -> None: ...
 
 
 def decorator(func: Callable) -> Callable:
     @wraps(func)
-    def wrapper() -> None:
-        ...
+    def wrapper() -> None: ...
 
     return wrapper
 
 
 @decorator
-def wrapped_pipeline() -> None:
-    ...
+def wrapped_pipeline() -> None: ...
 
 
 def test_pipeline_info_name() -> None:
     global deleted_pipeline, modified_pipeline
 
-    def local_pipeline() -> None:
-        ...
+    def local_pipeline() -> None: ...
 
     assert PipelineInfo.from_pipeline(simple_pipeline) == PipelineInfo(
         name="tests.worker.test_pipeline_info.simple_pipeline", resources={}
