@@ -15,7 +15,7 @@ from saturn_engine.core.api import JobsStates
 from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import StartJobInput
 from saturn_engine.models import Job
-from saturn_engine.models.job import JobCursorState
+from saturn_engine.models.job_cursor_state import JobCursorState
 from saturn_engine.models.queue import Queue
 from saturn_engine.stores import queues_store
 from saturn_engine.utils import utcnow
@@ -172,9 +172,9 @@ def sync_jobs_states(
         session.execute(cursors_stmt)
 
     if jobs_values:
-        session.bulk_update_mappings(Job, jobs_values)
+        session.execute(update(Job), jobs_values)
     if queues_values:
-        session.bulk_update_mappings(Queue, queues_values)
+        session.execute(update(Queue), queues_values)
 
 
 CursorsStates = dict[JobId, dict[Cursor, t.Optional[dict]]]

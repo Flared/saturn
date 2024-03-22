@@ -11,7 +11,9 @@ AnySyncSession = t.Union[Session, scoped_session]
 AnySession = AnySyncSession
 
 
-def upsert(session: AnySession) -> t.Callable[[object], postgresql.Insert]:
+def upsert(
+    session: AnySession,
+) -> t.Callable[[t.Any], postgresql.Insert | sqlite.Insert]:
     if not session.bind:
         raise ValueError("Session is unbound")
 

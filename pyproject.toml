@@ -133,7 +133,7 @@ disallow_incomplete_defs = true
 disallow_untyped_defs = true
 disallow_untyped_calls = true
 namespace_packages = true
-plugins = ["sqlalchemy.ext.mypy.plugin", "mypy_typing_asserts.mypy_plugin"]
+plugins = ["mypy_typing_asserts.mypy_plugin"]
 
 [[tool.mypy.overrides]]
 module = [
