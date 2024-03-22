@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "saturn-engine"
-version = "0.5.4"
+version = "0.5.5"
 description = ""
 readme = "README.md"
 authors = ["Flare Systems <oss@flare.systems>"]
@@ -69,7 +69,7 @@ tracer = [
 
 [tool.poetry.dev-dependencies]
 nox = "*"
-black = "*"
+black = "24.3.0"
 flake8 = "*"
 flake8-bandit = "*"
 flake8-black = "*"
