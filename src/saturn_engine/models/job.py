@@ -3,14 +3,12 @@ from typing import Optional
 from datetime import datetime
 
 from sqlalchemy import CheckConstraint
-from sqlalchemy import Column
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import backref
+from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.sqltypes import Text
-from sqlalchemy.types import JSON
 
+import saturn_engine.models.queue as queue_model
 from saturn_engine.core import Cursor
 from saturn_engine.core import JobId
 from saturn_engine.core.api import JobItem
@@ -18,13 +16,6 @@ from saturn_engine.utils import utcnow
 
 from .base import Base
 from .types import UTCDateTime
-
-
-class JobCursorState(Base):
-    __tablename__ = "job_cursor_states"
-    job_definition_name: Mapped[str] = Column(Text, primary_key=True)
-    cursor: Mapped[str] = Column(Text, primary_key=True)
-    state: Mapped[dict] = Column(JSON, nullable=False)
 
 
 class Job(Base):
@@ -36,18 +27,18 @@ class Job(Base):
         ),
     )
 
-    name: Mapped[str] = Column(Text, primary_key=True)
-    cursor = Column(Text, nullable=True)
-    completed_at: Mapped[Optional[datetime]] = Column(UTCDateTime, nullable=True)  # type: ignore[assignment]  # noqa: B950
-    started_at: Mapped[datetime] = Column(UTCDateTime, nullable=False)  # type: ignore[assignment]  # noqa: B950
-    queue_name: Mapped[str] = Column(Text, ForeignKey("queues.name"), nullable=False)
-    error = Column(Text, nullable=True)
-    queue: Mapped["Queue"] = relationship(
-        "Queue",
+    name: Mapped[str] = mapped_column(primary_key=True)
+    cursor: Mapped[Optional[str]] = mapped_column(nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime, nullable=True)
+    started_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
+    queue_name: Mapped[str] = mapped_column(ForeignKey("queues.name"), nullable=False)
+    error: Mapped[Optional[str]] = mapped_column(nullable=True)
+    queue: Mapped[queue_model.Queue] = relationship(
+        lambda: queue_model.Queue,
         uselist=False,
-        backref=backref("job", uselist=False),
+        back_populates="job",
     )
-    job_definition_name: Mapped[Optional[str]] = Column(Text, nullable=True)
+    job_definition_name: Mapped[Optional[str]] = mapped_column(nullable=True)
 
     def __init__(
         self,
@@ -82,6 +73,3 @@ class Job(Base):
             error=self.error,
             **queue_args,  # type: ignore[arg-type]
         )
-
-
-from .queue import Queue
