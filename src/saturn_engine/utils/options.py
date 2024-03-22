@@ -57,7 +57,7 @@ def fromdict(
     d: dict[str, t.Any], klass: t.Type[T], *, config: t.Optional[dict] = None
 ) -> T:
     schema = schema_for(t.cast(t.Hashable, klass))
-    obj: pydantic.BaseModel = schema.parse_obj(d)
+    obj: pydantic.v1.BaseModel = schema.parse_obj(d)
     if dataclasses.is_dataclass(klass):
         return t.cast(T, klass(**obj.dict()))
     return t.cast(T, obj)
