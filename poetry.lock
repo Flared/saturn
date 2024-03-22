@@ -234,14 +234,14 @@ test = ["coverage", "mypy", "pexpect", "ruff", "wheel"]
 
 [[package]]
 name = "arq"
-version = "0.24.0"
+version = "0.25.0"
 description = "Job queues in python with asyncio and redis"
 category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
-    {file = "arq-0.24.0-py3-none-any.whl", hash = "sha256:76f85f84da76c67cb57a8f78ff8170f63f3e5039d49b3a6949109907e322ec1d"},
-    {file = "arq-0.24.0.tar.gz", hash = "sha256:048db0f63d7a5736c043b8abfd1d34a054f46a943eec46668062861b5b5e4f3c"},
+    {file = "arq-0.25.0-py3-none-any.whl", hash = "sha256:db072d0f39c0bc06b436db67ae1f315c81abc1527563b828955670531815290b"},
+    {file = "arq-0.25.0.tar.gz", hash = "sha256:d176ebadfba920c039dc578814d19b7814d67fa15f82fdccccaedb4330d65dae"},
 ]
 
 [package.dependencies]
@@ -3091,4 +3091,4 @@ worker-manager = ["Flask"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "2bdd6758b98f2a4dcf9e9e956e007e3c216f75dfa3e9328f6d28f54fe41dd6b0"
+content-hash = "ed1e1f48c824bc54dca916298050c547b7970092a7ecd94d654fd6d96908b7db"
