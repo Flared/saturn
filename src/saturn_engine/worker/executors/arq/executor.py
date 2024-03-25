@@ -22,8 +22,7 @@ from saturn_engine.worker.services import Services
 
 from .. import Executor
 from . import EXECUTE_FUNC_NAME
-from . import QUEUE_TIMEOUT
-from . import RESULT_TIMEOUT
+from . import TIMEOUT
 from . import executor_healthcheck_key
 from . import healthcheck_interval
 from . import worker_healthcheck_key
@@ -41,8 +40,7 @@ class ARQExecutor(Executor):
         redis_url: str
         concurrency: int
         queue_name: str = "arq:queue"
-        queue_timeout: int = QUEUE_TIMEOUT
-        result_timeout: int = RESULT_TIMEOUT
+        timeout: int = TIMEOUT
 
     def __init__(self, options: Options, services: Services) -> None:
         self.logger = getLogger(__name__, self)
@@ -105,7 +103,7 @@ class ARQExecutor(Executor):
             job = await (await self.redis_queue).enqueue_job(
                 EXECUTE_FUNC_NAME,
                 message.message.as_remote(),
-                _expires=options.queue_timeout,
+                _expires=options.timeout + 5,
                 _queue_name=options.queue_name,
             )
         except (OSError, RedisError):
@@ -114,7 +112,7 @@ class ARQExecutor(Executor):
 
         tasks = TasksGroup(name=f"saturn.arq.process_message({message.id})")
         result_task: asyncio.Task[PipelineResults] = tasks.create_task(
-            job.result(timeout=self.options.result_timeout)
+            job.result(timeout=self.options.timeout)
         )
         healthcheck_task = tasks.create_task(self.monitor_job_healthcheck(job))
         async with tasks:
