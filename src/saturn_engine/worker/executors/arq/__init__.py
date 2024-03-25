@@ -1,5 +1,4 @@
-QUEUE_TIMEOUT = 600
-RESULT_TIMEOUT = 1200
+TIMEOUT = 1200
 EXECUTE_FUNC_NAME = "remote_execute"
 
 healthcheck_interval = 10
