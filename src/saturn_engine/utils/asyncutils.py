@@ -317,7 +317,7 @@ class CachedProperty(t.Generic[T]):
                 try:
                     value = await self.__wrapped__(instance)
                     future.set_result(value)
-                except BaseException as e:
+                except BaseException as e:  # noqa: B036
                     future.set_exception(e)
                     instance.__dict__.pop(self._name, None)
 
