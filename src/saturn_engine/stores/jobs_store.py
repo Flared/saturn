@@ -9,11 +9,11 @@ from sqlalchemy import union_all
 from sqlalchemy import update
 from sqlalchemy.orm import joinedload
 
-from saturn_engine.core import Cursor
 from saturn_engine.core import JobId
 from saturn_engine.core.api import JobsStates
 from saturn_engine.core.api import QueueItem
 from saturn_engine.core.api import StartJobInput
+from saturn_engine.core.types import CursorStateKey
 from saturn_engine.models import Job
 from saturn_engine.models.job_cursor_state import JobCursorState
 from saturn_engine.models.queue import Queue
@@ -179,11 +179,11 @@ def sync_jobs_states(
         session.execute(update(Queue), queues_values)
 
 
-CursorsStates = dict[JobId, dict[Cursor, t.Optional[dict]]]
+CursorsStates = dict[JobId, dict[CursorStateKey, t.Optional[dict]]]
 
 
 def fetch_cursors_states(
-    query: dict[JobId, list[Cursor]],
+    query: dict[JobId, list[CursorStateKey]],
     session: AnySyncSession,
 ) -> CursorsStates:
     # Generate a query for each jobs so we can UNION them.

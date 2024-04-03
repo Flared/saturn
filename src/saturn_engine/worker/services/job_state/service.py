@@ -1,15 +1,20 @@
+import typing as t
+
 import dataclasses
+import enum
+import hashlib
 from collections import defaultdict
 
 from saturn_engine.client.worker_manager import WorkerManagerClient
 from saturn_engine.core import Cursor
 from saturn_engine.core import JobId
 from saturn_engine.core.api import FetchCursorsStatesInput
-from saturn_engine.core.api import FetchCursorsStatesResponse
 from saturn_engine.core.api import JobsStatesSyncInput
 from saturn_engine.core.api import QueueItemWithState
 from saturn_engine.core.job_state import CursorState
 from saturn_engine.core.job_state import CursorStateUpdated
+from saturn_engine.core.types import CursorStateKey
+from saturn_engine.utils import assert_never
 from saturn_engine.utils.asyncutils import DelayedThrottle
 from saturn_engine.utils.log import getLogger
 from saturn_engine.worker.executors.executable import ExecutableMessage
@@ -27,32 +32,99 @@ class Services(BaseServices):
     api_client: ApiClient
 
 
+class CursorFormat(enum.Enum):
+    RAW = "raw"
+    SHA256 = "sha256"
+
+    def format(self, cursor: Cursor) -> CursorStateKey:
+        if self is CursorFormat.RAW:
+            return CursorStateKey(cursor)
+        elif self is CursorFormat.SHA256:
+            return CursorStateKey(hashlib.sha256(cursor.encode()).hexdigest())
+        else:
+            assert_never(self)
+
+
 @dataclasses.dataclass
 class Options:
     flush_delay: float = 10.0
     auto_flush: bool = True
+    fetch_cursor_formats: list[CursorFormat] = dataclasses.field(
+        default_factory=lambda: [CursorFormat.SHA256]
+    )
+    save_cursor_format: CursorFormat = CursorFormat.SHA256
+
+
+@dataclasses.dataclass
+class FormattedRequest:
+    by_cursor: dict[Cursor, list[CursorStateKey]]
+    by_formatted: dict[CursorStateKey, Cursor]
+
+    @classmethod
+    def from_cursors(
+        cls, cursors: t.Iterable[Cursor], formats: list[CursorFormat]
+    ) -> "FormattedRequest":
+        formatted_cursors = {}
+        inverted_cursors = {}
+        for cursor in cursors:
+            formatted = [f.format(cursor) for f in formats]
+            formatted_cursors[cursor] = formatted
+            inverted_cursors.update({k: cursor for k in formatted})
+        return cls(
+            by_cursor=formatted_cursors,
+            by_formatted=inverted_cursors,
+        )
+
+    def all_cursors(self) -> list[CursorStateKey]:
+        return list(self.by_formatted.keys())
+
+    def map(self, key: CursorStateKey) -> Cursor | None:
+        return self.by_formatted.get(key)
 
 
 class CursorsStatesFetcher:
-    def __init__(self, *, client: WorkerManagerClient, fetch_delay: float = 0) -> None:
+    def __init__(
+        self,
+        *,
+        client: WorkerManagerClient,
+        formats: list[CursorFormat],
+        fetch_delay: float = 0,
+    ) -> None:
         self.client = client
+        self.formats = formats
         self.pending_queries: dict[JobId, set[Cursor]] = defaultdict(set)
         self._delayed_fetch = DelayedThrottle(self._do_fetch, delay=fetch_delay)
 
-    async def _do_fetch(self) -> FetchCursorsStatesResponse:
+    async def _do_fetch(self) -> dict[JobId, dict[Cursor, t.Optional[dict]]]:
         queries = self.pending_queries
         self.pending_queries = defaultdict(set)
-        cursors = {k: list(v) for k, v in queries.items()}
-        return await self.client.fetch_cursors_states(
-            FetchCursorsStatesInput(cursors=cursors)
+
+        # Convert Cursor into CursorStateKey
+        formatted_cursors = {
+            k: FormattedRequest.from_cursors(v, formats=self.formats)
+            for k, v in queries.items()
+        }
+        cursors_keys = {k: v.all_cursors() for k, v in formatted_cursors.items()}
+        response = await self.client.fetch_cursors_states(
+            FetchCursorsStatesInput(cursors=cursors_keys)
         )
+
+        # Retrieve original cursor from the CursorStateKey
+        mapped_cursors = {}
+        for job_name, cursor_states in response.cursors.items():
+            mapped_cursors[job_name] = {
+                fk: v
+                for k, v in cursor_states.items()
+                if (fk := formatted_cursors[job_name].map(k)) is not None
+            }
+        return mapped_cursors
 
     async def fetch(
         self, job_name: JobId, *, cursors: list[Cursor]
     ) -> dict[Cursor, dict]:
         self.pending_queries[job_name].update(cursors)
         result = await self._delayed_fetch()
-        return result.cursors.get(job_name, {})
+        return result.get(job_name, {})
 
 
 class JobStateService(Service[Services, Options]):
@@ -68,7 +140,8 @@ class JobStateService(Service[Services, Options]):
         self.logger = getLogger(__name__, self)
         self._store = JobsStatesSyncStore()
         self._cursors_fetcher = CursorsStatesFetcher(
-            client=self.services.api_client.client
+            client=self.services.api_client.client,
+            formats=self.options.fetch_cursor_formats,
         )
         self._delayed_flush = DelayedThrottle(
             self.flush, delay=self.options.flush_delay

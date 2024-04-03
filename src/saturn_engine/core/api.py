@@ -13,6 +13,7 @@ from saturn_engine.utils import utcnow
 from .pipeline import PipelineInfo  # noqa: F401  # Reexport for public API
 from .pipeline import QueuePipeline
 from .types import Cursor
+from .types import CursorStateKey
 from .types import JobId
 
 T = TypeVar("T")
@@ -111,12 +112,12 @@ class LockInput:
 
 @dataclasses.dataclass
 class FetchCursorsStatesInput:
-    cursors: dict[JobId, list[Cursor]]
+    cursors: dict[JobId, list[CursorStateKey]]
 
 
 @dataclasses.dataclass
 class FetchCursorsStatesResponse:
-    cursors: dict[JobId, dict[Cursor, t.Optional[dict]]]
+    cursors: dict[JobId, dict[CursorStateKey, t.Optional[dict]]]
 
 
 @dataclasses.dataclass
