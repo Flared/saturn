@@ -48,7 +48,9 @@ def create_job(
 
 
 def get_jobs(*, session: AnySyncSession) -> list[Job]:
-    return session.execute(select(Job).options(joinedload(Job.queue))).scalars().all()
+    return list(
+        session.execute(select(Job).options(joinedload(Job.queue))).scalars().all()
+    )
 
 
 def get_job(name: str, session: AnySyncSession) -> Optional[Job]:

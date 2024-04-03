@@ -101,9 +101,11 @@ def executable_message_attributes(
 
 def pipeline_message_attributes(
     message: PipelineMessage,
-) -> Mapping[str, AttributeValue]:
-    return {
+) -> dict[str, AttributeValue]:
+    d: dict[str, AttributeValue] = {
         "saturn.message.id": message.id,
         "saturn.resources.names": [n for n in message.resource_names if n],
         "saturn.pipeline.name": message.info.name,
-    } | {f"saturn.message.tags.{k}": v for k, v in message.message.tags.items()}
+    }
+    d |= {f"saturn.message.tags.{k}": v for k, v in message.message.tags.items()}
+    return d

@@ -32,7 +32,7 @@ def get_assigned_queues(
     extra_filters = []
     if selector:
         extra_filters.append(Queue.name.regexp_match(selector))
-    assigned_jobs: list[Queue] = (
+    assigned_jobs: t.Sequence[Queue] = (
         session.execute(
             select(Queue)
             .options(joinedload(Queue.job))
@@ -47,7 +47,7 @@ def get_assigned_queues(
         .scalars()
         .all()
     )
-    return assigned_jobs
+    return list(assigned_jobs)
 
 
 def get_unassigned_queues(
@@ -60,7 +60,7 @@ def get_unassigned_queues(
     extra_filters = []
     if selector:
         extra_filters.append(Queue.name.regexp_match(selector))
-    unassigned_queues: list[Queue] = (
+    unassigned_queues: t.Sequence[Queue] = (
         session.execute(
             select(Queue)
             .options(joinedload(Queue.job))
@@ -77,7 +77,7 @@ def get_unassigned_queues(
         .scalars()
         .all()
     )
-    return unassigned_queues
+    return list(unassigned_queues)
 
 
 def disable_queue(
