@@ -26,8 +26,10 @@ from saturn_engine.worker.services.hooks import MessagePublished
 from .. import BaseServices
 from .. import Service
 
-Event = dict[str, t.Any]
-Hint = dict[str, t.Any]
+if t.TYPE_CHECKING:
+    from sentry_sdk._types import Event
+    from sentry_sdk._types import Hint
+
 ExcInfo = tuple[
     t.Optional[t.Type[BaseException]],
     t.Optional[BaseException],
@@ -39,14 +41,14 @@ def get_hub() -> Hub:
     return Hub(Hub.current)
 
 
-def set_event_tags_from_queue(event: dict, *, queue: QueueItem) -> None:
+def set_event_tags_from_queue(event: "Event", *, queue: QueueItem) -> None:
     tags = event.setdefault("tags", {})
     tags["saturn.job.name"] = queue.name
     for k, v in queue.labels.items():
         tags[f"saturn.job.labels.{k}"] = v
 
 
-def set_event_tags_from_xmsg(event: dict, *, xmsg: ExecutableMessage) -> None:
+def set_event_tags_from_xmsg(event: "Event", *, xmsg: ExecutableMessage) -> None:
     tags = event.setdefault("tags", {})
     tags["saturn.message.id"] = xmsg.id
     tags["saturn.pipeline.name"] = xmsg.message.info.name
@@ -83,14 +85,16 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
         self.services.hooks.message_executed.register(self.on_message_executed)
         self.services.hooks.message_published.register(self.on_message_published)
 
-    def on_before_send(self, event: Event, hint: Hint) -> t.Optional[Event]:
+    def on_before_send(self, event: "Event", hint: "Hint") -> t.Optional["Event"]:
         exc_info = hint.get("exc_info")
         # RemoteException should have been unwrapped in one of the hooks,
         # but some exception might have been catched by other integration such
         # as logging, so we just ignore those.
         if exc_info and isinstance(exc_info[1], RemoteException):
             return None
-        pipeline_message = event.get("extra", {}).get("saturn-pipeline-message")
+        pipeline_message = t.cast(dict, event.get("extra", {})).get(
+            "saturn-pipeline-message"
+        )
         if pipeline_message:
             self._sanitize_message_resources(pipeline_message)
 
@@ -109,10 +113,12 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
         hub = get_hub()
         with hub.push_scope() as scope:
 
-            def _event_processor(event: Event, hint: Hint) -> Event:
+            def _event_processor(event: "Event", hint: "Hint") -> "Event":
                 with capture_internal_exceptions():
                     set_event_tags_from_queue(event, queue=item)
-                    extra = event.setdefault("extra", {}).setdefault("saturn", {})
+                    extra = t.cast(
+                        dict, event.setdefault("extra", {}).setdefault("saturn", {})
+                    )
                     extra["job"] = queue_data(item)
 
                 return event
@@ -130,10 +136,12 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
         hub = get_hub()
         with hub.push_scope() as scope:
 
-            def _event_processor(event: Event, hint: Hint) -> Event:
+            def _event_processor(event: "Event", hint: "Hint") -> "Event":
                 with capture_internal_exceptions():
                     set_event_tags_from_xmsg(event, xmsg=xmsg)
-                    extra = event.setdefault("extra", {}).setdefault("saturn", {})
+                    extra = t.cast(
+                        dict, event.setdefault("extra", {}).setdefault("saturn", {})
+                    )
                     extra["pipeline_message"] = asdict(message)
                     extra["job"] = queue_data(xmsg.queue.definition)
                 return event
@@ -151,11 +159,13 @@ class Sentry(Service[BaseServices, "Sentry.Options"]):
         hub = get_hub()
         with hub.push_scope() as scope:
 
-            def _event_processor(event: Event, hint: Hint) -> Event:
+            def _event_processor(event: "Event", hint: "Hint") -> "Event":
                 with capture_internal_exceptions():
                     set_event_tags_from_xmsg(event, xmsg=publish.xmsg)
                     event["tags"]["saturn.channel.name"] = publish.output.channel
-                    extra = event.setdefault("extra", {}).setdefault("saturn", {})
+                    extra = t.cast(dict, event.setdefault("extra", {})).setdefault(
+                        "saturn", {}
+                    )
                     extra["output_message"] = asdict(publish.output.message)
                     extra["pipeline_message"] = asdict(publish.xmsg.message)
                     extra["job"] = queue_data(publish.xmsg.queue.definition)
@@ -280,7 +290,7 @@ def event_from_remote_exception(
     exc: RemoteException,
     client_options: t.Optional[dict[str, t.Any]] = None,
     mechanism: t.Optional[dict[str, t.Any]] = None,
-) -> tuple[Event, Hint]:
+) -> tuple["Event", "Hint"]:
     return (
         {
             "level": "error",

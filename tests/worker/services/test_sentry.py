@@ -12,15 +12,18 @@ from saturn_engine.worker.executors.executable import ExecutableMessage
 from saturn_engine.worker.services.extras.sentry import Sentry
 from saturn_engine.worker.services.manager import ServicesManager
 
+if t.TYPE_CHECKING:
+    from sentry_sdk._types import Event
+
 
 class FakeTransport(sentry_sdk.transport.Transport):
     def __init__(self) -> None:
         super().__init__()
-        self.events: list[dict] = []
+        self.events: list["Event"] = []
         self.envelopes: list[Envelope] = []
         self._queue = None
 
-    def capture_event(self, event: dict) -> None:
+    def capture_event(self, event: "Event") -> None:
         self.events.append(event)
 
     def append_envelope(self, envelope: Envelope) -> None:

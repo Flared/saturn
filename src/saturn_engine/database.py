@@ -1,3 +1,4 @@
+import typing as t
 from typing import Any
 from typing import Callable
 from typing import Iterator
@@ -89,7 +90,7 @@ def session_scope(
 @lazy(threadlocal=True)
 def scoped_session() -> _sqlalchemy_scoped_session:
     return _sqlalchemy_scoped_session(
-        session_factory=session_factory(),
+        session_factory=t.cast(sessionmaker[Session], session_factory()),
     )
 
 

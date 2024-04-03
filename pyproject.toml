@@ -140,7 +140,7 @@ plugins = ["mypy_typing_asserts.mypy_plugin"]
 module = [
   "nox.*",
   "nox_poetry.*",
-  "aioredis.*",
+  "redis.*",
 ]
 ignore_missing_imports = true
 
