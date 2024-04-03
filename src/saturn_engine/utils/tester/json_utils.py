@@ -5,11 +5,13 @@ import dataclasses
 
 
 @overload
-def normalize_json(obj: dict) -> dict: ...
+def normalize_json(obj: dict) -> dict:
+    ...
 
 
 @overload
-def normalize_json(obj: list) -> list: ...
+def normalize_json(obj: list) -> list:
+    ...
 
 
 def normalize_json(obj: object) -> object:

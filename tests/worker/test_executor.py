@@ -94,7 +94,8 @@ async def test_base_executor(
     assert executor.processed == 10
 
 
-def pipeline(resource: FakeResource) -> None: ...
+def pipeline(resource: FakeResource) -> None:
+    ...
 
 
 @pytest.mark.asyncio

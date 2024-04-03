@@ -45,7 +45,8 @@ class TopicMessage:
             config: dict[str, dict[str, t.Optional[t.Any]]] = None,  # type: ignore[assignment]
             metadata: dict[str, dict[str, t.Optional[t.Any]]] = None,  # type: ignore[assignment]
             expire_after: t.Optional[datetime.timedelta | float] = None,
-        ) -> None: ...
+        ) -> None:
+            ...
 
     def __post_init__(self) -> None:
         if isinstance(self.expire_after, datetime.timedelta):

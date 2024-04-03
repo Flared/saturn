@@ -56,7 +56,8 @@ class FakeResourcesProvider(ResourcesProvider["FakeResourcesProvider"]):
         await self.add(ProvidedResource(name="fake-resource", data={"foo": "bar"}))
 
 
-def pipeline(resource: FakeResource) -> None: ...
+def pipeline(resource: FakeResource) -> None:
+    ...
 
 
 @pytest.fixture

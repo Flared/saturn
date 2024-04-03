@@ -18,7 +18,8 @@ class OptionsSchema:
         pass
 
     @abstractmethod
-    def __init__(self, *args: object, options: Options, **kwargs: object) -> None: ...
+    def __init__(self, *args: object, options: Options, **kwargs: object) -> None:
+        ...
 
     @classmethod
     def from_options(
