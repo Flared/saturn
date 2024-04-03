@@ -24,7 +24,8 @@ packages = [
 python = "^3.10"
 SQLAlchemy = {extras = ["mypy", "asyncio"], version = ">=1.4.29"}
 aiosqlite = "^0.17.0"
-asyncstdlib = "^3.10.2"
+# 3.12 breaks mypy until https://github.com/maxfischer2781/asyncstdlib/pull/140 is fixed.
+asyncstdlib = "^3.10.2, <3.12"
 aio-pika = ">=8.0"
 ####################
 ## worker-manager ##
