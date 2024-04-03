@@ -412,21 +412,33 @@ async def executor(services_manager: ServicesManager) -> AsyncIterator[Executor]
 
 
 @pytest.fixture
-async def fake_http_client_service(
+def fake_http_client_service_maker(
     http_client_mock: HttpClientMock,
+) -> t.Any:
+    async def maker(
+        services_manager: ServicesManager,
+    ) -> t.Any:
+        class FakeHttpClient(MinimalService):
+            name = "http_client"
+
+            async def open(self) -> None:
+                self.session = http_client_mock.client()
+
+            async def close(self) -> None:
+                pass
+
+        await services_manager._reload_service(FakeHttpClient)
+        await services_manager._reload_service(ApiClient)
+
+    return maker
+
+
+@pytest.fixture
+async def fake_http_client_service(
+    fake_http_client_service_maker: t.Callable,
     services_manager: ServicesManager,
 ) -> t.Any:
-    class FakeHttpClient(MinimalService):
-        name = "http_client"
-
-        async def open(self) -> None:
-            self.session = http_client_mock.client()
-
-        async def close(self) -> None:
-            pass
-
-    await services_manager._reload_service(FakeHttpClient)
-    await services_manager._reload_service(ApiClient)
+    return await fake_http_client_service_maker(services_manager=services_manager)
 
 
 class InMemoryCursorsFetcher(CursorsStatesFetcher):

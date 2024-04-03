@@ -5,6 +5,7 @@ from typing import Type
 from typing import TypeVar
 from typing import cast
 
+import dataclasses
 import inspect
 import os
 from collections.abc import Iterable
@@ -155,6 +156,8 @@ def load_config_interface(
         if is_leaf_type(typ):
             config_value = get_config_value(layers, name, value)
             if config_value is _MISSING:
+                config_value = get_default_value(interface, name)
+            if config_value is _MISSING:
                 if name not in config:
                     raise ValueError(f"Missing config key {key_path}")
             elif not check_type(config_value, typ, interface):
@@ -218,6 +221,25 @@ def get_attr(obj: Any, name: str) -> Any:
     if k is _MISSING:
         return k
     return getattr(obj, k, _MISSING)
+
+
+def get_field(obj: Any, name: str) -> Any:
+    if not dataclasses.is_dataclass(obj):
+        return None
+    return obj.__dataclass_fields__.get(name)
+
+
+def get_default_value(obj: Any, name: str) -> Any:
+    if not (field := get_field(obj, name)):
+        return _MISSING
+
+    if field.default is not dataclasses.MISSING:
+        return field.default
+
+    if field.default_factory is not dataclasses.MISSING:
+        return field.default_factory()
+
+    return _MISSING
 
 
 def get_prop_type(interface: Any, name: str, value: Any) -> Any:
