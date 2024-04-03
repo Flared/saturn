@@ -30,9 +30,9 @@ from tests.utils import HttpClientMock
 from tests.worker.conftest import InMemoryCursorsFetcher
 
 H = {
-    "a": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-    "b": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-    "c": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
+    "a": "sha256:ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+    "b": "sha256:3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+    "c": "sha256:2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
 }
 
 
@@ -88,9 +88,9 @@ async def test_job_state_update(
                             "completed_at": utcnow(),
                         },
                         "cursors_states": {
-                            "a": {"x": "1"},
-                            "b": {"x": "2"},
-                            "c": {"x": "3"},
+                            H["a"]: {"x": "1"},
+                            H["b"]: {"x": "2"},
+                            H["c"]: {"x": "3"},
                         },
                         "cursor": None,
                     },

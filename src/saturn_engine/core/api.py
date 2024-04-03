@@ -129,7 +129,7 @@ class JobCompletion:
 @dataclasses.dataclass
 class JobState:
     cursor: t.Optional[Cursor] = None
-    cursors_states: dict[Cursor, dict] = dataclasses.field(default_factory=dict)
+    cursors_states: dict[CursorStateKey, dict] = dataclasses.field(default_factory=dict)
     completion: t.Optional[JobCompletion] = None
 
 

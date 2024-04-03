@@ -19,7 +19,9 @@ class JobCompletion(api.JobCompletion):
 
 
 @dataclasses.dataclass
-class JobState(api.JobState):
+class JobState:
+    cursor: t.Optional[Cursor] = None
+    cursors_states: dict[Cursor, dict] = dataclasses.field(default_factory=dict)
     completion: t.Optional[JobCompletion] = None
 
     def merge(self, new: "JobState") -> "JobState":
@@ -35,7 +37,7 @@ class JobState(api.JobState):
 
 
 @dataclasses.dataclass
-class JobsStates(api.JobsStates):
+class JobsStates:
     jobs: dict[JobId, JobState] = dataclasses.field(
         default_factory=lambda: defaultdict(JobState)
     )
