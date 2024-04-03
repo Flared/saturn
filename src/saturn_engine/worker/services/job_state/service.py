@@ -8,6 +8,7 @@ from collections import defaultdict
 from saturn_engine.client.worker_manager import WorkerManagerClient
 from saturn_engine.core import Cursor
 from saturn_engine.core import JobId
+from saturn_engine.core import api
 from saturn_engine.core.api import FetchCursorsStatesInput
 from saturn_engine.core.api import JobsStatesSyncInput
 from saturn_engine.core.api import QueueItemWithState
@@ -37,12 +38,14 @@ class CursorFormat(enum.Enum):
     SHA256 = "sha256"
 
     def format(self, cursor: Cursor) -> CursorStateKey:
+        key: str
         if self is CursorFormat.RAW:
-            return CursorStateKey(cursor)
+            key = cursor
         elif self is CursorFormat.SHA256:
-            return CursorStateKey(hashlib.sha256(cursor.encode()).hexdigest())
+            key = "sha256:" + hashlib.sha256(cursor.encode()).hexdigest()
         else:
             assert_never(self)
+        return CursorStateKey(key)
 
 
 @dataclasses.dataclass
@@ -253,10 +256,24 @@ class JobStateService(Service[Services, Options]):
 
     async def flush_state(self, state: JobsStates) -> None:
         # Have to cast the job states to dict since defaultdict break dataclasses.
-        state = dataclasses.replace(state, jobs=dict(state.jobs))
-        await self.services.api_client.client.sync(JobsStatesSyncInput(state=state))
+        api_state = self._prepare_jobs_states(state)
+        await self.services.api_client.client.sync(JobsStatesSyncInput(state=api_state))
 
     async def close(self) -> None:
         self.logger.info("Closing")
         self._maybe_flush()
         await self._delayed_flush.flush()
+
+    def _prepare_jobs_states(self, states: JobsStates) -> api.JobsStates:
+        jobs = {}
+        for job, state in states.jobs.items():
+            formatted_cursors_states = {
+                self.options.save_cursor_format.format(k): v
+                for k, v in state.cursors_states.items()
+            }
+            jobs[job] = api.JobState(
+                cursor=state.cursor,
+                cursors_states=formatted_cursors_states,
+                completion=state.completion,
+            )
+        return api.JobsStates(jobs=jobs)
