@@ -47,7 +47,7 @@ class HangingTopic(Topic):
     async def publish(self, message: TopicMessage, wait: bool) -> bool:
         try:
             await asyncio.Event().wait()
-        except BaseException as e:
+        except BaseException as e:  # noqa: B036
             self.publish_result = e
         finally:
             self.publish_done.set()
