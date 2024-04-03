@@ -14,8 +14,7 @@ T = t.TypeVar("T", bound=RabbitMQTopic)
 
 
 class RabbitMQTopicMaker(t.Protocol):
-    async def __call__(self, klass: t.Type[T], **kwargs: t.Any) -> T:
-        ...
+    async def __call__(self, klass: t.Type[T], **kwargs: t.Any) -> T: ...
 
 
 async def ensure_clean_queue(

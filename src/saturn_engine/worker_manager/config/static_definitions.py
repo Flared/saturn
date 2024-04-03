@@ -23,6 +23,6 @@ class StaticDefinitions:
         default_factory=dict
     )
     resources: dict[str, ResourceItem] = dataclasses.field(default_factory=dict)
-    resources_by_type: dict[
-        str, list[t.Union[ResourceItem, ResourcesProviderItem]]
-    ] = dataclasses.field(default_factory=lambda: defaultdict(list))
+    resources_by_type: dict[str, list[t.Union[ResourceItem, ResourcesProviderItem]]] = (
+        dataclasses.field(default_factory=lambda: defaultdict(list))
+    )

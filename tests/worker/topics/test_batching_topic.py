@@ -83,8 +83,7 @@ async def test_batching_topic_flush_timeout() -> None:
 
 class NestedTestTopic(Topic):
     @dataclasses.dataclass
-    class Options:
-        ...
+    class Options: ...
 
     def __init__(self, options: Options, services: Services, **kwargs: object) -> None:
         self.entered_context_managers: list[int] = []
