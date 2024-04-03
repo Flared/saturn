@@ -96,9 +96,9 @@ def compile_static_definitions(
             uncompied_resources_provider.data, ResourcesProvider
         )
         resources_provider_item = resources_provider.to_core_object()
-        definitions.resources_providers[
-            resources_provider_item.name
-        ] = resources_provider_item
+        definitions.resources_providers[resources_provider_item.name] = (
+            resources_provider_item
+        )
         definitions.resources_by_type[resources_provider_item.resource_type].append(
             resources_provider_item
         )
