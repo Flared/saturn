@@ -17,7 +17,9 @@ saturn\_engine.worker.services.job\_state.service
 
    .. autosummary::
    
+      CursorFormat
       CursorsStatesFetcher
+      FormattedRequest
       JobStateService
       Options
       Services
