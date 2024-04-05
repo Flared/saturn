@@ -12,7 +12,7 @@ from tests.utils import TimeForwardLoop
 
 @pytest.mark.asyncio
 async def test_periodic_inventory(
-    event_loop: TimeForwardLoop,
+    running_event_loop: TimeForwardLoop,
     frozen_time: FreezeTime,
 ) -> None:
     frozen_time.move_to(datetime.datetime.fromisoformat("1970-01-01T00:00:00+00:00"))
@@ -54,7 +54,7 @@ async def test_periodic_inventory(
 @pytest.mark.asyncio
 async def test_periodic_end_date(
     frozen_time: FreezeTime,
-    event_loop: TimeForwardLoop,
+    running_event_loop: TimeForwardLoop,
 ) -> None:
     frozen_time.move_to(datetime.datetime.fromisoformat("1970-01-01T00:00:00+00:00"))
     start_date = utcnow()

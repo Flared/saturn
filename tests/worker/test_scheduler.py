@@ -17,7 +17,7 @@ from saturn_engine.worker.executors.scheduler import Scheduler
 
 @pytest.fixture
 async def scheduler(
-    event_loop: asyncio.AbstractEventLoop,
+    running_event_loop: asyncio.AbstractEventLoop,
 ) -> AsyncIterator[Scheduler[object]]:
     _scheduler: Scheduler[object] = Scheduler()
     yield _scheduler
@@ -33,7 +33,7 @@ def make_schedulable(iterable: AsyncGenerator[T, None]) -> Schedulable[T]:
 
 @pytest.mark.asyncio
 async def test_scheduler(
-    scheduler: Scheduler[object], event_loop: asyncio.AbstractEventLoop
+    scheduler: Scheduler[object], running_event_loop: asyncio.AbstractEventLoop
 ) -> None:
     schedulable1 = make_schedulable(
         iterable=aiter2agen(alib.cycle([sentinel.schedulable1]))

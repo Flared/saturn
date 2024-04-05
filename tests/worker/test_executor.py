@@ -74,21 +74,21 @@ class FakeFailingExecutor(FakeExecutor):
 @pytest.mark.asyncio
 async def test_base_executor(
     executable_maker: Callable[[], ExecutableMessage],
-    event_loop: TimeForwardLoop,
+    running_event_loop: TimeForwardLoop,
     executor_queue_maker: Callable[..., ExecutorQueue],
 ) -> None:
     executor = FakeExecutor()
     executor.concurrency = 5
     executor_manager = executor_queue_maker(executor=executor)
 
-    async with event_loop.until_idle():
+    async with running_event_loop.until_idle():
         for _ in range(10):
             asyncio.create_task(executor_manager.submit(executable_maker()))
 
     assert executor.processing == 5
     assert executor.processed == 0
 
-    async with event_loop.until_idle():
+    async with running_event_loop.until_idle():
         for _ in range(10):
             executor.execute_semaphore.release()
     assert executor.processed == 10
@@ -100,7 +100,7 @@ def pipeline(resource: FakeResource) -> None: ...
 @pytest.mark.asyncio
 async def test_executor_wait_resources_and_queue(
     executable_maker: Callable[..., ExecutableMessage],
-    event_loop: TimeForwardLoop,
+    running_event_loop: TimeForwardLoop,
     executor_queue_maker: Callable[..., ExecutorQueue],
 ) -> None:
     executor = FakeExecutor()
@@ -121,7 +121,7 @@ async def test_executor_wait_resources_and_queue(
     # Set up a scenario where there's 2 resource and 1 executor slot.
     # Queuing 3 items should have 1 waiting on the executor and 1 waiting on
     # the resources.
-    async with event_loop.until_idle():
+    async with running_event_loop.until_idle():
         for _ in range(2):
             await executor_manager.submit(executable_maker())
 
@@ -129,34 +129,34 @@ async def test_executor_wait_resources_and_queue(
     assert not parker.locked()
 
     # Submit another task, stuck locking a resource, park the processable.
-    async with event_loop.until_idle():
+    async with running_event_loop.until_idle():
         await executor_manager.submit(executable_maker())
 
     assert executor.processing == 1
     assert parker.locked()
 
     # Process the task pending in the executor and release the resource.
-    async with event_loop.until_idle():
+    async with running_event_loop.until_idle():
         executor.execute_semaphore.release()
     assert executor.processed == 1
     assert executor.processing == 2
     assert not parker.locked()
 
     # Process the other task, release the resource.
-    async with event_loop.until_idle():
+    async with running_event_loop.until_idle():
         executor.execute_semaphore.release()
     assert executor.processed == 2
     assert executor.processing == 3
     assert not parker.locked()
 
-    async with event_loop.until_idle():
+    async with running_event_loop.until_idle():
         executor.execute_semaphore.release()
 
 
 @pytest.mark.asyncio
 async def test_executor_wait_pusblish_and_queue(
     executable_maker: Callable[..., ExecutableMessage],
-    event_loop: TimeForwardLoop,
+    running_event_loop: TimeForwardLoop,
     executor_queue_maker: Callable[..., ExecutorQueue],
 ) -> None:
     executor = FakeExecutor()
@@ -180,7 +180,7 @@ async def test_executor_wait_pusblish_and_queue(
     # Set up a scenario where there's 2 task, 1 executor slot and 1 publish slot.
     # Queuing 2 items should have 1 waiting on the executor and 1 waiting on publish
     # the resources.
-    async with event_loop.until_idle():
+    async with running_event_loop.until_idle():
         for _ in range(2):
             await executor_manager.submit(executable_maker())
 
@@ -190,7 +190,7 @@ async def test_executor_wait_pusblish_and_queue(
     assert not parker.locked()
 
     # Process one task, take publish slot.
-    async with event_loop.until_idle():
+    async with running_event_loop.until_idle():
         executor.execute_semaphore.release()
 
     assert executor.processing == 2
@@ -199,7 +199,7 @@ async def test_executor_wait_pusblish_and_queue(
     assert not parker.locked()
 
     # Process the other task, get stuck on publishing
-    async with event_loop.until_idle():
+    async with running_event_loop.until_idle():
         executor.execute_semaphore.release()
 
     assert executor.processing == 2
@@ -208,7 +208,7 @@ async def test_executor_wait_pusblish_and_queue(
     assert parker.locked()
 
     # Pop the item in the publish queue, leaving room for the next item.
-    async with event_loop.until_idle():
+    async with running_event_loop.until_idle():
         assert output_queue.get_nowait().args == {"n": 1}
 
     assert executor.processing == 2
@@ -217,7 +217,7 @@ async def test_executor_wait_pusblish_and_queue(
     assert not parker.locked()
 
     # Pop the other item in the publish queue, clearing the queue.
-    async with event_loop.until_idle():
+    async with running_event_loop.until_idle():
         assert output_queue.get_nowait().args == {"n": 2}
 
     assert executor.processing == 2
@@ -229,7 +229,7 @@ async def test_executor_wait_pusblish_and_queue(
 @pytest.mark.asyncio
 async def test_executor_error_handler(
     fake_executable_maker_with_output: Callable[..., ExecutableMessage],
-    event_loop: TimeForwardLoop,
+    running_event_loop: TimeForwardLoop,
     executor_queue_maker: Callable[..., ExecutorQueue],
 ) -> None:
     executor = FakeFailingExecutor()
@@ -255,7 +255,7 @@ async def test_executor_error_handler(
     xmsg._executing_context.push_async_exit(collect_exit)
 
     # Execute our failing message
-    async with event_loop.until_idle():
+    async with running_event_loop.until_idle():
         asyncio.create_task(executor_manager.submit(xmsg))
 
     # Our pipeline should cause a test exception and publish it in its channel
@@ -287,7 +287,7 @@ async def test_executor_error_handler(
 @pytest.mark.asyncio
 async def test_executor_error_handler_unhandled(
     fake_executable_maker_with_output: Callable[..., ExecutableMessage],
-    event_loop: TimeForwardLoop,
+    running_event_loop: TimeForwardLoop,
     executor_queue_maker: Callable[..., ExecutorQueue],
 ) -> None:
     executor = FakeFailingExecutor()
@@ -314,7 +314,7 @@ async def test_executor_error_handler_unhandled(
     xmsg._context.push_async_exit(mock.context)
 
     # Execute our failing message
-    async with event_loop.until_idle():
+    async with running_event_loop.until_idle():
         asyncio.create_task(executor_manager.submit(xmsg))
 
     # A message is outputed to error topic.
@@ -334,7 +334,7 @@ async def test_executor_error_handler_unhandled(
 @pytest.mark.asyncio
 async def test_executor_error_handler_republish(
     fake_executable_maker_with_output: Callable[..., ExecutableMessage],
-    event_loop: TimeForwardLoop,
+    running_event_loop: TimeForwardLoop,
     executor_queue_maker: Callable[..., ExecutorQueue],
 ) -> None:
     executor = FakeFailingExecutor()
@@ -373,7 +373,7 @@ async def test_executor_error_handler_republish(
     xmsg._executing_context.push_async_exit(collect_exit)
 
     # Execute our failing message
-    async with event_loop.until_idle():
+    async with running_event_loop.until_idle():
         asyncio.create_task(executor_manager.submit(xmsg))
 
     # The error should be republished to the `retry` channel.
@@ -391,7 +391,7 @@ async def test_executor_error_handler_republish(
         output=output_topics,
     )
     xmsg._executing_context.push_async_exit(collect_exit)
-    async with event_loop.until_idle():
+    async with running_event_loop.until_idle():
         asyncio.create_task(executor_manager.submit(xmsg))
 
     # The error should reach max retry and not republish.

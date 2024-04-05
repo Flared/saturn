@@ -277,7 +277,7 @@ async def test_join_sub_inventories() -> None:
 
 
 async def test_concurrent_join_inventories(
-    event_loop: TimeForwardLoop,
+    running_event_loop: TimeForwardLoop,
 ) -> None:
     inventory = JoinInventory.from_options(
         {
@@ -300,7 +300,7 @@ async def test_concurrent_join_inventories(
     async with alib.scoped_iter(inventory.run()) as run, TasksGroup() as group:
         items = []
         while True:
-            async with event_loop.until_idle():
+            async with running_event_loop.until_idle():
                 task = group.create_task(alib.anext(run))
             if task.done():
                 items.append(task.result())
@@ -320,7 +320,7 @@ async def test_concurrent_join_inventories(
             async with sub_items.pop(1):
                 pass
 
-        await event_loop.wait_idle()
+        await running_event_loop.wait_idle()
         assert not task.done()
 
         assert json.loads(inventory.cursor) == {
@@ -357,7 +357,7 @@ async def test_concurrent_join_inventories(
 
 
 async def test_nested_join_inventory(
-    event_loop: TimeForwardLoop,
+    running_event_loop: TimeForwardLoop,
 ) -> None:
     inventory = JoinInventory.from_options(
         {
@@ -395,7 +395,7 @@ async def test_nested_join_inventory(
         # root_concurrency.
         items = []
         while True:
-            async with event_loop.until_idle():
+            async with running_event_loop.until_idle():
                 task = group.create_task(alib.anext(run))
             if task.done():
                 items.append(task.result())
@@ -413,10 +413,10 @@ async def test_nested_join_inventory(
             async with item:
                 pass
 
-        await event_loop.wait_idle()
+        await running_event_loop.wait_idle()
         items.append(await task)
         while True:
-            async with event_loop.until_idle():
+            async with running_event_loop.until_idle():
                 task = group.create_task(alib.anext(run))
             if task.done():
                 items.append(task.result())

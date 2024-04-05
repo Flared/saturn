@@ -23,8 +23,8 @@ from .utils.tcp_proxy import TcpProxy
 
 
 @pytest.fixture
-def http_client_mock(event_loop: TimeForwardLoop) -> HttpClientMock:
-    return HttpClientMock(loop=event_loop)
+def http_client_mock(running_event_loop: TimeForwardLoop) -> HttpClientMock:
+    return HttpClientMock(loop=running_event_loop)
 
 
 FreezeTime = t.Union[FrozenDateTimeFactory, StepTickTimeFactory]
@@ -79,6 +79,11 @@ def event_loop(
         # Allow collecting and logging potential task not awaited.
         gc.collect()
         loop.close()
+
+
+@pytest.fixture
+async def running_event_loop() -> TimeForwardLoop:
+    return t.cast(TimeForwardLoop, asyncio.get_running_loop())
 
 
 def pipeline() -> None: ...

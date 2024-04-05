@@ -14,7 +14,7 @@ from tests.utils import TimeForwardLoop
 
 
 @pytest.mark.asyncio
-async def test_blocking_topic(event_loop: TimeForwardLoop) -> None:
+async def test_blocking_topic(running_event_loop: TimeForwardLoop) -> None:
     event = threading.Event()
 
     class FakeTopic(BlockingTopic):
@@ -62,7 +62,7 @@ async def test_blocking_topic(event_loop: TimeForwardLoop) -> None:
         TopicMessage(id=MessageId("3"), args={"block": True}), wait=False
     )
 
-    async with event_loop.until_idle():
+    async with running_event_loop.until_idle():
         publish_task1 = asyncio.create_task(
             topic.publish(
                 TopicMessage(id=MessageId("4"), args={"block": True}), wait=True
@@ -84,7 +84,7 @@ async def test_blocking_topic(event_loop: TimeForwardLoop) -> None:
 
 
 @pytest.mark.asyncio
-async def test_blocking_topic_error(event_loop: TimeForwardLoop) -> None:
+async def test_blocking_topic_error(running_event_loop: TimeForwardLoop) -> None:
     class FakeTopic(BlockingTopic):
         def __init__(self) -> None:
             super().__init__()
