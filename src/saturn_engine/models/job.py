@@ -5,13 +5,13 @@ from datetime import datetime
 from sqlalchemy import CheckConstraint
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 
 import saturn_engine.models.queue as queue_model
 from saturn_engine.core import Cursor
 from saturn_engine.core import JobId
 from saturn_engine.core.api import JobItem
+from saturn_engine.models.compat import mapped_column
 from saturn_engine.utils import utcnow
 
 from .base import Base
