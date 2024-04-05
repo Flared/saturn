@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Mapped
-from sqlalchemy.orm import mapped_column
 from sqlalchemy.sql.sqltypes import Text
 from sqlalchemy.types import JSON
+
+from saturn_engine.models.compat import mapped_column
 
 from .base import Base
 
