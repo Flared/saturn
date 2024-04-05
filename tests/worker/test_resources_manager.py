@@ -43,7 +43,9 @@ async def test_resources_manager_acquire() -> None:
 
 
 @pytest.mark.asyncio
-async def test_resources_manager_acquire_many(event_loop: TimeForwardLoop) -> None:
+async def test_resources_manager_acquire_many(
+    running_event_loop: TimeForwardLoop,
+) -> None:
     r1 = ResourceData(name="r1", type="R1", data={})
     r2 = ResourceData(name="r2", type="R2", data={})
     r3 = ResourceData(name="r3", type="R3", data={})
@@ -75,7 +77,7 @@ async def test_resources_manager_acquire_many(event_loop: TimeForwardLoop) -> No
     # Philosopher 1 lock r1 and r2.
     # Philosopher 2 lock r2 and r3
     # Philosopher 3 lock r3 and r1
-    async with event_loop.until_idle():
+    async with running_event_loop.until_idle():
         philosophers = {
             asyncio.create_task(resources_manager.acquire_many(["R1", "R2"])),
             asyncio.create_task(resources_manager.acquire_many(["R2", "R3"])),
@@ -99,7 +101,9 @@ async def test_resources_manager_acquire_many(event_loop: TimeForwardLoop) -> No
 
 
 @pytest.mark.asyncio
-async def test_resources_manager_release_later(event_loop: TimeForwardLoop) -> None:
+async def test_resources_manager_release_later(
+    running_event_loop: TimeForwardLoop,
+) -> None:
     r1 = ResourceData(name="r1", type="R", data={})
     resources_manager = ResourcesManager()
     await resources_manager.add(r1)
@@ -118,7 +122,9 @@ async def test_resources_manager_release_later(event_loop: TimeForwardLoop) -> N
 
 
 @pytest.mark.asyncio
-async def test_resources_manager_default_delay(event_loop: TimeForwardLoop) -> None:
+async def test_resources_manager_default_delay(
+    running_event_loop: TimeForwardLoop,
+) -> None:
     r1 = ResourceData(name="r1", type="R", data={}, default_delay=1)
     resources_manager = ResourcesManager()
     await resources_manager.add(r1)
@@ -138,7 +144,7 @@ async def test_resources_manager_default_delay(event_loop: TimeForwardLoop) -> N
 
 @pytest.mark.asyncio
 async def test_resources_manager_with_hourly_rate_limiter(
-    event_loop: TimeForwardLoop,
+    running_event_loop: TimeForwardLoop,
 ) -> None:
     r1 = ResourceData(
         name="r1",
@@ -181,7 +187,7 @@ async def test_resources_manager_with_hourly_rate_limiter(
 
 @pytest.mark.asyncio
 async def test_resources_manager_with_daily_rate_limiter(
-    event_loop: TimeForwardLoop,
+    running_event_loop: TimeForwardLoop,
 ) -> None:
     r1 = ResourceData(
         name="r1",
@@ -247,7 +253,7 @@ async def test_resources_manager_with_daily_rate_limiter(
 
 @pytest.mark.asyncio
 async def test_resources_manager_with_hourly_rate_limit_and_wait(
-    event_loop: TimeForwardLoop,
+    running_event_loop: TimeForwardLoop,
 ) -> None:
     r1 = ResourceData(
         name="r1",

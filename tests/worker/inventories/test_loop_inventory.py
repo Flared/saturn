@@ -39,16 +39,16 @@ async def test_loop_inventory_max_iterations() -> None:
     assert json.loads(c) == {"v": 1, "a": "19"}
 
 
-async def test_loop_concurrency(event_loop: TimeForwardLoop) -> None:
+async def test_loop_concurrency(running_event_loop: TimeForwardLoop) -> None:
     inventory = LoopInventory(options=LoopInventory.Options(max_iterations=20))
 
     async with alib.scoped_iter(inventory.run()) as run, TasksGroup() as group:
         item = await alib.anext(run)
-        async with event_loop.until_idle():
+        async with running_event_loop.until_idle():
             next_item = group.create_task(alib.anext(run))
         assert not next_item.done()
 
-        async with event_loop.until_idle():
+        async with running_event_loop.until_idle():
             async with item:
                 pass
         assert next_item.done()

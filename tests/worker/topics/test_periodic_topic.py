@@ -10,8 +10,10 @@ from tests.utils import TimeForwardLoop
 
 
 @pytest.mark.asyncio
-async def test_periodic_topic(event_loop: TimeForwardLoop, frozen_time: t.Any) -> None:
-    begin_at = event_loop.time()
+async def test_periodic_topic(
+    running_event_loop: TimeForwardLoop, frozen_time: t.Any
+) -> None:
+    begin_at = running_event_loop.time()
     topic = PeriodicTopic.from_options({"interval": "*/5 * * * *"})
     async with alib.scoped_iter(topic.run()) as scoped_topic_iter:
         items = await alib.list(alib.islice(scoped_topic_iter, 5))
@@ -24,4 +26,4 @@ async def test_periodic_topic(event_loop: TimeForwardLoop, frozen_time: t.Any) -
         ]
 
     await topic.close()
-    assert event_loop.time() - begin_at >= 60 * 5 * 5
+    assert running_event_loop.time() - begin_at >= 60 * 5 * 5

@@ -101,7 +101,7 @@ def test_config_override(
 
 async def test_executable_close(
     executable_queue_maker: t.Callable[..., ExecutableQueue],
-    event_loop: TimeForwardLoop,
+    running_event_loop: TimeForwardLoop,
 ) -> None:
     output_topic = MemoryTopic(MemoryTopic.Options(name="output_topic"))
     output_topic.close = AsyncMock()  # type: ignore[assignment]
@@ -118,7 +118,7 @@ async def test_executable_close(
 
     xmsg_ctx = await alib.anext(xmsg_iter)
     async with xmsg_ctx._context:
-        async with event_loop.until_idle():
+        async with running_event_loop.until_idle():
             close_task = asyncio.create_task(executable_queue.close())
         input_topic.close.assert_awaited()
         output_topic.close.assert_not_called()
@@ -152,7 +152,7 @@ async def test_executable_context_error(
 async def test_execurablt_concurrency(
     executable_queue_maker: t.Callable[..., ExecutableQueue],
     fake_queue_item: QueueItemWithState,
-    event_loop: TimeForwardLoop,
+    running_event_loop: TimeForwardLoop,
 ) -> None:
     topic = StaticTopic(
         options=StaticTopic.Options(
@@ -166,15 +166,15 @@ async def test_execurablt_concurrency(
     async with alib.scoped_iter(xqueue.run()) as xrun, AsyncExitStack() as stack:
         msg1 = await xrun.__anext__()
         msg2 = await xrun.__anext__()
-        async with event_loop.until_idle():
+        async with running_event_loop.until_idle():
             next_task = asyncio.create_task(alib.anext(xrun))
         assert not next_task.done()
 
-        async with event_loop.until_idle():
+        async with running_event_loop.until_idle():
             await stack.enter_async_context(msg1._context)
         assert not next_task.done()
 
-        async with event_loop.until_idle():
+        async with running_event_loop.until_idle():
             async with stack:
                 pass
         assert next_task.done()

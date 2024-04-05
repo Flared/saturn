@@ -340,8 +340,8 @@ def fake_resources_provider_class() -> str:
 
 
 @pytest.fixture
-async def rabbitmq_url(event_loop: TimeForwardLoop, config: Config) -> str:
-    event_loop.forward_time = False
+async def rabbitmq_url(running_event_loop: TimeForwardLoop, config: Config) -> str:
+    running_event_loop.forward_time = False
     url = config.c.rabbitmq.url
     try:
         connection = await aio_pika.connect(url)
