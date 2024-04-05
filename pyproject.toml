@@ -68,7 +68,7 @@ tracer = [
   "opentelemetry-sdk",
 ]
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 nox = "*"
 black = "24.3.0"
 flake8 = "*"
