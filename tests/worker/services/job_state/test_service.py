@@ -150,7 +150,7 @@ async def test_job_state_fetch_cursors(
     states_1, states_2 = await asyncio.gather(fetch_1, fetch_2)
 
     assert states_1 == {"a": {"x": 1}, "b": {"x": 2}}
-    assert states_2 == {"c": None}
+    assert states_2 == {}
 
     http_client_mock.post(
         "http://127.0.0.1:5000/api/jobs/_states/fetch"
@@ -337,6 +337,7 @@ async def test_fetch_multiple_format(
         "cursors": {
             "job-1": {
                 "a": {"x": 1},
+                H["a"]: None,
                 H["b"]: {"x": 2},
             },
             "job-2": {
