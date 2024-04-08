@@ -98,7 +98,7 @@ class CursorsStatesFetcher:
         self.pending_queries: dict[JobId, set[Cursor]] = defaultdict(set)
         self._delayed_fetch = DelayedThrottle(self._do_fetch, delay=fetch_delay)
 
-    async def _do_fetch(self) -> dict[JobId, dict[Cursor, t.Optional[dict]]]:
+    async def _do_fetch(self) -> dict[JobId, dict[Cursor, dict]]:
         queries = self.pending_queries
         self.pending_queries = defaultdict(set)
 
@@ -118,7 +118,8 @@ class CursorsStatesFetcher:
             mapped_cursors[job_name] = {
                 fk: v
                 for k, v in cursor_states.items()
-                if (fk := formatted_cursors[job_name].map(k)) is not None
+                if v is not None
+                and (fk := formatted_cursors[job_name].map(k)) is not None
             }
         return mapped_cursors
 
