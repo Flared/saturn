@@ -38,9 +38,11 @@ def all_extras(session: Session) -> str:
 
 
 @nox_session(python=python_all_versions)
-def tests(session: Session) -> None:
+@nox.parametrize("sqlalchemy", ["1.4.52", "2.0.29"])
+def tests(session: Session, sqlalchemy: str) -> None:
     args = session.posargs
     session.install(".[worker-manager,structlog]", *tests_packages)
+    session._session.install(f"sqlalchemy=={sqlalchemy}")
     session.run(
         "pytest",
         "-vv",
