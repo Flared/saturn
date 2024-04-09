@@ -174,9 +174,9 @@ def sync_jobs_states(
         session.execute(cursors_stmt)
 
     if jobs_values:
-        session.execute(update(Job), jobs_values)
+        session.bulk_update_mappings(Job, jobs_values)  # type: ignore[arg-type]
     if queues_values:
-        session.execute(update(Queue), queues_values)
+        session.bulk_update_mappings(Queue, queues_values)  # type: ignore[arg-type]
 
 
 CursorsStates = dict[JobId, dict[CursorStateKey, t.Optional[dict]]]

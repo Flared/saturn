@@ -2,6 +2,7 @@ from typing import Optional
 
 import dataclasses
 
+import sqlalchemy as sa
 from sqlalchemy import Index
 from sqlalchemy import text
 from sqlalchemy.orm import Mapped
@@ -31,12 +32,12 @@ class Queue(Base):
         ),
     )
 
-    name: Mapped[str] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(sa.Text, primary_key=True)
     assigned_at = mapped_column(DateTime(timezone=True))
-    assigned_to: Mapped[Optional[str]] = mapped_column()
+    assigned_to: Mapped[Optional[str]] = mapped_column(sa.Text)
     job = relationship(lambda: job_model.Job, uselist=False, back_populates="queue")
     _queue_item: Optional[QueueItemWithState] = None
-    enabled: Mapped[bool] = mapped_column(default=True, nullable=False)
+    enabled: Mapped[bool] = mapped_column(sa.Boolean, default=True, nullable=False)
 
     @property
     def queue_item(self) -> QueueItemWithState:

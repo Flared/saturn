@@ -2,6 +2,7 @@ from typing import Optional
 
 from datetime import datetime
 
+import sqlalchemy as sa
 from sqlalchemy import CheckConstraint
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped
@@ -27,18 +28,20 @@ class Job(Base):
         ),
     )
 
-    name: Mapped[str] = mapped_column(primary_key=True)
-    cursor: Mapped[Optional[str]] = mapped_column(nullable=True)
+    name: Mapped[str] = mapped_column(sa.Text, primary_key=True)
+    cursor: Mapped[Optional[str]] = mapped_column(sa.Text, nullable=True)
     completed_at: Mapped[Optional[datetime]] = mapped_column(UTCDateTime, nullable=True)
     started_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
-    queue_name: Mapped[str] = mapped_column(ForeignKey("queues.name"), nullable=False)
-    error: Mapped[Optional[str]] = mapped_column(nullable=True)
+    queue_name: Mapped[str] = mapped_column(
+        sa.Text, ForeignKey("queues.name"), nullable=False
+    )
+    error: Mapped[Optional[str]] = mapped_column(sa.Text, nullable=True)
     queue: Mapped[queue_model.Queue] = relationship(
         lambda: queue_model.Queue,
         uselist=False,
         back_populates="job",
     )
-    job_definition_name: Mapped[Optional[str]] = mapped_column(nullable=True)
+    job_definition_name: Mapped[Optional[str]] = mapped_column(sa.Text, nullable=True)
 
     def __init__(
         self,
