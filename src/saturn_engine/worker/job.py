@@ -31,15 +31,24 @@ class Job(Topic):
         self.state_service = services.cast_service(JobStateService)
 
     async def run(self) -> AsyncGenerator[TopicOutput, None]:
+        log_context = {
+            "data": {
+                "job": {"name": self.queue_item.name},
+                "pipeline": self.queue_item.pipeline.info.name,
+            }
+        }
         cursor = self.queue_item.state.cursor
 
         try:
             async for item in self.inventory.run(after=cursor):
                 yield self.item_to_topic(item)
 
+            self.logger.info("Job inventory completed", extra=log_context)
+            await self.inventory.join()
             self.state_service.set_job_completed(self.queue_item.name)
+            self.logger.info("Job completed", extra=log_context)
         except Exception as e:
-            self.logger.exception("Exception raised from job")
+            self.logger.exception("Exception raised from job", extra=log_context)
             self.state_service.set_job_failed(self.queue_item.name, error=e)
 
     @asynccontextmanager
