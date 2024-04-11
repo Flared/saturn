@@ -8,6 +8,7 @@ import asyncstdlib as alib
 import pytest
 
 from saturn_engine.core.api import QueueItemWithState
+from saturn_engine.utils.asyncutils import TasksGroup
 from saturn_engine.worker.executors.executable import ExecutableQueue
 from saturn_engine.worker.inventory import Cursor
 from saturn_engine.worker.inventory import Inventory
@@ -15,6 +16,7 @@ from saturn_engine.worker.inventory import Item
 from saturn_engine.worker.job import Job
 from saturn_engine.worker.services.job_state.service import JobStateService
 from saturn_engine.worker.services.manager import ServicesManager
+from tests.utils import TimeForwardLoop
 
 
 class FakeInventory(Inventory):
@@ -71,6 +73,7 @@ async def test_inventory_set_cursor_after_completed(
     services_manager: ServicesManager,
     fake_queue_item: QueueItemWithState,
     executable_queue_maker: t.Callable[..., ExecutableQueue],
+    running_event_loop: TimeForwardLoop,
 ) -> None:
     def fail() -> None:
         raise ValueError()
@@ -100,13 +103,18 @@ async def test_inventory_set_cursor_after_completed(
     xqueue = executable_queue_maker(definition=fake_queue_item, topic=job)
 
     xmsg_ctxs: list[AsyncExitStack] = []
-    async with alib.scoped_iter(xqueue.run()) as xrun:
+    async with alib.scoped_iter(xqueue.run()) as xrun, TasksGroup() as group:
         async for xmsg in alib.islice(xrun, 7):
             async with AsyncExitStack() as stack:
                 await stack.enter_async_context(xmsg._context)
                 xmsg_ctxs.append(stack.pop_all())
 
+        async with running_event_loop.until_idle():
+            complete_task = group.create_task(alib.anext(xrun))
+        assert not complete_task.done()
+
         assert job_state_store.job_state(job_id).cursor is None
+        assert not job_state_store.job_state(job_id).completion
         assert len(xmsg_ctxs) == 7
 
         # .: Pending, R: Ready
@@ -117,6 +125,7 @@ async def test_inventory_set_cursor_after_completed(
             await xmsg_ctxs[2].aclose()
         await xmsg_ctxs[5].aclose()
         assert (cursor := job_state_store.job_state(job_id).cursor)
+        assert not job_state_store.job_state(job_id).completion
         assert json.loads(cursor) == {"v": 1, "p": ["2", "5"]}
 
         # .: Pending, R: Ready
@@ -126,6 +135,7 @@ async def test_inventory_set_cursor_after_completed(
         await xmsg_ctxs[3].aclose()
         await xmsg_ctxs[0].aclose()
         assert (cursor := job_state_store.job_state(job_id).cursor)
+        assert not job_state_store.job_state(job_id).completion
         assert json.loads(cursor) == {"v": 1, "a": "0", "p": ["2", "5"]}
 
         # .: Pending, R: Ready
@@ -134,6 +144,7 @@ async def test_inventory_set_cursor_after_completed(
         #    Message 2 is commited (Message 3 has no cursor)
         await xmsg_ctxs[1].aclose()
         assert (cursor := job_state_store.job_state(job_id).cursor)
+        assert not job_state_store.job_state(job_id).completion
         assert json.loads(cursor) == {"v": 1, "a": "2", "p": ["5"]}
 
         # .: Pending, R: Ready
@@ -143,4 +154,8 @@ async def test_inventory_set_cursor_after_completed(
         await xmsg_ctxs[6].aclose()
         await xmsg_ctxs[4].aclose()
         assert (cursor := job_state_store.job_state(job_id).cursor)
+        assert not job_state_store.job_state(job_id).completion
         assert json.loads(cursor) == {"v": 1, "a": "6"}
+
+        with pytest.raises(StopAsyncIteration):
+            await complete_task
