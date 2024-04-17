@@ -1,7 +1,6 @@
 import typing as t
 
 import dataclasses
-import functools
 import importlib
 import inspect
 import sys
@@ -9,6 +8,8 @@ import threading
 from collections.abc import Iterable
 
 import typing_inspect
+
+from .cache import threadsafe_cache
 
 R = t.TypeVar("R")
 
@@ -143,7 +144,7 @@ def import_name(name: str) -> t.Any:
     raise ModuleNotFoundError(name)
 
 
-@functools.cache
+@threadsafe_cache
 def signature(func: t.Callable) -> inspect.Signature:
     _signature = inspect.signature(func)
     _signature = eval_annotations(func, _signature)
@@ -190,7 +191,7 @@ class BaseParamsDataclass(t.Generic[R]):
         return self._func(**args_dict, **kwargs)
 
 
-@functools.cache
+@threadsafe_cache
 def dataclass_from_params(func: t.Callable[..., R]) -> t.Type[BaseParamsDataclass[R]]:
     cls_name = func.__name__ + ".params"
     fields: list[tuple] = []

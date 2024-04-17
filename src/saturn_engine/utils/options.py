@@ -3,10 +3,11 @@ import typing as t
 import dataclasses
 import json
 from abc import abstractmethod
-from functools import cache
 
 import pydantic.v1
 import pydantic.v1.json
+
+from .cache import threadsafe_cache
 
 OptionsSchemaT = t.TypeVar("OptionsSchemaT", bound="OptionsSchema")
 T = t.TypeVar("T")
@@ -32,7 +33,7 @@ class ModelConfig(pydantic.v1.BaseConfig):
     arbitrary_types_allowed = True
 
 
-@cache
+@threadsafe_cache
 def schema_for(klass: t.Type) -> t.Type[pydantic.v1.BaseModel]:
     if issubclass(klass, pydantic.v1.BaseModel):
         return klass
