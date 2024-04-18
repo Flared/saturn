@@ -23,6 +23,7 @@ from saturn_engine.worker.services import Services
 from .. import Executor
 from . import EXECUTE_FUNC_NAME
 from . import TIMEOUT
+from . import TIMEOUT_DELAY
 from . import executor_healthcheck_key
 from . import healthcheck_interval
 from . import worker_healthcheck_key
@@ -41,6 +42,7 @@ class ARQExecutor(Executor):
         concurrency: int
         queue_name: str = "arq:queue"
         timeout: int = TIMEOUT
+        timeout_delay: int = TIMEOUT_DELAY
 
     def __init__(self, options: Options, services: Services) -> None:
         self.logger = getLogger(__name__, self)
@@ -103,7 +105,7 @@ class ARQExecutor(Executor):
             job = await (await self.redis_queue).enqueue_job(
                 EXECUTE_FUNC_NAME,
                 message.message.as_remote(),
-                _expires=options.timeout + 5,
+                _expires=options.timeout + options.timeout_delay,
                 _queue_name=options.queue_name,
             )
         except (OSError, RedisError):

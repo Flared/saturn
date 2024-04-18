@@ -1,4 +1,5 @@
 TIMEOUT = 1200
+TIMEOUT_DELAY = 60
 EXECUTE_FUNC_NAME = "remote_execute"
 
 healthcheck_interval = 10
