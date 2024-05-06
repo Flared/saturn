@@ -210,6 +210,7 @@ spec:
     config:
       job_state:
         cursors_states_enabled: true
+        cursors_states_namespace: example-namespace
       job:
         buffer_size: 5
 
