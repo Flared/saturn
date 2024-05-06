@@ -630,7 +630,7 @@ def test_sync_states(
                             "completed_at": "2020-01-01T01:02:03+04:00",
                             "error": "ValueError: boo",
                         },
-                    }
+                    },
                 }
             }
         },
@@ -649,7 +649,7 @@ def test_sync_states(
                         },
                     },
                     orphan_job.name: {"cursors_states": {"a": {"x": 1}}},
-                }
+                },
             }
         },
     )
@@ -677,6 +677,7 @@ def test_fetch_cursors_states(
     new_job: Job,
     orphan_job: Job,
 ) -> None:
+    custom_ns = "custom-namespace"
     resp = client.post(
         "/api/jobs/_states",
         json={
@@ -687,7 +688,12 @@ def test_fetch_cursors_states(
                             "a": {"x": 1},
                             "b": {"x": 2},
                         },
-                    }
+                    },
+                    custom_ns: {
+                        "cursors_states": {
+                            "c": {"x": 1},
+                        }
+                    },
                 }
             }
         },
@@ -702,6 +708,7 @@ def test_fetch_cursors_states(
                 new_job.name: ["a", "c"],
                 orphan_job.name: ["a"],
                 "do-not-exist": ["a"],
+                custom_ns: ["c", "d"],
             }
         },
     )
@@ -714,6 +721,10 @@ def test_fetch_cursors_states(
             },
             orphan_job.name: {"a": None},
             "do-not-exist": {"a": None},
+            custom_ns: {
+                "c": {"x": 1},
+                "d": None,
+            },
         }
     }
 

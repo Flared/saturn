@@ -4,6 +4,7 @@ from typing import Optional
 import time
 from datetime import datetime
 
+import sqlalchemy as sa
 from sqlalchemy import select
 from sqlalchemy import union_all
 from sqlalchemy import update
@@ -190,13 +191,19 @@ def fetch_cursors_states(
     fetch_stmts = []
     for job, cursors in query.items():
         fetch_stmts.append(
-            select(Job.name, JobCursorState)
+            select(JobCursorState, sa.func.coalesce(Job.name, job).label("name"))
             .join(
-                JobCursorState,
+                Job,
                 Job.job_definition_name == JobCursorState.job_definition_name,
+                isouter=True,
             )
             .where(
-                Job.name == job,
+                sa.or_(
+                    Job.name == job,
+                    sa.and_(
+                        Job.name.is_(None), JobCursorState.job_definition_name == job
+                    ),
+                ),
                 JobCursorState.cursor.in_(cursors),
             )
         )
