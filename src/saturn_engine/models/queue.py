@@ -47,19 +47,19 @@ class Queue(Base):
 
     def join_definitions(self, static_definitions: StaticDefinitions) -> None:
         if not self.job:
-            self._queue_item = dataclasses.replace(
-                static_definitions.jobs[self.job.name],
-                name=JobId(self.name),
-            ).with_state(state)
-            return
-
-        if self.job.job_definition_name is None:
             raise NotImplementedError("Only support Job queue")
 
         state = QueueItemState(
             cursor=Cursor(self.job.cursor) if self.job.cursor else None,
             started_at=self.job.started_at,
         )
+
+        if self.job.job_definition_name is None:
+            self._queue_item = dataclasses.replace(
+                static_definitions.jobs[self.job.name],
+                name=JobId(self.name),
+            ).with_state(state)
+            return
 
         self._queue_item = dataclasses.replace(
             static_definitions.job_definitions[
