@@ -62,8 +62,6 @@ class Queue(Base):
             return
 
         self._queue_item = dataclasses.replace(
-            static_definitions.job_definitions[
-                self.job.job_definition_name
-            ].template,
+            static_definitions.job_definitions[self.job.job_definition_name].template,
             name=JobId(self.name),
         ).with_state(state)
