@@ -114,7 +114,7 @@ class ARQExecutor(Executor):
 
         tasks = TasksGroup(name=f"saturn.arq.process_message({message.id})")
         result_task: asyncio.Task[PipelineResults] = tasks.create_task(
-            job.result(timeout=self.options.timeout)
+            job.result(timeout=options.timeout)
         )
         healthcheck_task = tasks.create_task(self.monitor_job_healthcheck(job))
         async with tasks:
