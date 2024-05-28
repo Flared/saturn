@@ -198,7 +198,9 @@ class JobStateService(Service[Services, Options]):
                 continue
 
             message = pevents.xmsg.message.message
-            cursor = message.metadata.get("job_state", {}).get("state_cursor")
+            cursor = event.cursor or message.metadata.get("job_state", {}).get(
+                "state_cursor"
+            )
             if not cursor:
                 continue
 

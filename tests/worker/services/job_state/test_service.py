@@ -253,9 +253,19 @@ async def test_job_state_set_message_cursor_state(
         async with xmsg._context:
             xmsgs.append(xmsg)
             results.append(xmsg.message.execute())
+
+            # Emit a new state.
             await services_manager.services.s.hooks.pipeline_events_emitted.emit(
                 PipelineEventsEmitted(
                     xmsg=xmsg, events=[CursorStateUpdated(state={"x": len(xmsgs) * 10})]
+                )
+            )
+
+            # Emit a new state with a custom cursor.
+            await services_manager.services.s.hooks.pipeline_events_emitted.emit(
+                PipelineEventsEmitted(
+                    xmsg=xmsg,
+                    events=[CursorStateUpdated(cursor=Cursor("42"), state={"x": 42})],
                 )
             )
 
@@ -287,7 +297,14 @@ async def test_job_state_set_message_cursor_state(
     # Rerun the inventory, expect new states to be loaded
     inventory = FakeInventory(
         options=FakeInventory.Options(
-            data=[5, 4, 3, 2, (1, {"job_state": {"state_cursor": "a"}})]
+            data=[
+                5,
+                4,
+                3,
+                2,
+                (1, {"job_state": {"state_cursor": "a"}}),
+                (42, {"job_state": {"state_cursor": "42"}}),
+            ]
         )
     )
     job = Job(
@@ -310,6 +327,7 @@ async def test_job_state_set_message_cursor_state(
         {"x": 30},
         {"x": 40},
         {"x": 50},
+        {"x": 42},
     ]
 
 
