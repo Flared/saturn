@@ -76,8 +76,14 @@ class Broker:
         This allow to add and remove queues from the scheduler.
         """
         while self.is_running:
-            work_sync = await self.work_manager.sync()
-            self.logger.info("Worker sync", extra={"data": {"work": str(work_sync)}})
+            try:
+                work_sync = await self.work_manager.sync()
+                self.logger.info(
+                    "Worker sync", extra={"data": {"work": str(work_sync)}}
+                )
+            except Exception:
+                self.logger.exception("Failed to sync")
+                continue
 
             for executor in work_sync.executors.add:
                 self.executors_manager.add_executor(executor)
