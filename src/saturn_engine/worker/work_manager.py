@@ -79,8 +79,8 @@ class WorkManager:
                 await asyncio.sleep(
                     (self.sync_period - last_sync_elapsed).total_seconds()
                 )
-        lock_response = await self.client.lock()
         self.last_sync_at = datetime.now()
+        lock_response = await self.client.lock()
 
         queues_sync = await self.load_queues(lock_response)
         resources_sync = await self.load_resources(lock_response)

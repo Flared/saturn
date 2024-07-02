@@ -113,6 +113,7 @@ def increment_state(
     logging.info("state: %s", state)
     if not state:
         state = IncrementedState(x=0)
+    time.sleep(5)
     yield CursorStateUpdated({"x": state.x + 1})
 
 
