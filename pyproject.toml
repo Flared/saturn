@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "saturn-engine"
-version = "0.5.17"
+version = "0.5.18"
 description = ""
 readme = "README.md"
 authors = ["Flare Systems <oss@flare.systems>"]
