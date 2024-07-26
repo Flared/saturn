@@ -4,11 +4,15 @@ import dataclasses
 import datetime
 import uuid
 
+from .encoded_content import EncodedContent
 from .types import MessageId
 
 
 @dataclasses.dataclass
 class TopicMessage:
+    #: Raw content used to pass to executors without any decoding in the worker.
+    body: t.Optional[EncodedContent]
+
     #: Message arguments used to call the pipeline.
     args: dict[str, t.Optional[t.Any]]
 
