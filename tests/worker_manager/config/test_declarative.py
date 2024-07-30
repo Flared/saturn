@@ -592,3 +592,17 @@ def test_resources_provider() -> None:
     static_definitions = load_definitions_from_str(resources_provider_str)
     assert len(static_definitions.resources_providers) == 1
     assert len(static_definitions.resources_by_type["TestApiKey"]) == 1
+
+
+def test_dynamic_definition() -> None:
+    resources_provider_str = """
+    apiVersion: saturn.flared.io/v1alpha1
+    kind: SaturnDynamicTopology
+    metadata:
+      name: test-dynamic-topology
+    spec:
+      module: tests.worker_manager.config.dynamic_definition.build
+    """
+    static_definitions = load_definitions_from_str(resources_provider_str)
+    assert "test-inventory" in static_definitions.inventories
+    assert static_definitions.inventories["test-inventory"].name == "test-inventory"

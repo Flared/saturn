@@ -1,6 +1,7 @@
 from typing import DefaultDict
 
 import dataclasses
+import logging
 import re
 from collections import defaultdict
 
@@ -9,6 +10,7 @@ from saturn_engine.utils.declarative_config import load_uncompiled_objects_from_
 from saturn_engine.utils.declarative_config import load_uncompiled_objects_from_str
 from saturn_engine.utils.options import fromdict
 
+from .declarative_dynamic_topology import DynamicTopology
 from .declarative_executor import Executor
 from .declarative_inventory import Inventory
 from .declarative_job import Job
@@ -102,6 +104,21 @@ def compile_static_definitions(
         definitions.resources_by_type[resources_provider_item.resource_type].append(
             resources_provider_item
         )
+
+    for uncompiled_dynamic_topology in objects_by_kind.pop(
+        "SaturnDynamicTopology",
+        dict(),
+    ).values():
+        dynamic_topology: DynamicTopology = fromdict(
+            uncompiled_dynamic_topology.data, DynamicTopology
+        )
+
+        try:
+            dynamic_topology.update_static_definitions(definitions)
+        except Exception:
+            logging.getLogger(__name__).exception(
+                "Failed to build dynamic topology: %s", dynamic_topology.metadata.name
+            )
 
     for object_kind in objects_by_kind.keys():
         raise Exception(f"Unsupported kind {object_kind}")
