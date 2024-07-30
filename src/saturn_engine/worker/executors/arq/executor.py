@@ -4,13 +4,16 @@ import asyncio
 import dataclasses
 import pickle  # noqa: S403
 
-from arq import create_pool
+import redis.exceptions
 from arq.connections import ArqRedis
 from arq.connections import RedisSettings
 from arq.jobs import Job
 from arq.jobs import JobStatus
 from opentelemetry.metrics import get_meter
-from redis.exceptions import RedisError
+from redis.asyncio import BlockingConnectionPool
+from redis.asyncio import ConnectionPool
+from redis.asyncio import SSLConnection
+from redis.asyncio import UnixDomainSocketConnection
 
 from saturn_engine.core import PipelineResults
 from saturn_engine.utils.asyncutils import TasksGroup
@@ -40,6 +43,9 @@ class ARQExecutor(Executor):
     class Options:
         redis_url: str
         concurrency: int
+        redis_pool_args: dict[str, t.Any] = dataclasses.field(default_factory=dict)
+        redis_conn_retries: int = 5
+        redis_conn_retry_delay: float = 1
         queue_name: str = "arq:queue"
         timeout: int = TIMEOUT
         timeout_delay: int = TIMEOUT_DELAY
@@ -81,15 +87,75 @@ class ARQExecutor(Executor):
         obj = pickle.loads(data)  # noqa: S301
         return obj
 
+    def create_connection_pool(self) -> ConnectionPool:
+        # Create a connection from
+        redis_settings = RedisSettings.from_dsn(self.options.redis_url)
+        kwargs: dict[str, t.Any] = {
+            "username": redis_settings.username,
+            "password": redis_settings.password,
+            "db": redis_settings.database,
+            "socket_connect_timeout": 1,
+            "max_connection": self.concurrency,
+            "timeout": 10,
+        }
+
+        if redis_settings.unix_socket_path is not None:
+            kwargs.update(
+                {
+                    "path": redis_settings.unix_socket_path,
+                    "connection_class": UnixDomainSocketConnection,
+                }
+            )
+        else:
+            # TCP specific options
+            kwargs.update(
+                {
+                    "host": redis_settings.host,
+                    "port": redis_settings.port,
+                }
+            )
+            if redis_settings.ssl:
+                kwargs["connection_class"] = SSLConnection
+
+        kwargs.update(self.options.redis_pool_args)
+        return BlockingConnectionPool(**kwargs)
+
     @cached_property
     async def redis_queue(self) -> ArqRedis:
-        redis_queue = await create_pool(
-            RedisSettings.from_dsn(self.options.redis_url),
-            job_serializer=self.serialize,
-            job_deserializer=self.deserialize,
-        )
-        await self.init_redis(redis_queue)
-        return redis_queue
+        def make_arq_redis() -> ArqRedis:
+            connection_pool = self.create_connection_pool()
+            return ArqRedis(
+                job_serializer=self.serialize,
+                job_deserializer=self.deserialize,
+                connection_pool=connection_pool,
+            )
+
+        retry = 0
+        while True:
+            try:
+                arq_redis = make_arq_redis()
+                await arq_redis.ping()
+            except (
+                OSError,
+                redis.exceptions.RedisError,
+                asyncio.TimeoutError,
+            ) as e:
+                if retry < self.options.redis_conn_retries:
+                    self.logger.warning(
+                        "redis connection error %s %s, %s retries remaining...",
+                        e.__class__.__name__,
+                        e,
+                        self.options.redis_conn_retries - retry,
+                    )
+                    await asyncio.sleep(self.options.redis_conn_retry_delay)
+                    retry = retry + 1
+                else:
+                    raise
+            else:
+                if retry > 0:
+                    self.logger.info("redis connection successful")
+                await self.init_redis(arq_redis)
+                return arq_redis
 
     async def init_redis(self, redis_queue: ArqRedis) -> None:
         # Clear the executor pending queue, where there might be old work from
@@ -108,8 +174,13 @@ class ARQExecutor(Executor):
                 _expires=options.timeout + options.timeout_delay,
                 _queue_name=options.queue_name,
             )
-        except (OSError, RedisError):
-            del self.redis_queue
+        except (OSError, redis.exceptions.RedisError) as e:
+            if not (
+                isinstance(e, redis.exceptions.ConnectionError)
+                and len(e.args) == 1
+                and e.args[0] == "No connection available."
+            ):
+                await self._close_redis()
             raise
 
         tasks = TasksGroup(name=f"saturn.arq.process_message({message.id})")
@@ -155,3 +226,10 @@ class ARQExecutor(Executor):
     @property
     def concurrency(self) -> int:
         return self.options.concurrency
+
+    async def _close_redis(self) -> None:
+        await (await self.redis_queue).close(close_connection_pool=True)
+        del self.redis_queue
+
+    async def close(self) -> None:
+        await self._close_redis()
