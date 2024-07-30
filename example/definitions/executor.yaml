@@ -27,4 +27,7 @@ spec:
   type: ARQExecutor
   options:
     redis_url: "redis://localhost"
+    redis_pool_args:
+      max_connections: 2
+      timeout: 5
     concurrency: 2
