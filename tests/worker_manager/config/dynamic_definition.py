@@ -5,9 +5,11 @@ from saturn_engine.worker_manager.config.static_definitions import StaticDefinit
 
 
 def build(definitions: StaticDefinitions) -> None:
-    definitions.inventories["test-inventory"] = Inventory(
-        metadata=ObjectMetadata(name="test-inventory"),
-        apiVersion="saturn.flared.io/v1alpha1",
-        kind="SaturnInventory",
-        spec=InventorySpec(type="testtype"),
-    ).to_core_object()
+    definitions.add(
+        Inventory(
+            metadata=ObjectMetadata(name="test-inventory"),
+            apiVersion="saturn.flared.io/v1alpha1",
+            kind="SaturnInventory",
+            spec=InventorySpec(type="testtype"),
+        )
+    )
