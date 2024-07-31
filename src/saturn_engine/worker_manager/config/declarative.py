@@ -41,21 +41,21 @@ def compile_static_definitions(
         dict(),
     ).values():
         executor: Executor = fromdict(uncompiled_executor.data, Executor)
-        definitions.executors[executor.metadata.name] = executor.to_core_object()
+        definitions.add(executor)
 
     for uncompiled_inventory in objects_by_kind.pop(
         "SaturnInventory",
         dict(),
     ).values():
         inventory: Inventory = fromdict(uncompiled_inventory.data, Inventory)
-        definitions.inventories[inventory.metadata.name] = inventory.to_core_object()
+        definitions.add(inventory)
 
     for uncompiled_topic in objects_by_kind.pop(
         "SaturnTopic",
         dict(),
     ).values():
         topic_item: TopicItem = fromdict(uncompiled_topic.data, TopicItem)
-        definitions.topics[topic_item.metadata.name] = topic_item.to_core_object()
+        definitions.add(topic_item)
 
     for uncompiled_job_definition in objects_by_kind.pop(
         "SaturnJobDefinition",
@@ -64,31 +64,21 @@ def compile_static_definitions(
         job_definition: JobDefinition = fromdict(
             uncompiled_job_definition.data, JobDefinition
         )
-        for core_job_definition in job_definition.to_core_objects(definitions):
-            definitions.job_definitions[core_job_definition.name] = core_job_definition
+        definitions.add(job_definition)
 
     for uncompiled_job in objects_by_kind.pop(
         "SaturnJob",
         dict(),
     ).values():
         job_data: Job = fromdict(uncompiled_job.data, Job)
-        for queue_item in job_data.to_core_objects(definitions):
-            definitions.jobs[queue_item.name] = queue_item
+        definitions.add(job_data)
 
     for uncompiled_resource in objects_by_kind.pop(
         "SaturnResource",
         dict(),
     ).values():
         resource: Resource = fromdict(uncompiled_resource.data, Resource)
-        # If we have concurrency for our resource then
-        # we append an index at the end in order
-        # to differentiate the instances of said resource
-        for i in range(1, resource.spec.concurrency + 1):
-            resource_item = resource.to_core_object()
-            if resource.spec.concurrency > 1:
-                resource_item.name = f"{resource.metadata.name}-{i}"
-            definitions.resources[resource_item.name] = resource_item
-            definitions.resources_by_type[resource_item.type].append(resource_item)
+        definitions.add(resource)
 
     for uncompied_resources_provider in objects_by_kind.pop(
         "SaturnResourcesProvider",
@@ -97,13 +87,7 @@ def compile_static_definitions(
         resources_provider = fromdict(
             uncompied_resources_provider.data, ResourcesProvider
         )
-        resources_provider_item = resources_provider.to_core_object()
-        definitions.resources_providers[resources_provider_item.name] = (
-            resources_provider_item
-        )
-        definitions.resources_by_type[resources_provider_item.resource_type].append(
-            resources_provider_item
-        )
+        definitions.add(resources_provider)
 
     for uncompiled_dynamic_topology in objects_by_kind.pop(
         "SaturnDynamicTopology",
@@ -114,7 +98,7 @@ def compile_static_definitions(
         )
 
         try:
-            dynamic_topology.update_static_definitions(definitions)
+            definitions.add(dynamic_topology)
         except Exception:
             logging.getLogger(__name__).exception(
                 "Failed to build dynamic topology: %s", dynamic_topology.metadata.name
