@@ -95,7 +95,7 @@ class ARQExecutor(Executor):
             "password": redis_settings.password,
             "db": redis_settings.database,
             "socket_connect_timeout": 1,
-            "max_connection": self.concurrency,
+            "max_connections": self.concurrency,
             "timeout": 10,
         }
 
