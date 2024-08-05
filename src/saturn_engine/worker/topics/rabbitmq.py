@@ -301,6 +301,9 @@ class RabbitMQTopic(Topic):
             self.logger.error("Channel closed: %s", reason, extra=extra)
 
     def channel_reopened(self, channel: aio_pika.abc.AbstractChannel) -> None:
+        del self.queue
+        del self.exchange
+
         self.logger.info(
             "Channel reopening", extra={"data": {"topic": {"id": self.name}}}
         )
