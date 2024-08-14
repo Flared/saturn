@@ -69,6 +69,7 @@ class RabbitMQTopic(Topic):
     """A queue that consume message from RabbitMQ"""
 
     RETRY_PUBLISH_DELAY = timedelta(seconds=10)
+    PUBLISH_TIMEOUT = timedelta(seconds=30)
     FAILURE_RETRY_BACKOFFS = [timedelta(seconds=s) for s in (0, 5, 10, 20, 30, 60)]
 
     @dataclasses.dataclass
@@ -180,14 +181,18 @@ class RabbitMQTopic(Topic):
                 try:
                     await self.ensure_queue()  # Ensure the queue is created.
                     exchange = await self.exchange
-                    await exchange.publish(
-                        aio_pika.Message(
-                            body=body,
-                            delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
-                            content_type=self.options.serializer.content_type,
-                            expiration=message.expire_after,
+                    await asyncio.wait_for(
+                        exchange.publish(
+                            aio_pika.Message(
+                                body=body,
+                                delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+                                content_type=self.options.serializer.content_type,
+                                expiration=message.expire_after,
+                            ),
+                            routing_key=self.options.routing_key
+                            or self.options.queue_name,
                         ),
-                        routing_key=self.options.routing_key or self.options.queue_name,
+                        timeout=self.PUBLISH_TIMEOUT.total_seconds(),
                     )
                     self.publish_bytes_counter.add(len(body), {"topic": self.name})
                     return True
