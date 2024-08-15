@@ -15,7 +15,7 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Application Frameworks",
   "Topic :: System :: Distributed Computing",
 ]
-license = "BSD-3-Clause"
+license = "MIT"
 packages = [
     { include = "saturn_engine", from = "src" },
 ]
