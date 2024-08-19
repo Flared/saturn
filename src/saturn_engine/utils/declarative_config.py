@@ -13,7 +13,7 @@ class ObjectMetadata:
     labels: dict[str, str] = field(default_factory=dict)
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(kw_only=True)
 class BaseObject:
     metadata: ObjectMetadata
     apiVersion: str

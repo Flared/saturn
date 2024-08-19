@@ -1,10 +1,12 @@
-from typing import Any
-from typing import Optional
+import typing as t
 
 import dataclasses
 
 from saturn_engine.core import api
 from saturn_engine.utils.declarative_config import BaseObject
+
+RESOURCE_KIND: t.Final[str] = "SaturnResource"
+RESOURCE_PROVIDER_KIND: t.Final[str] = "SaturnResourcesProvider"
 
 
 @dataclasses.dataclass
@@ -16,15 +18,16 @@ class ResourceRateLimitSpec:
 @dataclasses.dataclass
 class ResourceSpec:
     type: str
-    data: dict[str, Any]
+    data: dict[str, t.Any]
     default_delay: float = 0
-    rate_limit: Optional[ResourceRateLimitSpec] = None
+    rate_limit: t.Optional[ResourceRateLimitSpec] = None
     concurrency: int = 1
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(kw_only=True)
 class Resource(BaseObject):
     spec: ResourceSpec
+    kind: str = RESOURCE_KIND
 
     def to_core_object(self) -> api.ResourceItem:
         return api.ResourceItem(
@@ -47,12 +50,13 @@ class Resource(BaseObject):
 class ResourcesProviderSpec:
     type: str
     resource_type: str
-    options: dict[str, Any]
+    options: dict[str, t.Any]
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(kw_only=True)
 class ResourcesProvider(BaseObject):
     spec: ResourcesProviderSpec
+    kind: str = RESOURCE_PROVIDER_KIND
 
     def to_core_object(self) -> api.ResourcesProviderItem:
         return api.ResourcesProviderItem(
