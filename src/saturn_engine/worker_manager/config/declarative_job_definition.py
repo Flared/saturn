@@ -8,6 +8,8 @@ from saturn_engine.worker_manager.config.declarative_job import JobSpec
 
 from .static_definitions import StaticDefinitions
 
+JOB_DEFINITION_KIND: t.Final[str] = "SaturnJobDefinition"
+
 
 @dataclasses.dataclass
 class JobDefinitionSpec:
@@ -15,9 +17,10 @@ class JobDefinitionSpec:
     minimalInterval: str
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(kw_only=True)
 class JobDefinition(BaseObject):
     spec: JobDefinitionSpec
+    kind: str = JOB_DEFINITION_KIND
 
     def to_core_objects(
         self,

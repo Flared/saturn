@@ -10,13 +10,21 @@ from saturn_engine.utils.declarative_config import load_uncompiled_objects_from_
 from saturn_engine.utils.declarative_config import load_uncompiled_objects_from_str
 from saturn_engine.utils.options import fromdict
 
+from .declarative_dynamic_topology import DYNAMIC_TOPOLOGY_KIND
 from .declarative_dynamic_topology import DynamicTopology
+from .declarative_executor import EXECUTOR_KIND
 from .declarative_executor import Executor
+from .declarative_inventory import INVENTORY_KIND
 from .declarative_inventory import Inventory
+from .declarative_job import JOB_KIND
 from .declarative_job import Job
+from .declarative_job_definition import JOB_DEFINITION_KIND
 from .declarative_job_definition import JobDefinition
+from .declarative_resource import RESOURCE_KIND
+from .declarative_resource import RESOURCE_PROVIDER_KIND
 from .declarative_resource import Resource
 from .declarative_resource import ResourcesProvider
+from .declarative_topic_item import TOPIC_ITEM_KIND
 from .declarative_topic_item import TopicItem
 from .static_definitions import StaticDefinitions
 
@@ -37,28 +45,28 @@ def compile_static_definitions(
     definitions: StaticDefinitions = StaticDefinitions()
 
     for uncompiled_executor in objects_by_kind.pop(
-        "SaturnExecutor",
+        EXECUTOR_KIND,
         dict(),
     ).values():
         executor: Executor = fromdict(uncompiled_executor.data, Executor)
         definitions.add(executor)
 
     for uncompiled_inventory in objects_by_kind.pop(
-        "SaturnInventory",
+        INVENTORY_KIND,
         dict(),
     ).values():
         inventory: Inventory = fromdict(uncompiled_inventory.data, Inventory)
         definitions.add(inventory)
 
     for uncompiled_topic in objects_by_kind.pop(
-        "SaturnTopic",
+        TOPIC_ITEM_KIND,
         dict(),
     ).values():
         topic_item: TopicItem = fromdict(uncompiled_topic.data, TopicItem)
         definitions.add(topic_item)
 
     for uncompiled_job_definition in objects_by_kind.pop(
-        "SaturnJobDefinition",
+        JOB_DEFINITION_KIND,
         dict(),
     ).values():
         job_definition: JobDefinition = fromdict(
@@ -67,21 +75,21 @@ def compile_static_definitions(
         definitions.add(job_definition)
 
     for uncompiled_job in objects_by_kind.pop(
-        "SaturnJob",
+        JOB_KIND,
         dict(),
     ).values():
         job_data: Job = fromdict(uncompiled_job.data, Job)
         definitions.add(job_data)
 
     for uncompiled_resource in objects_by_kind.pop(
-        "SaturnResource",
+        RESOURCE_KIND,
         dict(),
     ).values():
         resource: Resource = fromdict(uncompiled_resource.data, Resource)
         definitions.add(resource)
 
     for uncompied_resources_provider in objects_by_kind.pop(
-        "SaturnResourcesProvider",
+        RESOURCE_PROVIDER_KIND,
         dict(),
     ).values():
         resources_provider = fromdict(
@@ -90,7 +98,7 @@ def compile_static_definitions(
         definitions.add(resources_provider)
 
     for uncompiled_dynamic_topology in objects_by_kind.pop(
-        "SaturnDynamicTopology",
+        DYNAMIC_TOPOLOGY_KIND,
         dict(),
     ).values():
         dynamic_topology: DynamicTopology = fromdict(

@@ -10,6 +10,7 @@ from saturn_engine.worker_manager.config.declarative_pipeline import PipelineInf
 from saturn_engine.worker_manager.config.static_definitions import StaticDefinitions
 
 DEFAULT_INPUT_NAME: t.Final[str] = "default"
+JOB_KIND: t.Final[str] = "SaturnJob"
 
 
 @dataclasses.dataclass
@@ -101,9 +102,10 @@ class JobSpec:
             )
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(kw_only=True)
 class Job(BaseObject):
     spec: JobSpec
+    kind: str = JOB_KIND
 
     def to_core_objects(
         self,
