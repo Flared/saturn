@@ -108,6 +108,7 @@ class LockResponse:
 class LockInput:
     worker_id: str
     selector: t.Optional[str] = None
+    executors: list[str] | None = None
 
 
 @dataclasses.dataclass

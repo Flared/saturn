@@ -39,9 +39,11 @@ class WorkerManagerClient(AbstractWorkerManagerClient):
         base_url: str,
         worker_id: Optional[str] = None,
         selector: Optional[str] = None,
+        executors: list[str] | None = None,
     ) -> None:
         self.worker_id: str = worker_id or socket.gethostname()
-        self.selector: Optional[str] = selector
+        self.selector: str | None = selector
+        self.executors: list[str] | None = executors
         self.http_client = http_client
         self.base_url = base_url
 

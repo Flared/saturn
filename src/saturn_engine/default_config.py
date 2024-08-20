@@ -15,6 +15,7 @@ class config(SaturnConfig):
     env = Env(os.environ.get("SATURN_ENV", "development"))
     worker_id = socket.gethostname()
     selector: t.Optional[str] = os.environ.get("SATURN_SELECTOR")
+    executors: list[str] | None = os.environ.get("SATURN_EXECUTORS", "").split(",")
     worker_manager_url = os.environ.get(
         "SATURN_WORKER_MANAGER_URL", "http://127.0.0.1:5000"
     )

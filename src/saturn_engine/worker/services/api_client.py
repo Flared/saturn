@@ -27,6 +27,7 @@ class ApiClient(Service[Services, None]):
         self.client = WorkerManagerClient(
             http_client=self.services.http_client.session,
             base_url=self.services.config.c.worker_manager_url,
+            executors=self.services.config.c.executors,
             worker_id=self.services.config.c.worker_id,
             selector=self.services.config.c.selector,
         )
