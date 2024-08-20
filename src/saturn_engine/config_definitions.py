@@ -54,6 +54,10 @@ class SaturnConfig:
     standalone: bool
     # If set, select jobs matching the selector regex.
     selector: t.Optional[str]
+
+    # If set, select jobs for specific executors
+    executors: t.Optional[list[str]]
+
     services_manager: ServicesManagerConfig
     worker_manager: WorkerManagerConfig
     rabbitmq: RabbitMQConfig

@@ -55,28 +55,28 @@ def get_unassigned_queues(
     session: AnySyncSession,
     assigned_before: datetime.datetime,
     selector: t.Optional[str] = None,
-    limit: int,
+    limit: int | None,
 ) -> list[Queue]:
     extra_filters = []
     if selector:
         extra_filters.append(Queue.name.regexp_match(selector))
-    unassigned_queues: t.Sequence[Queue] = (
-        session.execute(
-            select(Queue)
-            .options(joinedload(Queue.job))
-            .where(
-                Queue.enabled.is_(True),
-                or_(
-                    Queue.assigned_at.is_(None),
-                    Queue.assigned_at < assigned_before,
-                ),
-                *extra_filters,
-            )
-            .limit(limit)
+
+    query = (
+        select(Queue)
+        .options(joinedload(Queue.job))
+        .where(
+            Queue.enabled.is_(True),
+            or_(
+                Queue.assigned_at.is_(None),
+                Queue.assigned_at < assigned_before,
+            ),
+            *extra_filters,
         )
-        .scalars()
-        .all()
     )
+    if limit:
+        query = query.limit(limit=limit)
+
+    unassigned_queues: t.Sequence[Queue] = session.execute(query).scalars().all()
     return list(unassigned_queues)
 
 

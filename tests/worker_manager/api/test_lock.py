@@ -290,3 +290,40 @@ def test_executors(
     assert resp.json
     assert resp.json["items"][0]["name"] == "test"
     assert resp.json["executors"][0]["name"] == "ray-executor"
+
+
+def test_api_lock_with_executors(
+    client: FlaskClient,
+    session: Session,
+    frozen_time: FreezeTime,
+    fake_job_definition: api.JobDefinition,
+) -> None:
+    # Make sure the job is set at the default executor
+    assert fake_job_definition.template.executor == "default"
+
+    queues_store.create_queue(session=session, name="test")
+    jobs_store.create_job(
+        session=session,
+        name="test",
+        queue_name="test",
+        job_definition_name=fake_job_definition.name,
+    )
+    session.commit()
+
+    # Try to lock the queue_item, but the wrong executor is set
+    resp = client.post(
+        "/api/lock", json={"worker_id": "worker-1", "executors": ["other-executor"]}
+    )
+    assert resp.status_code == 200
+    assert resp.json
+    assert not resp.json["items"]
+    assert not resp.json["resources"]
+
+    # Lock with the default executor return the job
+    resp = client.post(
+        "/api/lock", json={"worker_id": "worker-1", "executors": ["default"]}
+    )
+    assert resp.status_code == 200
+    assert resp.json
+    assert resp.json["items"][0]["name"] == "test"
+    assert resp.json["executors"][0]["name"] == "default"

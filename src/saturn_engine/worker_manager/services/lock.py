@@ -52,14 +52,25 @@ def lock_jobs(
             queues_store.get_unassigned_queues(
                 session=session,
                 assigned_before=assignation_expiration_cutoff,
-                limit=max_assigned_items - len(assigned_items),
+                # We don't set a limit when specifying executors
+                limit=(
+                    max_assigned_items - len(assigned_items)
+                    if not lock_input.executors
+                    else None
+                ),
                 selector=lock_input.selector,
             )
         )
 
+    # Join definitions and filtered out by executors
     for item in assigned_items.copy():
         try:
             item.join_definitions(static_definitions)
+            if (
+                lock_input.executors
+                and item.queue_item.executor not in lock_input.executors
+            ):
+                assigned_items.remove(item)
         except Exception as e:
             if item.job:
                 jobs_store.set_failed(item.job.name, session=session, error=repr(e))
