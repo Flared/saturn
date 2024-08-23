@@ -49,7 +49,13 @@ class WorkerManagerClient(AbstractWorkerManagerClient):
 
     async def lock(self) -> LockResponse:
         lock_url = urlcat(self.base_url, "api/lock")
-        json = asdict(LockInput(worker_id=self.worker_id, selector=self.selector))
+        json = asdict(
+            LockInput(
+                worker_id=self.worker_id,
+                selector=self.selector,
+                executors=self.executors,
+            )
+        )
         async with self.http_client.post(lock_url, json=json) as response:
             return fromdict(await response.json(), LockResponse)
 
