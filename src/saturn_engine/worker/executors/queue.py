@@ -58,7 +58,7 @@ class ExecutorQueue:
         while self.is_running:
             processable = await self.poll()
             processable._executing_context.callback(self.queue.task_done)
-            with contextlib.suppress(Exception), processable.saturn_context():
+            with contextlib.suppress(BaseException), processable.saturn_context():
                 async with (
                     processable._context,
                     processable._executing_context,
