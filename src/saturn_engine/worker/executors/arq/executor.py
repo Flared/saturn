@@ -167,21 +167,12 @@ class ARQExecutor(Executor):
         config = self.config.load_object(message.config)
         options = config.cast_namespace(ARQ_EXECUTOR_NAMESPACE, ARQExecutor.Options)
 
-        try:
-            job = await (await self.redis_queue).enqueue_job(
-                EXECUTE_FUNC_NAME,
-                message.message.as_remote(),
-                _expires=options.timeout + options.timeout_delay,
-                _queue_name=options.queue_name,
-            )
-        except (OSError, redis.exceptions.RedisError) as e:
-            if not (
-                isinstance(e, redis.exceptions.ConnectionError)
-                and len(e.args) == 1
-                and e.args[0] == "No connection available."
-            ):
-                await self._close_redis()
-            raise
+        job = await (await self.redis_queue).enqueue_job(
+            EXECUTE_FUNC_NAME,
+            message.message.as_remote(),
+            _expires=options.timeout + options.timeout_delay,
+            _queue_name=options.queue_name,
+        )
 
         tasks = TasksGroup(name=f"saturn.arq.process_message({message.id})")
         result_task: asyncio.Task[PipelineResults] = tasks.create_task(
