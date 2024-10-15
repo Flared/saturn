@@ -18,6 +18,7 @@ from . import MinimalService
 
 
 class PipelineName(t.NamedTuple):
+    labels: t.FrozenSet[tuple[str, str]]
     executor: str
     name: str
 
@@ -38,6 +39,7 @@ U = t.TypeVar("U", bound=ExecutableMessage)
 
 class PipelineUsage(t.NamedTuple):
     executor: str
+    labels: dict[str, str]
     name: str
     usage: float
 
@@ -88,6 +90,7 @@ class StageState(t.Generic[T, U]):
     def _name(xmsg: ExecutableMessage) -> PipelineName:
         return PipelineName(
             executor=xmsg.queue.definition.executor or "default",
+            labels=frozenset(xmsg.queue.definition.labels.items()),
             name=xmsg.message.info.name,
         )
 
@@ -104,7 +107,10 @@ class StageState(t.Generic[T, U]):
     def collect(self, *, now: Nanoseconds) -> t.Iterator[PipelineUsage]:
         for k, state in self.pipelines.items():
             yield PipelineUsage(
-                executor=k.executor, name=k.name, usage=state.collect(now=now)
+                labels=dict(k.labels),
+                executor=k.executor,
+                name=k.name,
+                usage=state.collect(now=now),
             )
 
 
@@ -178,7 +184,8 @@ class UsageMetrics(MinimalService):
                         "executor": pipeline.executor,
                         "pipeline": pipeline.name,
                         "state": stage_name,
-                    },
+                    }
+                    | {f"saturn.job.labels.{k}": v for k, v in pipeline.labels.items()},
                 )
 
     async def on_message_polled(self, xmsg: ExecutableMessage) -> None:
