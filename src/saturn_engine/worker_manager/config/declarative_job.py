@@ -96,7 +96,12 @@ class JobSpec:
                     info=self.pipeline.to_core_object(),
                     args=dict(),
                 ),
-                labels=labels,
+                labels=dict(
+                    {
+                        "job-definition-name": name,
+                    },
+                    **labels,
+                ),
                 config=self.config,
                 executor=self.executor,
             )

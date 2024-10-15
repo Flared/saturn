@@ -26,10 +26,15 @@ async def test_message_metrics(
         xmsg: ExecutableMessage = Mock()
         xmsg.message.info.name = pipeline_name
         xmsg.queue.definition.executor = "default"
+        xmsg.queue.definition.labels = {"k": "v"}
         xmsgs.append(xmsg)
 
     any_: t.Any = None
-    pipeline_params = {"pipeline": pipeline_name, "executor": "default"}
+    pipeline_params = {
+        "pipeline": pipeline_name,
+        "executor": "default",
+        "saturn.job.labels.k": "v",
+    }
     results = PipelineResults(outputs=[], resources=[])
     metric = services_manager.services.cast_service(UsageMetrics)
 

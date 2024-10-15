@@ -91,7 +91,10 @@ spec:
                             "resources": {"api_key": "GithubApiKey"},
                         },
                     },
-                    "labels": {"owner": "team-saturn"},
+                    "labels": {
+                        "owner": "team-saturn",
+                        "job-definition-name": "test-job-definition",
+                    },
                     "config": {
                         "tracer": {
                             "sampler": {
