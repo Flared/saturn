@@ -75,5 +75,4 @@ def load_uncompiled_objects_from_directory(config_dir: str) -> list[UncompiledOb
 
             with open(os.path.join(root, filename), "r", encoding="utf-8") as f:
                 uncompiled_objects.extend(load_uncompiled_objects_from_str(f.read()))
-
     return uncompiled_objects
