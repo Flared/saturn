@@ -18,9 +18,8 @@ class WorkerManagerContext:
 
     @property
     def static_definitions(self) -> StaticDefinitions:
-        assert (
-            self._static_definitions
-        ), "Static definitions need to be set before usage"
+        if not self._static_definitions:
+            raise ValueError("Static definitions need to be set before usage")
         return self._static_definitions
 
     def load_static_definition(self, session: AnySession) -> None:

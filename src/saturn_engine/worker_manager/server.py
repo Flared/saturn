@@ -56,7 +56,7 @@ def init_all(app: Optional[SaturnApp] = None) -> None:
     with app.app_context():
         create_all()
         with session_scope() as session:
-            current_app.saturn.reset_static_definition(session=session)
+            current_app.saturn.load_static_definition(session=session)
             sync_jobs(
                 static_definitions=current_app.saturn.static_definitions,
                 session=session,

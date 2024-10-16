@@ -30,7 +30,7 @@ class StandaloneWorkerManagerClient(AbstractWorkerManagerClient):
 
         self.context = WorkerManagerContext(config=config.c.worker_manager)
         with self.sessionmaker() as session:
-            self.context.reset_static_definition(session=session)
+            self.context.load_static_definition(session=session)
 
     async def init_db(self) -> None:
         return await asyncio.get_event_loop().run_in_executor(
