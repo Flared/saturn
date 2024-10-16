@@ -23,7 +23,7 @@ class WorkerManagerContext:
         ), "Static definitions need to be set before usage"
         return self._static_definitions
 
-    def reset_static_definition(self, session: AnySession) -> None:
+    def load_static_definition(self, session: AnySession) -> None:
         self._static_definitions = _load_static_definition(
             session=session, config=self.config
         )
