@@ -103,7 +103,7 @@ def client(
             "TESTING": True,
         },
     )
-    app.saturn.static_definitions = static_definitions
+    app.saturn._static_definitions = static_definitions
     with app.app_context():
         Base.metadata.drop_all(bind=database.engine())
         Base.metadata.create_all(bind=database.engine())

@@ -26,8 +26,11 @@ class StandaloneWorkerManagerClient(AbstractWorkerManagerClient):
     ) -> None:
         self.sessionmaker = sessionmaker
         self.worker_id = config.c.worker_id
-        self.context = WorkerManagerContext(config=config.c.worker_manager)
         self.max_assigned_items = config.c.worker_manager.work_items_per_worker
+
+        self.context = WorkerManagerContext(config=config.c.worker_manager)
+        with self.sessionmaker() as session:
+            self.context.reset_static_definition(session=session)
 
     async def init_db(self) -> None:
         return await asyncio.get_event_loop().run_in_executor(
