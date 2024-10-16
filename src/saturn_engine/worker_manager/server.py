@@ -32,6 +32,7 @@ def get_app(
     from .api.lock import bp as bp_lock
     from .api.status import bp as bp_status
     from .api.topics import bp as bp_topics
+    from .api.topologies import bp as bp_topologies
 
     app.register_blueprint(bp_status)
     app.register_blueprint(bp_jobs)
@@ -39,6 +40,7 @@ def get_app(
     app.register_blueprint(bp_topics)
     app.register_blueprint(bp_lock)
     app.register_blueprint(bp_inventories)
+    app.register_blueprint(bp_topologies)
 
     @app.teardown_appcontext  # type: ignore
     def shutdown_session(response_or_exc: Optional[BaseException]) -> None:

@@ -1,3 +1,5 @@
+import typing as t
+
 import os
 from dataclasses import field
 
@@ -18,6 +20,7 @@ class BaseObject:
     metadata: ObjectMetadata
     apiVersion: str
     kind: str
+    spec: t.Any
 
 
 @dataclasses.dataclass
