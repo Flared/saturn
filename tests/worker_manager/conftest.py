@@ -9,6 +9,7 @@ from saturn_engine.core import JobId
 from saturn_engine.core import api
 from saturn_engine.models import Base
 from saturn_engine.worker_manager import server as worker_manager_server
+from saturn_engine.worker_manager.app import SaturnApp
 from saturn_engine.worker_manager.config.declarative import StaticDefinitions
 
 
@@ -95,17 +96,23 @@ def fake_job_definition(
 
 
 @pytest.fixture
-def client(
-    static_definitions: StaticDefinitions,
-) -> t.Iterator[FlaskClient]:
+def app() -> t.Iterator[SaturnApp]:
     app = worker_manager_server.get_app(
         config={
             "TESTING": True,
         },
     )
-    app.saturn._static_definitions = static_definitions
     with app.app_context():
         Base.metadata.drop_all(bind=database.engine())
         Base.metadata.create_all(bind=database.engine())
-        with app.test_client() as client:
-            yield client
+        yield app
+
+
+@pytest.fixture
+def client(
+    app: SaturnApp,
+    static_definitions: StaticDefinitions,
+) -> t.Iterator[FlaskClient]:
+    app.saturn._static_definitions = static_definitions
+    with app.test_client() as client:
+        yield client

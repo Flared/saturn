@@ -23,3 +23,10 @@ def patch(*, session: AnySession, patch: BaseObject) -> TopologyPatch:
     )
     session.execute(stmt)  # type: ignore
     return topology_patch
+
+
+def get_patches(*, session: AnySession) -> list[TopologyPatch]:
+    """_summary_
+    Return all the patches
+    """
+    return session.query(TopologyPatch).all()
