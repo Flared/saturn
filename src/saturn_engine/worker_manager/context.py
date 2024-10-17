@@ -39,6 +39,9 @@ def _load_static_definition(
     - Jobs
     - JobDefinitions
     """
+    if not config.static_definitions_directories:
+        return StaticDefinitions()
+
     patches = topologies_store.get_patches(session=session)
     definitions = load_definitions_from_paths(
         config.static_definitions_directories, patches=patches

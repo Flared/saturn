@@ -1,9 +1,12 @@
+import typing as t
+
 import time
 from datetime import timedelta
 
 import pytest
 import werkzeug.test
 from flask.testing import FlaskClient
+from pytest_mock import MockerFixture
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -13,8 +16,11 @@ from saturn_engine.models import JobCursorState
 from saturn_engine.stores import jobs_store
 from saturn_engine.stores import queues_store
 from saturn_engine.utils import utcnow
+from saturn_engine.utils.inspect import get_import_name
+from saturn_engine.worker_manager.app import SaturnApp
 from saturn_engine.worker_manager.config.declarative import StaticDefinitions
 from saturn_engine.worker_manager.config.declarative import load_definitions_from_str
+from saturn_engine.worker_manager.context import _load_static_definition
 from tests.conftest import FreezeTime
 
 
@@ -66,6 +72,16 @@ def orphan_job(
     )
     session.commit()
     return job
+
+
+@pytest.fixture
+def mock_definitions(mocker: MockerFixture) -> t.Callable[[StaticDefinitions], None]:
+    def mock_definitions(definitions: StaticDefinitions) -> None:
+        mocker.patch(
+            get_import_name(_load_static_definition), new=lambda *x, **y: definitions
+        )
+
+    return mock_definitions
 
 
 def ids(response: werkzeug.test.TestResponse) -> set[str]:
@@ -202,10 +218,12 @@ def test_api_update_job(
 
 def test_jobs_sync(
     client: FlaskClient,
+    app: SaturnApp,
     static_definitions: StaticDefinitions,
     session: Session,
     frozen_time: FreezeTime,
     fake_executor: api.ComponentDefinition,
+    mock_definitions: t.Callable[[StaticDefinitions], None],
 ) -> None:
     new_definitions_str: str = """
 apiVersion: saturn.flared.io/v1alpha1
@@ -296,8 +314,11 @@ spec:
       name: something.saturn.pipelines.aa.bb
       resources: {"api_key": "GithubApiKey"}
 """
+
     new_definitions = load_definitions_from_str(new_definitions_str)
     static_definitions.job_definitions = new_definitions.job_definitions
+
+    mock_definitions(static_definitions)
 
     queue = queues_store.create_queue(session=session, name="test")
     jobs_store.create_job(
@@ -365,6 +386,7 @@ spec:
 
     # Trigger sync
     resp = client.post("/api/jobs/sync")
+
     assert resp.status_code == 200
     assert resp.json == {}
 
@@ -449,6 +471,7 @@ def test_failed_jobs(
     static_definitions: StaticDefinitions,
     fake_executor: api.ComponentDefinition,
     frozen_time: FreezeTime,
+    mock_definitions: t.Callable[[StaticDefinitions], None],
 ) -> None:
     # Add a job
     new_definitions_str: str = """
@@ -476,6 +499,8 @@ spec:
 """
     new_definitions = load_definitions_from_str(new_definitions_str)
     static_definitions.job_definitions = new_definitions.job_definitions
+
+    mock_definitions(static_definitions)
 
     queue = queues_store.create_queue(session=session, name="test")
     session.flush()
@@ -543,6 +568,7 @@ def test_saturn_jobs_sync(
     static_definitions: StaticDefinitions,
     session: Session,
     frozen_time: FreezeTime,
+    mock_definitions: t.Callable[[StaticDefinitions], None],
 ) -> None:
     """test for jobs that don't have an interval (saturn jobs)"""
 
@@ -581,6 +607,8 @@ spec:
 """
     new_definitions = load_definitions_from_str(new_definitions_str)
     static_definitions.jobs = new_definitions.jobs
+
+    mock_definitions(static_definitions)
 
     # Trigger sync
     resp = client.post("/api/jobs/sync")

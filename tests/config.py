@@ -1,6 +1,7 @@
 from saturn_engine.config import Env
 from saturn_engine.config import SaturnConfig
 from saturn_engine.config import ServicesManagerConfig
+from saturn_engine.config_definitions import WorkerManagerConfig
 
 
 class config(SaturnConfig):
@@ -16,3 +17,6 @@ class config(SaturnConfig):
 
     class job_state:
         auto_flush = False
+
+    class worker_manager(WorkerManagerConfig):
+        static_definitions_directories = []

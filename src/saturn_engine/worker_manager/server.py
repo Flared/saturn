@@ -1,5 +1,6 @@
 from typing import Optional
 
+from saturn_engine.config import Config
 from saturn_engine.config import default_config_with_env
 from saturn_engine.database import create_all
 from saturn_engine.database import scoped_session
@@ -12,19 +13,22 @@ from saturn_engine.worker_manager.services.sync import sync_jobs
 
 
 def get_app(
-    config: Optional[dict] = None,
+    saturn_config: Config | None = None,
+    app_config: Optional[dict] = None,
 ) -> SaturnApp:
-    worker_manager_context = WorkerManagerContext(
-        config=default_config_with_env().c.worker_manager,
-    )
+    config = default_config_with_env()
+    if saturn_config:
+        config = config.load_object(saturn_config.c)
+
+    worker_manager_context = WorkerManagerContext(config=config.c.worker_manager)
 
     app = SaturnApp(
         worker_manager_context,
         __name__,
     )
 
-    if config:
-        app.config.from_mapping(config)
+    if app_config:
+        app.config.from_mapping(app_config)
 
     from .api.inventories import bp as bp_inventories
     from .api.job_definitions import bp as bp_job_definitions

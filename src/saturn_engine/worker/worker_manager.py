@@ -103,6 +103,8 @@ class StandaloneWorkerManagerClient(AbstractWorkerManagerClient):
 
     def _sync_jobs(self) -> None:
         with self.sessionmaker() as session:
+            # We reset static definition at each jobs sync
+            self.context.load_static_definition(session=session)
             sync_jobs(
                 static_definitions=self.context.static_definitions,
                 session=session,

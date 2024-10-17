@@ -67,6 +67,8 @@ def update_job(job_name: str) -> Json[UpdateResponse]:
 def post_sync() -> Json[JobsSyncResponse]:
     """Create jobs that are due to be scheduled."""
     with session_scope() as session:
+        # We reset static definition at each jobs sync
+        current_app.saturn.load_static_definition(session=session)
         sync_jobs(
             static_definitions=current_app.saturn.static_definitions,
             session=session,
