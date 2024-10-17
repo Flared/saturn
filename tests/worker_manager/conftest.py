@@ -5,6 +5,7 @@ from flask.testing import FlaskClient
 from sqlalchemy.orm import Session
 
 from saturn_engine import database
+from saturn_engine.config import Config
 from saturn_engine.core import JobId
 from saturn_engine.core import api
 from saturn_engine.models import Base
@@ -96,11 +97,12 @@ def fake_job_definition(
 
 
 @pytest.fixture
-def app() -> t.Iterator[SaturnApp]:
+def app(config: Config) -> t.Iterator[SaturnApp]:
     app = worker_manager_server.get_app(
-        config={
+        app_config={
             "TESTING": True,
         },
+        saturn_config=config,
     )
     with app.app_context():
         Base.metadata.drop_all(bind=database.engine())
