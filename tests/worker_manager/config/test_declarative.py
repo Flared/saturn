@@ -1,10 +1,17 @@
 import os
 
 import pytest
+from flask.testing import FlaskClient
+from sqlalchemy.orm import Session
 
 from saturn_engine.core.api import ComponentDefinition
 from saturn_engine.core.api import JobDefinition
 from saturn_engine.core.api import ResourceItem
+from saturn_engine.stores import topologies_store
+from saturn_engine.utils.declarative_config import BaseObject
+from saturn_engine.utils.declarative_config import ObjectMetadata
+from saturn_engine.utils.declarative_config import load_uncompiled_objects_from_str
+from saturn_engine.worker_manager.config.declarative import compile_static_definitions
 from saturn_engine.worker_manager.config.declarative import filter_with_jobs_selector
 from saturn_engine.worker_manager.config.declarative import load_definitions_from_paths
 from saturn_engine.worker_manager.config.declarative import load_definitions_from_str
@@ -606,3 +613,70 @@ def test_dynamic_definition() -> None:
     static_definitions = load_definitions_from_str(resources_provider_str)
     assert "test-inventory" in static_definitions.inventories
     assert static_definitions.inventories["test-inventory"].name == "test-inventory"
+
+
+def test_compile_static_definitions_with_patches(
+    client: FlaskClient, session: Session
+) -> None:
+    concurrency_definition_str = """
+    apiVersion: saturn.flared.io/v1alpha1
+    kind: SaturnResource
+    metadata:
+      name: test-resource
+      labels:
+        owner: team-saturn
+    spec:
+      type: TestApiKey
+      data:
+        key: "qwe"
+      default_delay: 10
+      concurrency: 2
+    """
+
+    uncompiled_objects = load_uncompiled_objects_from_str(concurrency_definition_str)
+
+    compileed_static_definitions_without_patch = compile_static_definitions(
+        uncompiled_objects=uncompiled_objects
+    )
+
+    assert compileed_static_definitions_without_patch.resources == {
+        "test-resource-1": ResourceItem(
+            name="test-resource-1",
+            type="TestApiKey",
+            data={"key": "qwe"},
+            default_delay=10.0,
+            rate_limit=None,
+        ),
+        "test-resource-2": ResourceItem(
+            name="test-resource-2",
+            type="TestApiKey",
+            data={"key": "qwe"},
+            default_delay=10.0,
+            rate_limit=None,
+        ),
+    }
+
+    # Now we create a patch to change the resource concurrency
+    patch = topologies_store.patch(
+        session=session,
+        patch=BaseObject(
+            kind="SaturnResource",
+            apiVersion="saturn.flared.io/v1alpha1",
+            metadata=ObjectMetadata(name="test-resource"),
+            spec={"concurrency": 1},
+        ),
+    )
+
+    compileed_static_definitions_without_patch = compile_static_definitions(
+        uncompiled_objects=uncompiled_objects, patches=[patch]
+    )
+
+    assert compileed_static_definitions_without_patch.resources == {
+        "test-resource": ResourceItem(
+            name="test-resource",
+            type="TestApiKey",
+            data={"key": "qwe"},
+            default_delay=10.0,
+            rate_limit=None,
+        )
+    }

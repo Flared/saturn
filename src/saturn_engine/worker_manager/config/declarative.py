@@ -5,6 +5,8 @@ import logging
 import re
 from collections import defaultdict
 
+from saturn_engine.models.topology_patches import TopologyPatch
+from saturn_engine.utils import dict as dict_utils
 from saturn_engine.utils.declarative_config import UncompiledObject
 from saturn_engine.utils.declarative_config import load_uncompiled_objects_from_path
 from saturn_engine.utils.declarative_config import load_uncompiled_objects_from_str
@@ -31,8 +33,15 @@ from .static_definitions import StaticDefinitions
 
 def compile_static_definitions(
     uncompiled_objects: list[UncompiledObject],
+    patches: list[TopologyPatch] | None = None,
 ) -> StaticDefinitions:
     objects_by_kind: DefaultDict[str, dict[str, UncompiledObject]] = defaultdict(dict)
+
+    if patches:
+        uncompiled_objects = merge_with_patches(
+            uncompiled_objects=uncompiled_objects, patches=patches
+        )
+
     for uncompiled_object in uncompiled_objects:
         if uncompiled_object.name in objects_by_kind[uncompiled_object.kind]:
             raise Exception(
@@ -122,12 +131,14 @@ def load_definitions_from_str(definitions: str) -> StaticDefinitions:
     return compile_static_definitions(load_uncompiled_objects_from_str(definitions))
 
 
-def load_definitions_from_paths(config_dirs: list[str]) -> StaticDefinitions:
+def load_definitions_from_paths(
+    config_dirs: list[str], patches: list[TopologyPatch] | None = None
+) -> StaticDefinitions:
     uncompiled_objects = []
     for config_dir in config_dirs:
         uncompiled_objects.extend(load_uncompiled_objects_from_path(config_dir))
 
-    return compile_static_definitions(uncompiled_objects)
+    return compile_static_definitions(uncompiled_objects, patches=patches)
 
 
 def filter_with_jobs_selector(
@@ -141,3 +152,25 @@ def filter_with_jobs_selector(
         if pattern.search(name)
     }
     return dataclasses.replace(definitions, jobs=jobs, job_definitions=job_definitions)
+
+
+def merge_with_patches(
+    uncompiled_objects: list[UncompiledObject], patches: list[TopologyPatch]
+) -> list[UncompiledObject]:
+    uncompiled_object_by_kind_and_name = {
+        (u.kind, u.name): u for u in uncompiled_objects
+    }
+    for patch in patches:
+        uncompiled_object = uncompiled_object_by_kind_and_name.get(
+            (patch.kind, patch.name)
+        )
+        if not uncompiled_object:
+            logging.warning(
+                f"Can't find an uncompiled objects to use with patch {patch=}"
+            )
+            continue
+
+        uncompiled_object.data = dict_utils.deep_merge(
+            a=uncompiled_object.data, b=patch.data
+        )
+    return uncompiled_objects

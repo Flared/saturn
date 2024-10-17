@@ -22,7 +22,6 @@ def lock_jobs(
     session: AnySyncSession,
 ) -> LockResponse:
     logger = logging.getLogger(f"{__name__}.lock_jobs")
-
     # Note:
     # - Leftover items remain unassigned.
     assignation_expiration_cutoff: datetime = datetime.now() - timedelta(minutes=15)
@@ -61,7 +60,6 @@ def lock_jobs(
                 selector=lock_input.selector,
             )
         )
-
     # Join definitions and filtered out by executors
     for item in assigned_items.copy():
         try:
@@ -129,7 +127,6 @@ def lock_jobs(
             continue
 
         executors.setdefault(executor.name, executor)
-
     # Refresh assignments
     new_assigned_at = datetime.now()
     for assigned_item in assigned_items:

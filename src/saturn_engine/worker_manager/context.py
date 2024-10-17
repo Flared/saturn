@@ -1,4 +1,5 @@
 from saturn_engine.config import WorkerManagerConfig
+from saturn_engine.stores import topologies_store
 from saturn_engine.utils.sqlalchemy import AnySession
 from saturn_engine.worker_manager.config.declarative import filter_with_jobs_selector
 from saturn_engine.worker_manager.config.declarative import load_definitions_from_paths
@@ -38,7 +39,11 @@ def _load_static_definition(
     - Jobs
     - JobDefinitions
     """
-    definitions = load_definitions_from_paths(config.static_definitions_directories)
+    patches = topologies_store.get_patches(session=session)
+    definitions = load_definitions_from_paths(
+        config.static_definitions_directories, patches=patches
+    )
+
     if config.static_definitions_jobs_selector:
         definitions = filter_with_jobs_selector(
             definitions=definitions,
