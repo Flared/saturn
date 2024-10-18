@@ -93,7 +93,7 @@ spec:
                     },
                     "labels": {
                         "owner": "team-saturn",
-                        "job-definition-name": "test-job-definition",
+                        "internal.job-definition-name": "test-job-definition",
                     },
                     "config": {
                         "tracer": {
