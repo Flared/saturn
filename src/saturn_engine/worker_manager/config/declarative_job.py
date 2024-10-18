@@ -98,7 +98,7 @@ class JobSpec:
                 ),
                 labels=dict(
                     {
-                        "job-definition-name": name,
+                        "internal.job-definition-name": name,
                     },
                     **labels,
                 ),
