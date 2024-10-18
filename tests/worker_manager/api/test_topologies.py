@@ -110,7 +110,10 @@ spec:
                 "config": {},
                 "executor": "default",
                 "input": {"name": "test-inventory", "options": {}, "type": "testtype"},
-                "labels": {"owner": "team-saturn"},
+                "labels": {
+                    "owner": "team-saturn",
+                    "internal.job-definition-name": "job_1",
+                },
                 "name": mock.ANY,
                 "output": {},
                 "pipeline": {
@@ -169,7 +172,10 @@ spec:
                 "config": {},
                 "executor": "default",
                 "input": {"name": "test-inventory", "options": {}, "type": "testtype"},
-                "labels": {"owner": "team-saturn"},
+                "labels": {
+                    "owner": "team-saturn",
+                    "internal.job-definition-name": "job_1",
+                },
                 "name": mock.ANY,
                 "output": {},
                 "pipeline": {
