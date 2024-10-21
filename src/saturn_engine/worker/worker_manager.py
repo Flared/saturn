@@ -10,7 +10,6 @@ from saturn_engine.core.api import JobsStatesSyncInput
 from saturn_engine.core.api import JobsStatesSyncResponse
 from saturn_engine.core.api import LockInput
 from saturn_engine.core.api import LockResponse
-from saturn_engine.models.base import Base
 from saturn_engine.stores import jobs_store
 from saturn_engine.worker_manager.context import WorkerManagerContext
 from saturn_engine.worker_manager.services.lock import lock_jobs
@@ -31,12 +30,6 @@ class StandaloneWorkerManagerClient(AbstractWorkerManagerClient):
         self.context = WorkerManagerContext(config=config.c.worker_manager)
         with self.sessionmaker() as session:
             self.context.load_static_definition(session=session)
-
-    async def init_db(self) -> None:
-        return await asyncio.get_event_loop().run_in_executor(
-            None,
-            self._sync_init_db,
-        )
 
     async def lock(self) -> LockResponse:
         return await asyncio.get_event_loop().run_in_executor(
@@ -65,11 +58,6 @@ class StandaloneWorkerManagerClient(AbstractWorkerManagerClient):
             None,
             self._sync_jobs,
         )
-
-    # TODO: Eventually figure out some nice monadic pattern to support both
-    # sync/async IO in stores.
-    def _sync_init_db(self) -> None:
-        Base.metadata.create_all(bind=self.sessionmaker.kw["bind"])
 
     def _sync_lock(self) -> LockResponse:
         with self.sessionmaker() as session:
