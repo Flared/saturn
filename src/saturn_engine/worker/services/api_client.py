@@ -3,6 +3,7 @@ import asyncio
 from sqlalchemy.orm import sessionmaker
 
 from saturn_engine.client.worker_manager import WorkerManagerClient
+from saturn_engine.models.base import Base
 from saturn_engine.worker.services.databases import Databases
 from saturn_engine.worker.services.tasks_runner import TasksRunnerService
 from saturn_engine.worker.worker_manager import StandaloneWorkerManagerClient
@@ -48,15 +49,28 @@ class StandaloneApiClient(Service[StandaloneServices, None]):
     SYNC_DELAY = 60
 
     async def open(self) -> None:
+        await self.init_db()
         self.client = StandaloneWorkerManagerClient(
             config=self.services.config,
             sessionmaker=sessionmaker(self.services.databases.sync_engine()),
         )
 
-        await self.client.init_db()
         await self.client.sync_jobs()
         self.services.tasks_runner.create_task(
             self._sync_jobs(), name="StandaloneClient.sync-jobs"
+        )
+
+    async def init_db(self) -> None:
+        # TODO: Eventually figure out some nice monadic pattern to support both
+        # sync/async IO in stores.
+        def _sync_init_db() -> None:
+            Base.metadata.create_all(
+                bind=sessionmaker(self.services.databases.sync_engine()).kw["bind"]
+            )
+
+        return await asyncio.get_event_loop().run_in_executor(
+            None,
+            _sync_init_db,
         )
 
     async def _sync_jobs(self) -> None:
