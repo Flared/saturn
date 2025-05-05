@@ -4,7 +4,7 @@ Saturn is a job scheduling and data processing system developed for web crawling
 
 ## Documentation
 
-- [**Architecture Overview**](docs/old/architecture_overview.md)
+- [**Architecture Overview**](https://flared.github.io/saturn/index.html)
 
 ## Installation
 
