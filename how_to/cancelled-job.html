@@ -319,11 +319,11 @@
 <p>When a Saturn Worker die or timeout, it will stop listening for an executor result. In these cases, it might be better to let the executor gracefully stop its job. This can be achieved by looking at a <cite>CancellationToken</cite> passed to the pipeline. Note that this feature is only supported with ARQ executors.</p>
 <div class="literal-block-wrapper docutils container" id="id1">
 <div class="code-block-caption"><span class="caption-text">cancel.py</span><a class="headerlink" href="#id1" title="Permalink to this code">#</a></div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">saturn_engine.core.pipeline</span> <span class="kn">import</span> <span class="n">CancellationToken</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">saturn_engine.core.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">CancellationToken</span>
 
-<span class="k">def</span> <span class="nf">progress_work</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">progress_work</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
 
-<span class="k">def</span> <span class="nf">can_cancel</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="n">CancellationToken</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">can_cancel</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="n">CancellationToken</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">while</span> <span class="ow">not</span> <span class="n">token</span><span class="o">.</span><span class="n">is_cancelled</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">progress_work</span><span class="p">(</span><span class="n">message</span><span class="p">):</span>
             <span class="k">break</span>

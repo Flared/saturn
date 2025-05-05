@@ -319,12 +319,12 @@
 <p>To create our first pipeline all we need is to define a Python function that receive
 parameters from a Saturn message and do some processing or returns new messages.</p>
 <p>Let’s start by creating a new file named <code class="docutils literal notranslate"><span class="pre">pipelines.py</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">abc.collection</span> <span class="kn">import</span> <span class="n">Iterator</span>
-<span class="kn">from</span> <span class="nn">saturn_engine.core</span> <span class="kn">import</span> <span class="n">TopicMessage</span>
-<span class="kn">from</span> <span class="nn">saturn_engine.core.pipeline</span> <span class="kn">import</span> <span class="n">PipelineResult</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">abc.collection</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">saturn_engine.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">TopicMessage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">saturn_engine.core.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">PipelineResult</span>
 
 
-<span class="k">def</span> <span class="nf">upper_word</span><span class="p">(</span><span class="n">word</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TopicMessage</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">upper_word</span><span class="p">(</span><span class="n">word</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TopicMessage</span><span class="p">:</span>
     <span class="k">return</span> <span class="n">TopicMessage</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;upper&quot;</span><span class="p">:</span> <span class="n">word</span><span class="o">.</span><span class="n">upper</span><span class="p">()})</span>
 </pre></div>
 </div>
@@ -333,7 +333,7 @@ parameters from a Saturn message and do some processing or returns new messages.
 Python and aims for a 100% typing coverage using <a class="reference external" href="https://mypy.readthedocs.io/en/stable/">mypy</a>. Parameters types are very important since
 Saturn is going to use them to convert message into pipeline parameters.</p>
 <p>Let’s move on to the function definition:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">upper_word</span><span class="p">(</span><span class="n">word</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">PipelineResult</span><span class="p">]:</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">upper_word</span><span class="p">(</span><span class="n">word</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">PipelineResult</span><span class="p">]:</span>
 </pre></div>
 </div>
 <p>Saturn pipelines are simple Python function. They take arbitrary parameters and simply
