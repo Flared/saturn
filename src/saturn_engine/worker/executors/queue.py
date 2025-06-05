@@ -23,6 +23,10 @@ from . import Executor
 from .executable import ExecutableMessage
 
 
+class MessageCancelled(Exception):
+    pass
+
+
 class ExecutorQueue:
     CLOSE_TIMEOUT = datetime.timedelta(seconds=60)
 
@@ -69,6 +73,8 @@ class ExecutorQueue:
                         xmsg: ExecutableMessage,
                     ) -> PipelineResults:
                         try:
+                            if xmsg.is_cancelled:
+                                raise MessageCancelled
                             return await self.executor.process_message(xmsg)
                         except Exception:
                             exc_type, exc_value, exc_traceback = sys.exc_info()
